@@ -231,28 +231,57 @@ export default function Phase2ProcessingPage() {
 
       <div className="space-y-2">
         {displaySteps.map(s => {
-          const statusColor = s.status === "complete" ? "#22C55E"
-            : s.status === "running" ? "#A855F7"
-            : s.status === "error" ? "#EF4444"
-            : "#1E3A5F";
+          const isComplete = s.status === "complete";
+          const isRunning = s.status === "running";
+          const isError = s.status === "error";
+          const isPending = s.status === "pending";
+          const desc = STEP_DESCRIPTIONS[s.step];
+
           return (
             <div
               key={s.step}
-              className="flex items-center gap-3 p-3 rounded-lg border transition-all"
+              className="rounded-lg border transition-all"
               style={{
-                borderColor: s.status === "running" ? "#A855F740" : "#0D1F3A",
-                background: s.status === "running" ? "#130A2A" : "#080F1F",
+                borderColor: isRunning ? "#A855F740" : isComplete ? "#22C55E30" : "#0D1F3A",
+                background: isRunning ? "#130A2A" : isComplete ? "#0A1A0A" : "#080F1F",
               }}
             >
-              <span style={{ color: statusColor }} className="text-sm font-bold flex-shrink-0 w-4 text-center">
-                {s.status === "complete" ? "✓" : s.status === "running" ? "●" : s.status === "error" ? "✕" : "○"}
-              </span>
-              <span className="text-sm">{STEP_ICONS[s.step]}</span>
-              <span className="text-sm" style={{ color: s.status === "pending" ? "#4A6580" : "#F0F4FF" }}>
-                {s.step}
-              </span>
-              {s.status === "running" && (
-                <span className="ml-auto text-[#A855F7] text-xs animate-pulse">Running{dots}</span>
+              {/* Step header row */}
+              <div className="flex items-center gap-3 p-3">
+                <span
+                  className="text-sm font-bold flex-shrink-0 w-4 text-center"
+                  style={{ color: isComplete ? "#22C55E" : isRunning ? "#A855F7" : isError ? "#EF4444" : "#1E3A5F" }}
+                >
+                  {isComplete ? "✓" : isRunning ? "●" : isError ? "✕" : "○"}
+                </span>
+                <span className="text-sm">{STEP_ICONS[s.step]}</span>
+                <span className="text-sm font-medium" style={{ color: isPending ? "#4A6580" : isRunning ? "#A855F7" : "#F0F4FF" }}>
+                  {s.step}
+                </span>
+                {isRunning && (
+                  <span className="ml-auto text-[#A855F7] text-xs animate-pulse">Running{dots}</span>
+                )}
+                {s.detail && !isRunning && (
+                  <span className="ml-auto text-[#4A6580] text-xs font-mono">{s.detail}</span>
+                )}
+              </div>
+
+              {/* Expanded description for completed steps */}
+              {isComplete && desc && (
+                <div className="px-4 pb-3 ml-7 border-t border-[#22C55E20] pt-2.5 space-y-1.5">
+                  <p className="text-xs text-[#D0DCF0] leading-relaxed">{desc.what}</p>
+                  <p className="text-xs text-[#4A6580] leading-relaxed">
+                    <span className="text-[#4F8EF7] font-medium">Why it matters: </span>
+                    {desc.why}
+                  </p>
+                </div>
+              )}
+
+              {/* Running step — show description preview */}
+              {isRunning && desc && (
+                <div className="px-4 pb-3 ml-7 border-t border-[#A855F720] pt-2.5">
+                  <p className="text-xs text-[#8BA3C7] leading-relaxed italic">{desc.what}</p>
+                </div>
               )}
             </div>
           );
