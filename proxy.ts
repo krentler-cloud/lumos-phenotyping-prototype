@@ -1,20 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health', '/auth']
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Let auth pages and public API routes through
+  // Always let Next.js internals and public paths through
   if (
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/auth/update-password') ||
-    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next') ||
-    pathname === '/favicon.ico'
+    pathname.startsWith('/api/') ||
+    pathname === '/favicon.ico' ||
+    PUBLIC_PATHS.some((p) => pathname.startsWith(p))
   ) {
     return NextResponse.next()
   }
 
+  // ── Password gate (only active when PROTO_PASSWORD is set) ──────────────────
+  // On Railway: gates access behind a shared password for prototype review.
+  // Locally: PROTO_PASSWORD is unset so this is skipped entirely.
+  const protoPassword = process.env.PROTO_PASSWORD
+  if (protoPassword) {
+    const authCookie = req.cookies.get('lumos-auth')?.value
+    if (authCookie !== protoPassword) {
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('next', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    // Password correct — allow through without Supabase auth check
+    return NextResponse.next()
+  }
+
+  // ── Supabase auth (local dev fallback when no PROTO_PASSWORD) ───────────────
+  const { createServerClient } = await import('@supabase/ssr')
   let res = NextResponse.next()
 
   const supabase = createServerClient(
