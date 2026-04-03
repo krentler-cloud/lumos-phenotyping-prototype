@@ -229,7 +229,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       <div className="mb-6">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-1">Phase 1 — Preclinical Report</p>
+            <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis Report</p>
             <h1 className="text-2xl font-bold text-[#F0F4FF]">{drugName} · {indication}</h1>
             <p className="text-[#4A6580] text-xs mt-1">Generated {genDate}</p>
           </div>
@@ -484,7 +484,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
             <p className="text-[#8BA3C7] text-xs leading-relaxed">
               <span className="text-[#F59E0B] font-semibold">Important: </span>
-              All evidence is in vitro or animal-model — no human clinical data has been collected yet. Confidence scores reflect corpus evidence strength, not clinical validation. These are hypotheses to be tested in Phase 1.
+              All evidence is in vitro or animal-model — no human clinical data has been collected yet. Confidence scores reflect corpus evidence strength, not clinical validation. These are hypotheses to be tested in the clinical trial.
             </p>
           </div>
         </div>

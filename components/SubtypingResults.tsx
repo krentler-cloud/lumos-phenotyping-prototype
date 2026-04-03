@@ -267,11 +267,11 @@ export default function SubtypingResults({
       <div className="flex items-start justify-between mb-8">
         <div>
           <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-1">
-            Phase 2 — Clinical Re-Analysis · Lumos v2.1
+            Clinical Analysis · Lumos v2.1
           </p>
           <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">2.2 Subtyping Results</h1>
           <p className="text-[#8BA3C7] text-sm">
-            {drugName} · N=16 patients · {ml.concordance_pct}% concordance with Phase 1 prediction
+            {drugName} · N=16 patients · {ml.concordance_pct}% concordance with pre-clinical prediction
           </p>
         </div>
         <Link
@@ -361,7 +361,7 @@ export default function SubtypingResults({
                     <div className="h-full rounded-full" style={{ width: `${postPct}%`, background: card.color }} />
                   </div>
                 </div>
-                <p className="text-[10px] text-[#4A6580] mt-1">Phase 1 → Phase 2</p>
+                <p className="text-[10px] text-[#4A6580] mt-1">Pre-Clinical → Clinical</p>
               </div>
             );
           })}

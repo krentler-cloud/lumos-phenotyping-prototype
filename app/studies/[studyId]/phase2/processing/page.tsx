@@ -18,7 +18,7 @@ interface RunStatus {
 
 const ALL_STEPS = [
   "Load study data",
-  "Load Phase 1 report",
+  "Load pre-clinical report",
   "Load clinical patients",
   "Clinical ML analysis",
   "Phase 2 synthesis (Sonnet)",
@@ -27,11 +27,11 @@ const ALL_STEPS = [
 
 const STEP_ICONS: Record<string, string> = {
   "Load study data":           "📋",
-  "Load Phase 1 report":       "📊",
+  "Load pre-clinical report":  "📊",
   "Load clinical patients":    "👥",
   "Clinical ML analysis":      "🧮",
-  "Phase 2 synthesis (Sonnet)":"🤖",
-  "Store Phase 2 report":      "💾",
+  "Clinical synthesis (Sonnet)":"🤖",
+  "Store clinical report":      "💾",
 };
 
 const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
@@ -39,7 +39,7 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Loaded the study configuration — drug name, indication, and the linked Phase 1 run record.",
     why: "Phase 2 re-analysis is always anchored to a specific drug and its Phase 1 hypothesis. This establishes that link before any data is touched.",
   },
-  "Load Phase 1 report": {
+  "Load pre-clinical report": {
     what: "Retrieved the complete Phase 1 corpus synthesis — responder and non-responder phenotype profiles, biomarker table, and the original Bayesian confidence scores. These are the pre-clinical hypotheses that Phase 2 will now test against real patient data.",
     why: "The Bayesian update in Step 4 requires the Phase 1 priors as a starting point. Without them, we would have no principled baseline to update — the clinical data would be interpreted in a vacuum rather than against a pre-specified hypothesis.",
   },
@@ -51,11 +51,11 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Ran three analyses in parallel: (1) threshold-based subtype clustering — assigned each patient to Subtype A (BDNF < 15 ng/mL), B (IL-6 ≥ 4 pg/mL), or C (mixed) using the Phase 1-derived thresholds; (2) Pearson correlation feature importance — ranked each biomarker by its linear association with response status; (3) Bayesian update — applied the observed responder/non-responder counts to update the Phase 1 Beta-Binomial priors.",
     why: "These three computations answer three distinct questions: Which subtype did each patient actually belong to? Which biomarkers were most predictive in practice? And how much should we revise our confidence in the Phase 1 hypotheses given the new data? Each feeds directly into the synthesis step.",
   },
-  "Phase 2 synthesis (Sonnet)": {
+  "Clinical synthesis (Sonnet)": {
     what: "Claude Sonnet integrated the Phase 1 phenotype profiles, the Bayesian-updated confidence scores, MADRS trajectory data, and feature importance rankings to produce refined responder and non-responder profiles with validation badges, enhanced outcome measures for future trials, and structured CRO screening prompts.",
     why: "Sonnet — rather than Opus — is used here because the synthesis task is more constrained: the structure of the output is tighter, the corpus context is smaller, and the primary challenge is interpretation rather than open-ended scientific reasoning. Sonnet is faster and more cost-efficient for this type of structured generation.",
   },
-  "Store Phase 2 report": {
+  "Store clinical report": {
     what: "Persisted the complete Phase 2 output — refined profiles, ML results, patient-level data, MADRS trajectories, feature importances, and the Bayesian update record — as a versioned report linked to this study.",
     why: "Storing the full evidential chain means every confidence score and profile revision can be traced back to the specific patient observations and computational steps that produced it — critical for regulatory review and for explaining methodology to clinical stakeholders.",
   },
@@ -141,8 +141,8 @@ export default function Phase2ProcessingPage() {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
         <div className="mb-8">
-          <p className="text-[#22C55E] text-xs uppercase tracking-widest font-semibold mb-2">Phase 2 — Clinical</p>
-          <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">Re-Analysis Complete</h1>
+          <p className="text-[#22C55E] text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
+          <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">Analysis Complete</h1>
           <p className="text-[#8BA3C7] text-sm">
             {ALL_STEPS.length} pipeline steps completed · Powered by Claude Sonnet · N=16 clinical patients
           </p>
@@ -202,7 +202,7 @@ export default function Phase2ProcessingPage() {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
         <div className="p-6 rounded-xl border border-[#EF4444]/30 bg-[#1A0A0A]">
-          <p className="text-[#EF4444] font-semibold mb-2">Phase 2 Processing Failed</p>
+          <p className="text-[#EF4444] font-semibold mb-2">Clinical Analysis Failed</p>
           <p className="text-[#8BA3C7] text-sm">{runStatus?.error_message ?? "Unknown error"}</p>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function Phase2ProcessingPage() {
   return (
     <div className="max-w-2xl mx-auto px-8 py-12">
       <div className="mb-8">
-        <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-2">Phase 2 — Clinical Re-Analysis</p>
+        <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
         <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">
           {runningStep ? `${runningStep.step}${dots}` : `Initializing${dots}`}
         </h1>

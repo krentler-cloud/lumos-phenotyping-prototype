@@ -169,7 +169,7 @@ export default function Phase1ProcessingPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-[#22C55E] text-xs uppercase tracking-widest mb-1">Phase 1 — Preclinical</p>
+            <p className="text-[#22C55E] text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis</p>
             <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">Analysis Complete</h1>
             <p className="text-[#8BA3C7] text-sm">
               7 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
@@ -258,14 +258,14 @@ export default function Phase1ProcessingPage() {
       {/* Header */}
       <div className="mb-10">
         <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-2">
-          Phase 1 — Preclinical
+          Pre-Clinical Analysis
         </p>
         <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">
           {isError ? "Analysis Failed" : `Lumos AI™ is analyzing${dots}`}
         </h1>
         <p className="text-[#8BA3C7] text-sm">
           {isError
-            ? "An error occurred during corpus analysis. You can re-run from the Phase 1 page."
+            ? "An error occurred during corpus analysis. You can re-run from the pre-clinical analysis page."
             : "Running pre-clinical corpus analysis — no patient data required. This typically takes 60–90 seconds."}
         </p>
       </div>
@@ -353,7 +353,7 @@ export default function Phase1ProcessingPage() {
             href={`/studies/${studyId}/phase1`}
             className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#8BA3C7] hover:text-[#F0F4FF] transition-colors"
           >
-            ← Return to Phase 1 to re-run
+            ← Return to re-run
           </a>
         </div>
       )}

@@ -22,11 +22,11 @@ export default async function Phase2Page({
   return (
     <div className="max-w-4xl mx-auto px-8 py-12">
       <div className="text-center mb-12">
-        <p className="text-[#8BA3C7] text-xs uppercase tracking-widest mb-4">— 18 months later —</p>
-        <h1 className="text-4xl font-bold text-[#F0F4FF] mb-3">Lumos AI™ v2.1</h1>
+        <p className="text-[#A855F7] text-xs uppercase tracking-widest mb-4">Clinical Analysis · Lumos v2.1</p>
+        <h1 className="text-4xl font-bold text-[#F0F4FF] mb-3">Trial Data Is In</h1>
         <p className="text-[#8BA3C7] text-sm max-w-xl mx-auto leading-relaxed">
-          Xylo&apos;s Phase 1 clinical data has arrived. In the meantime, Lumos has not been sitting still —
-          continuously ingesting new research, trials, and advancing with the frontier of AI.
+          XYL-1001 Phase 1 patient outcomes are ready. Run Lumos Clinical Analysis to validate the pre-clinical
+          phenotype hypotheses against real patient data and generate CRO-ready screening criteria.
         </p>
       </div>
 
@@ -39,7 +39,6 @@ export default async function Phase2Page({
               "+ 1,847 new MDD trial records ingested",
               "+ 340 new publications indexed",
               "+ ClinicalTrials.gov re-queried: +28 trials",
-              "+ In Silico Twin cohort: +3,100 profiles",
             ],
             color: "#4F8EF7",
           },

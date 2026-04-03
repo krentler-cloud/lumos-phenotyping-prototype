@@ -171,8 +171,8 @@ function CROTab({ prompts }: { prompts: CROPrompt[] }) {
       <div className="p-4 bg-[#080F1F] border border-[#F59E0B]/20 rounded-xl">
         <p className="text-[#F59E0B] text-xs font-semibold mb-1">Clinical Research Organization Use</p>
         <p className="text-[#8BA3C7] text-xs leading-relaxed">
-          These screening prompts are derived from the validated Phase 2 phenotype profiles. They translate
-          the Lumos AI biomarker findings into actionable enrollment criteria for Phase 2/3 clinical trial design.
+          These screening prompts are derived from the validated clinical analysis phenotype profiles. They translate
+          the Lumos AI biomarker findings into actionable enrollment criteria for future clinical trial design.
         </p>
       </div>
 
@@ -238,7 +238,7 @@ export default function Phase2FinalReport({
       {/* Header */}
       <div className="mb-8">
         <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-1">
-          Phase 2 — Final Report · Lumos v2.1
+          Clinical Analysis — Final Report · Lumos v2.1
         </p>
         <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">
           {drugName} · {indication} · Clinical Validation
@@ -251,7 +251,7 @@ export default function Phase2FinalReport({
             PATIENT-LEVEL VALIDATED
           </span>
           <span className="text-xs text-[#4A6580]">
-            Phase 1 corpus hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
+            Pre-clinical hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
           </span>
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function Phase2FinalReport({
           {/* Methodology narrative */}
           {report.methodology_narrative && (
             <div className="p-5 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
-              <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-3">Phase 2 Methodology</p>
+              <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-3">Clinical Analysis Methodology</p>
               <div className="text-[#8BA3C7] text-sm leading-relaxed space-y-3">
                 {report.methodology_narrative.split(/\n\n+/).map((para, i) => (
                   <p key={i}>{para.trim()}</p>
@@ -297,8 +297,8 @@ export default function Phase2FinalReport({
           <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
             <p className="text-[#8BA3C7] text-xs leading-relaxed">
               <span className="text-[#F59E0B] font-semibold">Note: </span>
-              Phase 2 validation is based on N=16 participants. Confidence scores reflect Bayesian-updated
-              estimates — larger Phase 2/3 trials will further refine these hypotheses. CRO screening prompts
+              Clinical analysis is based on N=16 participants. Confidence scores reflect Bayesian-updated
+              estimates — larger trials will further refine these hypotheses. CRO screening prompts
               should be reviewed by a qualified clinical team before protocol implementation.
             </p>
           </div>

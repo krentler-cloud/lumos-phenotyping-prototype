@@ -81,7 +81,7 @@ export async function POST(
     })
 
     // ── Step 2: Load Phase 1 report ─────────────────────────────────────────
-    await step(supabase, run_id, log, 'Load Phase 1 report', async () => {
+    await step(supabase, run_id, log, 'Load pre-clinical report', async () => {
       const { data, error } = await supabase
         .from('phase1_reports')
         .select('report_data')
@@ -131,7 +131,7 @@ export async function POST(
 
     // ── Step 5: Synthesize with Claude Sonnet ──────────────────────────────
     let phase2Report = null
-    await step(supabase, run_id, log, 'Phase 2 synthesis (Sonnet)', async () => {
+    await step(supabase, run_id, log, 'Clinical synthesis (Sonnet)', async () => {
       phase2Report = await synthesizePhase2Report(
         study!.drug_name,
         study!.indication,
@@ -142,7 +142,7 @@ export async function POST(
     })
 
     // ── Step 6: Store report ────────────────────────────────────────────────
-    await step(supabase, run_id, log, 'Store Phase 2 report', async () => {
+    await step(supabase, run_id, log, 'Store clinical report', async () => {
       const fullReport = {
         ...phase2Report,
         ml_result: mlResult,

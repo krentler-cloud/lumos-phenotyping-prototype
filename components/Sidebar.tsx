@@ -50,7 +50,7 @@ export default function Sidebar({ study }: SidebarProps) {
       <div className="px-5 py-4 border-b border-[#1E3A5F]">
         <p className="text-[#8BA3C7] text-[10px] uppercase tracking-wider mb-1">Active Project</p>
         <p className="text-[#F0F4FF] text-sm font-semibold">{study.sponsor} · {study.drug_name}</p>
-        <p className="text-[#8BA3C7] text-xs mt-0.5">{study.indication} · Phase 1 — Preclinical</p>
+        <p className="text-[#8BA3C7] text-xs mt-0.5">{study.indication} · Pre-Clinical Analysis</p>
       </div>
 
       {/* Navigation */}
@@ -60,7 +60,7 @@ export default function Sidebar({ study }: SidebarProps) {
         <div>
           <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left group">
             <span className={`text-[10px] font-bold uppercase tracking-widest ${phase1Active ? 'text-[#4F8EF7]' : 'text-[#8BA3C7]'}`}>
-              ▶ Phase 1 — Preclinical
+              ▶ Pre-Clinical Analysis
             </span>
           </button>
           <div className="mt-1 space-y-0.5 ml-2">
@@ -73,14 +73,14 @@ export default function Sidebar({ study }: SidebarProps) {
             {hasPhase1 ? (
               <SidebarItem
                 href={`${base}/phase1/report`}
-                label="Report #1 — Preclinical"
+                label="Pre-Clinical Report"
                 icon="☰"
                 active={isActive(`${base}/phase1/report`)}
               />
             ) : (
               <SidebarItem
                 href={`${base}/phase1`}
-                label="Report #1 — Preclinical"
+                label="Pre-Clinical Report"
                 icon="○"
                 muted
                 active={false}
@@ -93,7 +93,7 @@ export default function Sidebar({ study }: SidebarProps) {
         <div>
           <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left">
             <span className={`text-[10px] font-bold uppercase tracking-widest ${phase2Active ? 'text-[#22C55E]' : 'text-[#8BA3C7]'}`}>
-              {phase2Active ? '▶' : '▷'} Phase 2 — Clinical
+              {phase2Active ? '▶' : '▷'} Clinical Analysis
             </span>
           </button>
           <div className="mt-1 space-y-0.5 ml-2">
@@ -101,7 +101,7 @@ export default function Sidebar({ study }: SidebarProps) {
               <>
                 <SidebarItem
                   href={hasPhase2 ? `${base}/phase2/processing` : `${base}/phase2`}
-                  label={hasPhase2 ? "Re-Analysis Complete" : "Phase 2 — Re-Analysis"}
+                  label={hasPhase2 ? "Analysis Complete" : "Run Clinical Analysis"}
                   icon="↻"
                   active={
                     (isActive(`${base}/phase2`) && !pathname.includes('/subtyping') && !pathname.includes('/report')) ||
@@ -132,7 +132,7 @@ export default function Sidebar({ study }: SidebarProps) {
               </>
             ) : (
               <>
-                <SidebarItem href={`${base}/phase1`} label="Phase 2 — Re-Analysis" icon="○" muted active={false} />
+                <SidebarItem href={`${base}/phase1`} label="Run Clinical Analysis" icon="○" muted active={false} />
                 <SidebarItem href={`${base}/phase1`} label="2.2 Subtyping Results" icon="○" muted active={false} />
                 <SidebarItem href={`${base}/phase1`} label="Final Report + CRO Prompts" icon="○" muted active={false} />
               </>
