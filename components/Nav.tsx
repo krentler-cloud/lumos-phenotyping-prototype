@@ -14,8 +14,9 @@ const navLinks = [
 export default function Nav() {
   const pathname = usePathname();
 
-  // Don't show nav on auth page or study pages (they have their own sidebar)
+  // Don't show nav on auth/login pages or study pages (they have their own sidebar)
   if (pathname === "/auth") return null;
+  if (pathname === "/login") return null;
   if (pathname.startsWith("/studies/")) return null;
 
   return (
