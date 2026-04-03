@@ -117,6 +117,12 @@ export default function Sidebar({ study }: SidebarProps) {
                       active={isActive(`${base}/phase2/subtyping`)}
                     />
                     <SidebarItem
+                      href={`${base}/phase2/patients`}
+                      label="Patient Population"
+                      icon="◉"
+                      active={isActive(`${base}/phase2/patients`)}
+                    />
+                    <SidebarItem
                       href={`${base}/phase2/report`}
                       label="Final Report + CRO Prompts"
                       icon="☰"
@@ -126,6 +132,7 @@ export default function Sidebar({ study }: SidebarProps) {
                 ) : (
                   <>
                     <SidebarItem href={`${base}/phase2`} label="2.2 Subtyping Results" icon="○" muted active={false} />
+                    <SidebarItem href={`${base}/phase2`} label="Patient Population" icon="○" muted active={false} />
                     <SidebarItem href={`${base}/phase2`} label="Final Report + CRO Prompts" icon="○" muted active={false} />
                   </>
                 )}
@@ -134,6 +141,7 @@ export default function Sidebar({ study }: SidebarProps) {
               <>
                 <SidebarItem href={`${base}/phase1`} label="Run Clinical Analysis" icon="○" muted active={false} />
                 <SidebarItem href={`${base}/phase1`} label="2.2 Subtyping Results" icon="○" muted active={false} />
+                <SidebarItem href={`${base}/phase1`} label="Patient Population" icon="○" muted active={false} />
                 <SidebarItem href={`${base}/phase1`} label="Final Report + CRO Prompts" icon="○" muted active={false} />
               </>
             )}
