@@ -140,9 +140,17 @@ export default function Sidebar({ study }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-[#1E3A5F]">
+      <div className="px-5 py-3 border-t border-[#1E3A5F] space-y-2">
         <p className="text-[#1E3A5F] text-[10px]">HIPAA · SOC 2</p>
         <p className="text-[#1E3A5F] text-[10px]">headlamp.com/lumosai</p>
+        <form action="/api/auth/logout" method="POST">
+          <button
+            type="submit"
+            className="text-[#2A4060] hover:text-[#8BA3C7] text-[10px] transition-colors"
+          >
+            Sign out
+          </button>
+        </form>
       </div>
     </aside>
   );
