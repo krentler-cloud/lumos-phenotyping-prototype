@@ -27,6 +27,46 @@ const SOURCE_LABELS: Record<string, string> = {
   regulatory:     "Regulatory",
 };
 
+const SOURCE_OPTIONS = [
+  { value: "literature",     label: "Literature" },
+  { value: "clinical_trial", label: "Clinical Trial" },
+  { value: "internal",       label: "Internal" },
+  { value: "regulatory",     label: "Regulatory" },
+];
+
+function SourceTypeSelect({ doc, onUpdated }: { doc: CorpusDoc; onUpdated: () => void }) {
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    if (newType === doc.source_type) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/corpus/docs/${doc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_type: newType }),
+      });
+      onUpdated();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <select
+      value={doc.source_type}
+      onChange={handleChange}
+      disabled={saving}
+      className="bg-[#0A1628] border border-[#1E3A5F] text-[#8BA3C7] text-xs rounded px-2 py-1 cursor-pointer hover:border-[#4F8EF7] transition-colors disabled:opacity-50"
+    >
+      {SOURCE_OPTIONS.map(o => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
 export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: number }) {
   const [docs, setDocs] = useState<CorpusDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +153,8 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
                     <span className="block text-[#EF4444] text-xs mt-0.5 max-w-xs">{doc.metadata.error}</span>
                   )}
                 </td>
-                <td className="px-5 py-3 text-[#8BA3C7] hidden md:table-cell">
-                  {SOURCE_LABELS[doc.source_type] ?? doc.source_type}
+                <td className="px-5 py-3 hidden md:table-cell">
+                  <SourceTypeSelect doc={doc} onUpdated={fetchDocs} />
                 </td>
                 <td className="px-5 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs border ${STATUS_STYLES[doc.status] ?? ""}`}>

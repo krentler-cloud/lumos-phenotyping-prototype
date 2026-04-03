@@ -233,7 +233,19 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             <h1 className="text-2xl font-bold text-[#F0F4FF]">{drugName} · {indication}</h1>
             <p className="text-[#4A6580] text-xs mt-1">Generated {genDate}</p>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0 print-hide">
+            <form action={`/api/studies/${studyId}/rerun-phase1`} method="POST">
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1E3A5F] bg-[#0F1F3D] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors text-xs font-medium"
+                title="Clear this run and re-analyse with the current corpus"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.25"/>
+                </svg>
+                Re-run with updated corpus
+              </button>
+            </form>
             <ConfidenceBadge
               value={report.overall_confidence}
               onClick={() => setShowConfidence(v => !v)}
