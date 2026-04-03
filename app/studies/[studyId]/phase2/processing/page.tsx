@@ -21,8 +21,8 @@ const ALL_STEPS = [
   "Load pre-clinical report",
   "Load clinical patients",
   "Clinical ML analysis",
-  "Phase 2 synthesis (Sonnet)",
-  "Store Phase 2 report",
+  "Clinical synthesis (Sonnet)",
+  "Store clinical report",
 ];
 
 const STEP_ICONS: Record<string, string> = {

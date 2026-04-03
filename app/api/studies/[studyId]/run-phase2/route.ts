@@ -8,6 +8,12 @@ export async function POST(
   const { studyId } = await params
   const supabase = createServiceClient()
 
+  // Build public-facing base URL (Railway sets x-forwarded-host)
+  const forwarded = req.headers.get('x-forwarded-host')
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
+  const explicitBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+  const publicBase = explicitBase ?? (forwarded ? `${proto}://${forwarded}` : req.nextUrl.origin)
+
   try {
     const { data: study, error: studyError } = await supabase
       .from('studies')
@@ -33,14 +39,10 @@ export async function POST(
         .single()
 
       if (existingRun?.status === 'queued' || existingRun?.status === 'processing') {
-        return NextResponse.redirect(
-          new URL(`/studies/${studyId}/phase2/processing`, req.nextUrl.origin)
-        )
+        return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase2/processing`)
       }
       if (existingRun?.status === 'complete') {
-        return NextResponse.redirect(
-          new URL(`/studies/${studyId}/phase2/subtyping`, req.nextUrl.origin)
-        )
+        return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase2/subtyping`)
       }
       // Error state — clear and re-run
       await supabase.from('studies').update({ phase2_run_id: null }).eq('id', studyId)
@@ -65,9 +67,8 @@ export async function POST(
 
     await supabase.from('studies').update({ phase2_run_id: run.id }).eq('id', studyId)
 
-    // Fire-and-forget async processing
-    const baseUrl = req.nextUrl.origin
-    fetch(`${baseUrl}/api/studies/${studyId}/process-phase2`, {
+    // Fire-and-forget async processing (internal — use origin directly)
+    fetch(`${req.nextUrl.origin}/api/studies/${studyId}/process-phase2`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,9 +77,7 @@ export async function POST(
       body: JSON.stringify({ run_id: run.id }),
     }).catch(err => console.error('[run-phase2] Failed to kick off processing:', err))
 
-    return NextResponse.redirect(
-      new URL(`/studies/${studyId}/phase2/processing`, req.nextUrl.origin)
-    )
+    return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase2/processing`)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     console.error('[run-phase2]', message)

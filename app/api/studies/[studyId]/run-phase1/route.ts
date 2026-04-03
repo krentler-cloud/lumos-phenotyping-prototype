@@ -14,6 +14,12 @@ export async function POST(
   const { studyId } = await params
   const supabase = createServiceClient()
 
+  // Build public-facing base URL (Railway sets x-forwarded-host)
+  const forwarded = req.headers.get('x-forwarded-host')
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
+  const explicitBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+  const publicBase = explicitBase ?? (forwarded ? `${proto}://${forwarded}` : req.nextUrl.origin)
+
   try {
     // 1. Verify study exists
     const { data: study, error: studyError } = await supabase
@@ -37,9 +43,9 @@ export async function POST(
       // Active or complete — just redirect, don't create another
       if (existingRun?.status === 'queued' || existingRun?.status === 'processing' || existingRun?.status === 'complete') {
         const dest = existingRun.status === 'complete'
-          ? `/studies/${studyId}/phase1/report`
-          : `/studies/${studyId}/phase1/processing`
-        return NextResponse.redirect(new URL(dest, req.nextUrl.origin))
+          ? `${publicBase}/studies/${studyId}/phase1/report`
+          : `${publicBase}/studies/${studyId}/phase1/processing`
+        return NextResponse.redirect(dest)
       }
 
       // Error state — clear the link and fall through to create a fresh run
@@ -69,9 +75,8 @@ export async function POST(
       .update({ phase1_run_id: run.id })
       .eq('id', studyId)
 
-    // 5. Kick off async processing — fire and forget
-    const baseUrl = req.nextUrl.origin
-    fetch(`${baseUrl}/api/studies/${studyId}/process-phase1`, {
+    // 5. Kick off async processing — fire and forget (internal, use origin directly)
+    fetch(`${req.nextUrl.origin}/api/studies/${studyId}/process-phase1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,9 +86,7 @@ export async function POST(
     }).catch(err => console.error('[run-phase1] Failed to kick off processing:', err))
 
     // 6. Redirect to processing page
-    return NextResponse.redirect(
-      new URL(`/studies/${studyId}/phase1/processing`, req.nextUrl.origin)
-    )
+    return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase1/processing`)
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'

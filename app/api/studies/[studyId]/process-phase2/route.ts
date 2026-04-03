@@ -130,7 +130,7 @@ export async function POST(
     })
 
     // ── Step 5: Synthesize with Claude Sonnet ──────────────────────────────
-    let phase2Report = null
+    let phase2Report: Awaited<ReturnType<typeof synthesizePhase2Report>> | null = null
     await step(supabase, run_id, log, 'Clinical synthesis (Sonnet)', async () => {
       phase2Report = await synthesizePhase2Report(
         study!.drug_name,
