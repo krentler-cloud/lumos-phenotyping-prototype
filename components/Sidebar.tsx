@@ -100,10 +100,13 @@ export default function Sidebar({ study }: SidebarProps) {
             {hasPhase1 ? (
               <>
                 <SidebarItem
-                  href={`${base}/phase2`}
-                  label="Phase 2 — Re-Analysis"
+                  href={hasPhase2 ? `${base}/phase2/processing` : `${base}/phase2`}
+                  label={hasPhase2 ? "Re-Analysis Complete" : "Phase 2 — Re-Analysis"}
                   icon="↻"
-                  active={isActive(`${base}/phase2`) && !pathname.includes('/subtyping') && !pathname.includes('/report')}
+                  active={
+                    (isActive(`${base}/phase2`) && !pathname.includes('/subtyping') && !pathname.includes('/report')) ||
+                    isActive(`${base}/phase2/processing`)
+                  }
                 />
                 {hasPhase2 ? (
                   <>
@@ -117,7 +120,6 @@ export default function Sidebar({ study }: SidebarProps) {
                       href={`${base}/phase2/report`}
                       label="Final Report + CRO Prompts"
                       icon="☰"
-                      badge="PDF"
                       active={isActive(`${base}/phase2/report`)}
                     />
                   </>
