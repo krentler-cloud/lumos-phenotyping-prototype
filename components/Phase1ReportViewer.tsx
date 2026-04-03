@@ -135,7 +135,7 @@ function ConfidencePanel({ overall, narrative }: { overall: number; narrative: s
 }
 
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
-  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology">("methodology");
   const [showConfidence, setShowConfidence] = useState(false);
 
   const genDate = new Date(generatedAt).toLocaleDateString("en-US", {
@@ -174,10 +174,10 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
 
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <div className="flex border-b border-[#1E3A5F] mb-6 -mx-1 overflow-x-auto">
+        <Tab label="Methodology" active={activeTab === "methodology"} onClick={() => setActiveTab("methodology")} />
         <Tab label="Overview" active={activeTab === "overview"} onClick={() => setActiveTab("overview")} />
         <Tab label="Biomarker Protocol" active={activeTab === "biomarkers"} onClick={() => setActiveTab("biomarkers")} count={report.biomarker_recommendations?.length} />
         <Tab label="Evidence & Safety" active={activeTab === "evidence"} onClick={() => setActiveTab("evidence")} count={(report.cross_species_evidence?.length ?? 0) + (report.safety_flags?.length ?? 0)} />
-        <Tab label="Methodology" active={activeTab === "methodology"} onClick={() => setActiveTab("methodology")} />
       </div>
 
       {/* ══ OVERVIEW TAB ══════════════════════════════════════════════ */}

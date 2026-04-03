@@ -142,7 +142,7 @@ export function Phase1PDF({
   return (
     <Document title={`${drugName} Phase 1 Preclinical Report — Lumos AI`} author="Headlamp Health">
 
-      {/* ══ PAGE 1: Cover + Profiles ══════════════════════════════════ */}
+      {/* ══ PAGE 1: Cover + Methodology ══════════════════════════════ */}
       <Page size="A4" style={s.page}>
         <Footer drugName={drugName} date={genDate} />
 
@@ -165,11 +165,34 @@ export function Phase1PDF({
           </View>
         </View>
 
-        {/* Methodology summary */}
+        {/* Full methodology narrative */}
+        <SectionLabel text="METHODOLOGY" color={c.blue} />
         <View style={[s.card, { marginBottom: 14 }]}>
-          <Text style={[s.label, { marginBottom: 4 }]}>ANALYSIS METHODOLOGY</Text>
           <Text style={s.body}>{report.methodology_narrative}</Text>
         </View>
+
+        {/* Confidence scores */}
+        <SectionLabel text="CONFIDENCE SUMMARY" color={c.blue} />
+        <View style={s.grid2}>
+          <View style={[s.card, { flex: 1 }]}>
+            <Text style={[s.label, { color: c.green, marginBottom: 4 }]}>RESPONDER PROFILE</Text>
+            <ConfPill value={report.responder_profile.corpus_hypothesis_confidence} />
+          </View>
+          <View style={[s.card, { flex: 1 }]}>
+            <Text style={[s.label, { color: c.red, marginBottom: 4 }]}>NON-RESPONDER PROFILE</Text>
+            <ConfPill value={report.nonresponder_profile.corpus_hypothesis_confidence} />
+          </View>
+          <View style={[s.card, { flex: 1 }]}>
+            <Text style={[s.label, { color: c.blue, marginBottom: 4 }]}>OVERALL ANALYSIS</Text>
+            <ConfPill value={report.overall_confidence} />
+          </View>
+        </View>
+      </Page>
+
+      {/* ══ PAGE 2: Phenotype Profiles ════════════════════════════════ */}
+      <Page size="A4" style={s.page}>
+        <Footer drugName={drugName} date={genDate} />
+        <SectionLabel text="PHENOTYPE PROFILES" color={c.blue} />
 
         {/* Profiles grid */}
         <View style={s.grid2}>
@@ -178,7 +201,7 @@ export function Phase1PDF({
             <View style={s.cardRow}>
               <View>
                 <Text style={[s.label, { color: c.green }]}>PREDICTED RESPONDER</Text>
-                <Text style={s.h2}>Subtype {report.responder_profile.primary_subtype}</Text>
+                <Text style={s.h2}>{report.responder_profile.primary_subtype}</Text>
               </View>
               <ConfPill value={report.responder_profile.corpus_hypothesis_confidence} />
             </View>
@@ -206,7 +229,7 @@ export function Phase1PDF({
             <View style={s.cardRow}>
               <View>
                 <Text style={[s.label, { color: c.red }]}>PREDICTED NON-RESPONDER</Text>
-                <Text style={s.h2}>Subtype {report.nonresponder_profile.primary_subtype}</Text>
+                <Text style={s.h2}>{report.nonresponder_profile.primary_subtype}</Text>
               </View>
               <ConfPill value={report.nonresponder_profile.corpus_hypothesis_confidence} />
             </View>
