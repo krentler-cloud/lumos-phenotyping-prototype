@@ -25,3 +25,47 @@ body {
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+@media print {
+  /* Preserve dark theme colors exactly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove scroll/height constraints set by the layout */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .h-screen, .overflow-hidden, .overflow-y-auto {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide sidebar, top nav bar, and any print-hide elements */
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Show hidden tab panels */
+  .print-show {
+    display: block !important;
+  }
+
+  /* Section divider between printed tab sections */
+  .print-section-heading {
+    display: block !important;
+    page-break-before: always;
+    padding-top: 2rem;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #A855F7;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .print-section-heading:first-of-type {
+    page-break-before: avoid;
+  }
+}

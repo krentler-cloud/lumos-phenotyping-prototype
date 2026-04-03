@@ -28,11 +28,11 @@ export default async function StudyLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0A1628]">
-      <Sidebar study={study} />
+      <div className="print-hide"><Sidebar study={study} /></div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar with phase toggle */}
-        <header className="flex-shrink-0 h-14 bg-[#070F1E] border-b border-[#1E3A5F] flex items-center justify-between px-6">
+        <header className="print-hide flex-shrink-0 h-14 bg-[#070F1E] border-b border-[#1E3A5F] flex items-center justify-between px-6">
           <div className="text-[#8BA3C7] text-sm" id="page-title" />
           <div className="flex items-center gap-2">
             <Link

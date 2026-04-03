@@ -246,18 +246,30 @@ export default function Phase2FinalReport({
         <p className="text-[#8BA3C7] text-sm mb-3">
           {sponsor} · Generated {generatedAt} · N=16 clinical patients
         </p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30">
-            PATIENT-LEVEL VALIDATED
-          </span>
-          <span className="text-xs text-[#4A6580]">
-            Pre-clinical hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
-          </span>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30">
+              PATIENT-LEVEL VALIDATED
+            </span>
+            <span className="text-xs text-[#4A6580]">
+              Pre-clinical hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
+            </span>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="print-hide flex items-center gap-2 px-4 py-2 rounded-lg border border-[#1E3A5F] bg-[#0F1F3D] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors text-xs font-medium"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Export PDF
+          </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-[#1E3A5F] mb-6 overflow-x-auto">
+      {/* Tabs — hidden in print */}
+      <div className="print-hide flex border-b border-[#1E3A5F] mb-6 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -273,15 +285,14 @@ export default function Phase2FinalReport({
         ))}
       </div>
 
-      {/* Tab content */}
-      {activeTab === "phenotypes" && (
+      {/* Phenotypes tab */}
+      <div className={activeTab !== "phenotypes" ? "hidden print-show" : ""}>
+        <span className="print-section-heading hidden">Refined Phenotypes &amp; Biomarkers</span>
         <div className="space-y-6">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <ProfileCard profile={report.refined_responder_profile} type="responder" />
             <ProfileCard profile={report.refined_nonresponder_profile} type="nonresponder" />
           </div>
-
-          {/* Methodology narrative */}
           {report.methodology_narrative && (
             <div className="p-5 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
               <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-3">Clinical Analysis Methodology</p>
@@ -292,8 +303,6 @@ export default function Phase2FinalReport({
               </div>
             </div>
           )}
-
-          {/* Disclaimer */}
           <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
             <p className="text-[#8BA3C7] text-xs leading-relaxed">
               <span className="text-[#F59E0B] font-semibold">Note: </span>
@@ -303,15 +312,19 @@ export default function Phase2FinalReport({
             </p>
           </div>
         </div>
-      )}
+      </div>
 
-      {activeTab === "outcomes" && (
+      {/* Outcomes tab */}
+      <div className={activeTab !== "outcomes" ? "hidden print-show" : ""}>
+        <span className="print-section-heading hidden">Enhanced Outcome Measures</span>
         <OutcomesTab measures={report.enhanced_outcome_measures ?? []} />
-      )}
+      </div>
 
-      {activeTab === "cro" && (
+      {/* CRO tab */}
+      <div className={activeTab !== "cro" ? "hidden print-show" : ""}>
+        <span className="print-section-heading hidden">CRO Screening Prompts</span>
         <CROTab prompts={report.cro_prompts ?? []} />
-      )}
+      </div>
     </div>
   );
 }
