@@ -103,11 +103,14 @@ function ProfileField({ label, value }: { label: string; value: string }) {
 function PriorityBar({ pct }: { pct: number }) {
   const color = pct >= 75 ? "#22C55E" : pct >= 50 ? "#4F8EF7" : "#F59E0B";
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-[#4A6580] mb-1">Preclinical signal strength</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+        </div>
+        <span className="text-xs font-medium w-8 text-right" style={{ color }}>{pct}</span>
       </div>
-      <span className="text-xs font-medium w-8 text-right" style={{ color }}>{pct}</span>
     </div>
   );
 }
@@ -463,7 +466,8 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
               const barColor = pct >= 70 ? "#22C55E" : pct >= 45 ? "#F59E0B" : "#EF4444";
               return (
                 <div key={label} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
-                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color }}>{label}</p>
+                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-1" style={{ color }}>{label}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">Confidence Score</p>
                   <p className="text-2xl font-bold mb-2" style={{ color: barColor }}>{pct}%</p>
                   <div className="h-1 bg-[#1E3A5F] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
