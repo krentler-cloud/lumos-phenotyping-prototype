@@ -28,7 +28,12 @@ export default async function Phase2Page({
     .eq("study_id", studyId)
     .order("patient_code");
 
-  const cohort = patients ?? [];
+  type PatientRow = {
+    patient_code: string; age: number; sex: string; response_status: string;
+    baseline_bdnf_ng_ml: number; baseline_il6_pg_ml: number; baseline_crp_mg_l: number;
+    baseline_madrs: number; prior_ad_trials: number;
+  }
+  const cohort: PatientRow[] = (patients ?? []) as PatientRow[];
   const n = cohort.length;
   const responders = cohort.filter((p) => p.response_status === "responder").length;
   const nonresponders = cohort.filter((p) => p.response_status === "nonresponder").length;
