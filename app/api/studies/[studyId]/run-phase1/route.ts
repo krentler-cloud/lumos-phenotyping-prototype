@@ -41,12 +41,13 @@ export async function POST(
         .single()
 
       // Active or complete — just redirect, don't create another
-      if (existingRun?.status === 'queued' || existingRun?.status === 'processing' || existingRun?.status === 'complete') {
+      if (existingRun?.status === 'processing' || existingRun?.status === 'complete') {
         const dest = existingRun.status === 'complete'
           ? `${publicBase}/studies/${studyId}/phase1/report`
           : `${publicBase}/studies/${studyId}/phase1/processing`
         return NextResponse.redirect(dest)
       }
+      // queued (stuck/stale) or error — clear and re-run
 
       // Error state — clear the link and fall through to create a fresh run
       await supabase.from('studies').update({ phase1_run_id: null }).eq('id', studyId)
@@ -75,8 +76,8 @@ export async function POST(
       .update({ phase1_run_id: run.id })
       .eq('id', studyId)
 
-    // 5. Kick off async processing — fire and forget (internal, use origin directly)
-    fetch(`${req.nextUrl.origin}/api/studies/${studyId}/process-phase1`, {
+    // 5. Kick off async processing — fire and forget
+    fetch(`${publicBase}/api/studies/${studyId}/process-phase1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

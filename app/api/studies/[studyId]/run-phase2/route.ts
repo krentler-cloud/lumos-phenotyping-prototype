@@ -38,13 +38,13 @@ export async function POST(
         .eq('id', study.phase2_run_id)
         .single()
 
-      if (existingRun?.status === 'queued' || existingRun?.status === 'processing') {
+      if (existingRun?.status === 'processing') {
         return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase2/processing`)
       }
       if (existingRun?.status === 'complete') {
         return NextResponse.redirect(`${publicBase}/studies/${studyId}/phase2/subtyping`)
       }
-      // Error state — clear and re-run
+      // queued (stuck/stale) or error — clear and re-run
       await supabase.from('studies').update({ phase2_run_id: null }).eq('id', studyId)
     }
 
@@ -67,8 +67,8 @@ export async function POST(
 
     await supabase.from('studies').update({ phase2_run_id: run.id }).eq('id', studyId)
 
-    // Fire-and-forget async processing (internal — use origin directly)
-    fetch(`${req.nextUrl.origin}/api/studies/${studyId}/process-phase2`, {
+    // Fire-and-forget async processing
+    fetch(`${publicBase}/api/studies/${studyId}/process-phase2`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
