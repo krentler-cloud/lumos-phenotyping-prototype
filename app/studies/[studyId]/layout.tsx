@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { createServiceClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
 import { notFound } from "next/navigation";
