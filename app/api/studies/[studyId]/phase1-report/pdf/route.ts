@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer } from "@react-pdf/renderer";
-import React from "react";
+import { renderToBuffer, DocumentProps } from "@react-pdf/renderer";
+import React, { JSXElementConstructor, ReactElement } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { Phase1PDF } from "@/components/Phase1ReportPDF";
 
@@ -39,18 +39,18 @@ export async function GET(
   }
 
   // Render PDF server-side — no Turbopack bundling involved
-  const buffer = await renderToBuffer(
-    React.createElement(Phase1PDF, {
-      report: reportRow.report_data,
-      drugName: study.name,
-      indication: study.indication ?? "",
-      generatedAt: reportRow.created_at,
-    })
-  );
+  const element = React.createElement(Phase1PDF, {
+    report: reportRow.report_data,
+    drugName: study.name,
+    indication: study.indication ?? "",
+    generatedAt: reportRow.created_at,
+  }) as ReactElement<DocumentProps, string | JSXElementConstructor<unknown>>;
+
+  const buffer = await renderToBuffer(element);
 
   const filename = `${study.name.replace(/[^a-z0-9]/gi, "-")}-Phase1-Preclinical-Report.pdf`;
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

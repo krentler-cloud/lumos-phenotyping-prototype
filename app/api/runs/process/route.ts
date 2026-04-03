@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     let mechanismContext: MechanismContext | null = null
     if (mechDocs && mechDocs.length > 0) {
       // Use the IND briefing document context if present, otherwise first available
-      const ctx = mechDocs.find(d => d.metadata?.mechanism_context?.mechanism_class)
+      const ctx = mechDocs.find((d: { metadata?: { mechanism_context?: { mechanism_class?: string } } }) => d.metadata?.mechanism_context?.mechanism_class)
       mechanismContext = ctx?.metadata?.mechanism_context ?? mechDocs[0]?.metadata?.mechanism_context ?? null
     }
     await log('Load mechanism context', mechanismContext ? 'complete' : 'complete', mechanismContext ? 'context loaded' : 'no pre-extracted context — will derive from corpus')
