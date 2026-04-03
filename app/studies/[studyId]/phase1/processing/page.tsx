@@ -29,32 +29,32 @@ const STEP_ICONS: Record<string, string> = {
 
 const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
   "Load study data": {
-    what: "Loaded the drug profile — mechanism class, target receptors, indication, and trial parameters from the study configuration.",
-    why: "Everything downstream is scoped to this drug's specific pharmacology. No generic analysis.",
+    what: "Loaded the drug profile — mechanism class, target receptors, indication, and trial parameters from the study configuration. This establishes the analytical frame: every retrieval query, every confidence score, and every phenotype hypothesis is evaluated through the lens of this specific compound's pharmacology. Think of it as setting the prior before any evidence enters the picture.",
+    why: "Everything downstream is scoped to this drug's specific pharmacology. A serotonin modulator and a glutamate receptor antagonist require entirely different evidence retrieval strategies — this step ensures the pipeline never conflates them.",
   },
   "Load mechanism context": {
-    what: "Retrieved pre-extracted pharmacological context from the IND briefing document — binding affinities, receptor selectivity profile, and mechanism of action narrative.",
-    why: "Grounds the corpus search in the drug's actual molecular mechanism rather than just its name or indication.",
+    what: "Retrieved pre-extracted pharmacological context from the IND briefing document — binding affinities, receptor selectivity profile, and mechanism of action narrative. This isn't a keyword summary; it captures the precise quantitative fingerprint of how the drug interacts with its target receptors, including off-target binding that often predicts tolerability. That specificity is what separates a mechanistically-grounded search from a keyword lookup.",
+    why: "Drug names and indications are poor proxies for mechanism. Two antidepressants can share an indication but diverge completely in their receptor pharmacology, and that divergence is exactly what determines which patient subtypes respond. Grounding the search in molecular specifics prevents the model from retrieving superficially similar but mechanistically irrelevant evidence.",
   },
   "Aspect embedding": {
-    what: "Generated four independent semantic embeddings — mechanism, efficacy, biomarkers, and safety/PK — using OpenAI text-embedding-3-large (3072 dimensions).",
-    why: "A single embedding misses nuance. Four aspect vectors let the search retrieve evidence that's relevant to each dimension of the analysis separately.",
+    what: "Generated four independent semantic embeddings — mechanism, efficacy, biomarkers, and safety/PK — using OpenAI's text-embedding-3-large model at 3,072 dimensions. An embedding converts language into a high-dimensional numerical vector where semantic similarity becomes geometric proximity — papers about serotonin transporter occupancy cluster near each other regardless of whether they use identical terminology. Running four separate embeddings rather than one allows each dimension of the analysis to pull evidence from different parts of the scientific literature.",
+    why: "A single query embedding optimized for, say, efficacy would systematically under-retrieve safety and biomarker literature. The four-aspect approach treats the analysis as four parallel information retrieval problems — each independently tuned — then merges the results. This is consistently more recall-complete than any single general-purpose embedding.",
   },
   "Weighted corpus search": {
-    what: "Retrieved the top 20 most relevant chunks from the Headlamp pre-clinical corpus (107 documents) using cosine similarity across all four aspect embeddings, with domain-specific weighting.",
-    why: "The corpus is the core of the analysis — peer-reviewed pre-clinical studies, IND filings, and mechanism literature. Higher similarity scores mean stronger evidential grounding.",
+    what: "Retrieved the top 20 most relevant chunks from the Headlamp pre-clinical corpus (107 documents, 800-token chunks) using cosine similarity across all four aspect embeddings, with domain-specific weighting applied to prioritize mechanistic and efficacy evidence. Cosine similarity measures the angular distance between two vectors in that 3,072-dimensional space — chunks that are conceptually close to the query sit at a small angle regardless of their literal wording. The domain weights reflect Headlamp's prior judgment about which evidence types carry the most predictive signal for responder stratification.",
+    why: "The corpus is the evidentiary foundation of the entire analysis. Every confidence score, every biomarker recommendation, and every phenotype hypothesis is only as valid as the literature it rests on. Retrieval quality — meaning how well the top-20 chunks actually represent the relevant science — is the single highest-leverage variable in the pipeline.",
   },
   "Bayesian prior computation": {
-    what: "Computed Beta-Binomial priors from the corpus response rate distributions — mean, variance, and effective sample size — to calibrate confidence scoring.",
-    why: "Confidence scores aren't arbitrary. They're grounded in the statistical distribution of effect sizes observed across comparable pre-clinical studies in the corpus.",
+    what: "Computed Beta-Binomial priors from the response rate distributions observed across the retrieved corpus chunks — capturing mean response rate, variance, and effective sample size for each evidence dimension. The Beta distribution is the natural choice here because it models probabilities bounded between 0 and 1, and the Binomial captures the responder/non-responder structure of the underlying data. The result is a calibrated prior for each confidence dimension that reflects not just the average effect size but how much the evidence agrees with itself.",
+    why: "Confidence scores need to reflect both the magnitude and the consistency of the evidence. A drug with five studies all showing 60% response rates should score differently than one with two studies at 90% and three at 30% — even if the averages match. The Bayesian framework captures that distinction by encoding variance explicitly, which is why the confidence percentages in the report are statistically grounded rather than heuristic.",
   },
   "Phenotype synthesis (Opus)": {
-    what: "Claude Opus analyzed all 20 corpus chunks against the drug's mechanism to synthesize responder/non-responder phenotype profiles, a ranked biomarker protocol, cross-species evidence mapping, and safety signals.",
-    why: "This is the reasoning step. Opus integrates the retrieved evidence with the mechanism context to generate hypotheses — which patient subtypes are most likely to respond and why.",
+    what: "Claude Opus read all 20 retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. Opus is the most capable reasoning model in the Claude family — chosen here specifically because the synthesis task requires holding a large body of heterogeneous evidence in context, identifying convergent patterns across studies with different designs, and generating structured clinical hypotheses rather than summaries. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all 20 chunks.",
+    why: "This is the step where retrieval becomes interpretation. The model is asked to do what a scientific reviewer does — weigh evidence quality, resolve conflicting signals, and commit to ranked hypotheses about which patient characteristics predict response. Opus-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
   },
   "Store report": {
-    what: "Saved the complete analysis — phenotype profiles, biomarker recommendations, confidence scores, methodology narrative, and corpus references — to the database.",
-    why: "Persists the full evidential chain so the report can be audited, exported, and carried forward into Phase 2 clinical trial design.",
+    what: "Saved the complete structured output — phenotype profiles, biomarker protocol, confidence scores, methodology narrative, corpus chunk references, and the Bayesian priors used to generate them — to the database as a versioned record. Every claim in the report is traceable to the specific corpus evidence and model version that produced it. This also makes the output portable: the same record feeds the interactive viewer, the PDF export, and eventually the Phase 2 study design inputs.",
+    why: "Reproducibility and auditability are non-negotiable in a clinical context. Persisting the full evidential chain means a medical affairs team can reconstruct exactly why a particular biomarker was ranked first, which studies it rested on, and how confident the model was — months after the analysis ran.",
   },
 };
 
