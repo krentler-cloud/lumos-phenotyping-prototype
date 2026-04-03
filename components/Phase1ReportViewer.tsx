@@ -134,6 +134,83 @@ function ConfidencePanel({ overall, narrative }: { overall: number; narrative: s
   );
 }
 
+// ── Methodology narrative parser ─────────────────────────────────────────────
+function MethodologyNarrative({ text }: { text: string }) {
+  // Split on "Key limitations:" or "Limitations:"
+  const limIdx = text.search(/key limitations?:/i);
+  const mainText = limIdx > -1 ? text.slice(0, limIdx).trim() : text;
+  const limText  = limIdx > -1 ? text.slice(limIdx).replace(/key limitations?:/i, "").trim() : "";
+
+  // Parse numbered evidence streams: (1) ... (2) ... (3)
+  const streamRegex = /\((\d+)\)\s+([^(]+?)(?=\(\d+\)|$)/g;
+  const streams: { n: string; body: string }[] = [];
+  let m;
+  while ((m = streamRegex.exec(mainText)) !== null) {
+    streams.push({ n: m[1], body: m[2].trim() });
+  }
+  const intro = streams.length > 0
+    ? mainText.slice(0, mainText.search(/\(\d+\)/)).trim()
+    : mainText;
+
+  // Parse lettered limitations: (a) ... (b) etc.
+  const limRegex = /\(([a-z])\)\s+([^(]+?)(?=\([a-z]\)|$)/g;
+  const limitations: { letter: string; body: string }[] = [];
+  if (limText) {
+    while ((m = limRegex.exec(limText)) !== null) {
+      limitations.push({ letter: m[1], body: m[2].trim() });
+    }
+  }
+  const limIntro = limitations.length > 0
+    ? limText.slice(0, limText.search(/\([a-z]\)/)).trim()
+    : limText;
+
+  return (
+    <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl overflow-hidden">
+      {/* Intro prose */}
+      {intro && (
+        <div className="px-5 pt-5 pb-4">
+          <p className="text-[#4F8EF7] text-[10px] uppercase tracking-widest font-semibold mb-2">Analysis Approach</p>
+          <p className="text-[#D0DCF0] text-sm leading-relaxed">{intro}</p>
+        </div>
+      )}
+
+      {/* Evidence streams */}
+      {streams.length > 0 && (
+        <div className="border-t border-[#1E3A5F]">
+          <p className="text-[#4F8EF7] text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Evidence Streams</p>
+          <div className="divide-y divide-[#1E3A5F]">
+            {streams.map(({ n, body }) => (
+              <div key={n} className="flex items-start gap-4 px-5 py-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0A1628] border border-[#4F8EF7] flex items-center justify-center">
+                  <span className="text-[#4F8EF7] text-[10px] font-bold">{n}</span>
+                </div>
+                <p className="text-[#D0DCF0] text-xs leading-relaxed pt-0.5">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Limitations */}
+      {(limitations.length > 0 || limIntro) && (
+        <div className="border-t border-[#1E3A5F] bg-[#0A1628]">
+          <p className="text-[#F59E0B] text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Key Limitations</p>
+          {limIntro && <p className="text-[#8BA3C7] text-xs px-5 pb-2 leading-relaxed">{limIntro}</p>}
+          <div className="divide-y divide-[#0F1F3D]">
+            {limitations.map(({ letter, body }) => (
+              <div key={letter} className="flex items-start gap-3 px-5 py-2.5">
+                <span className="flex-shrink-0 text-[#F59E0B] text-[10px] font-bold uppercase mt-0.5">({letter})</span>
+                <p className="text-[#8BA3C7] text-xs leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="h-3" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
   const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology">("methodology");
   const [showConfidence, setShowConfidence] = useState(false);
@@ -324,22 +401,27 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
               <div className="space-y-3">
                 {report.cross_species_evidence.map((ev, i) => (
                   <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[#F0F4FF] text-sm font-medium">{ev.animal_model}</span>
-                        <span className="text-[#4A6580] text-xs">→</span>
-                        <span className="text-[#A855F7] text-sm">{ev.human_subtype_mapping}</span>
-                      </div>
+                    {/* Header row: model name + badge */}
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <p className="text-[#F0F4FF] text-sm font-semibold leading-snug">{ev.animal_model}</p>
                       <SignalBadge strength={ev.signal_strength} />
                     </div>
+                    {/* Human mapping */}
+                    <div className="flex items-start gap-2 mb-3">
+                      <span className="text-[#4A6580] text-xs mt-0.5 flex-shrink-0">↳</span>
+                      <p className="text-[#A855F7] text-xs leading-relaxed">{ev.human_subtype_mapping}</p>
+                    </div>
+                    {/* Biomarker signal chips */}
                     {ev.key_biomarker_signals?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-2">
+                      <div className="flex flex-wrap gap-1.5 mb-2.5">
                         {ev.key_biomarker_signals.map((sig, j) => (
-                          <span key={j} className="text-xs px-2 py-0.5 rounded bg-[#1E3A5F] text-[#8BA3C7]">{sig}</span>
+                          <span key={j} className="text-xs px-2 py-1 rounded-md bg-[#0A1628] border border-[#1E3A5F] text-[#8BA3C7]">{sig}</span>
                         ))}
                       </div>
                     )}
-                    {ev.corpus_ref && <p className="text-[#4A6580] text-xs italic">{ev.corpus_ref}</p>}
+                    {ev.corpus_ref && (
+                      <p className="text-[#4A6580] text-[11px] italic border-t border-[#1E3A5F] pt-2 mt-1">{ev.corpus_ref}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -353,11 +435,11 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                 {report.safety_flags.map((flag, i) => (
                   <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <p className="text-[#F0F4FF] text-sm font-medium">{flag.signal}</p>
+                      <p className="text-[#F0F4FF] text-sm font-semibold leading-snug">{flag.signal}</p>
                       <SeverityBadge severity={flag.severity} />
                     </div>
-                    <p className="text-[#8BA3C7] text-xs mb-1.5 leading-relaxed">{flag.clinical_implication}</p>
-                    <p className="text-[#4A6580] text-xs italic">Source: {flag.source}</p>
+                    <p className="text-[#8BA3C7] text-xs leading-relaxed mb-2">{flag.clinical_implication}</p>
+                    <p className="text-[#4A6580] text-[11px] italic border-t border-[#1E3A5F] pt-2">Source: {flag.source}</p>
                   </div>
                 ))}
               </div>
@@ -369,36 +451,37 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       {/* ══ METHODOLOGY TAB ═══════════════════════════════════════════ */}
       {activeTab === "methodology" && (
         <div className="space-y-4">
-          <div className="p-5 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[#F0F4FF] font-semibold text-sm">Overall Confidence</h3>
-              <ConfidenceBadge value={report.overall_confidence} />
-            </div>
-            <p className="text-[#D0DCF0] text-sm leading-relaxed">{report.methodology_narrative}</p>
+
+          {/* Confidence scores row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Overall Analysis", value: report.overall_confidence, color: "#4F8EF7" },
+              { label: "Responder Hypothesis", value: report.responder_profile.corpus_hypothesis_confidence, color: "#22C55E" },
+              { label: "Non-Responder Hypothesis", value: report.nonresponder_profile.corpus_hypothesis_confidence, color: "#EF4444" },
+            ].map(({ label, value, color }) => {
+              const pct = Math.round(value * 100);
+              const barColor = pct >= 70 ? "#22C55E" : pct >= 45 ? "#F59E0B" : "#EF4444";
+              return (
+                <div key={label} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color }}>{label}</p>
+                  <p className="text-2xl font-bold mb-2" style={{ color: barColor }}>{pct}%</p>
+                  <div className="h-1 bg-[#1E3A5F] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[#22C55E] text-xs uppercase tracking-wider font-medium">Responder Hypothesis</p>
-                <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
-              </div>
-              <p className="text-[#8BA3C7] text-xs leading-relaxed">
-                Confidence reflects the strength and consistency of corpus evidence supporting the responder phenotype definition for Subtype {report.responder_profile.primary_subtype}.
-              </p>
-            </div>
-            <div className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[#EF4444] text-xs uppercase tracking-wider font-medium">Non-Responder Hypothesis</p>
-                <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
-              </div>
-              <p className="text-[#8BA3C7] text-xs leading-relaxed">
-                Confidence reflects the strength of negative evidence and mechanistic rationale for Subtype {report.nonresponder_profile.primary_subtype} exclusion.
-              </p>
-            </div>
-          </div>
-          <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl text-center">
-            <p className="text-[#8BA3C7] text-xs">Phase 1 pre-clinical analysis · All evidence is in vitro or animal-model — no human clinical data yet</p>
-            <p className="text-[#4A6580] text-xs mt-1">Re-run with Lumos v2.1 after Phase 1 clinical data collection</p>
+
+          {/* Methodology narrative — parsed into sections */}
+          <MethodologyNarrative text={report.methodology_narrative} />
+
+          {/* Disclaimer */}
+          <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
+            <p className="text-[#8BA3C7] text-xs leading-relaxed">
+              <span className="text-[#F59E0B] font-semibold">Important: </span>
+              All evidence is in vitro or animal-model — no human clinical data has been collected yet. Confidence scores reflect corpus evidence strength, not clinical validation. These are hypotheses to be tested in Phase 1.
+            </p>
           </div>
         </div>
       )}

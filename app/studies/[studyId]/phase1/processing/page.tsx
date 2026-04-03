@@ -74,8 +74,10 @@ export default function Phase1ProcessingPage() {
   const studyId = params.studyId as string;
 
   const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
+  const [loading, setLoading] = useState(true);
   const [dots, setDots] = useState("");
   const isFirstFetch = useRef(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -83,13 +85,23 @@ export default function Phase1ProcessingPage() {
       if (!res.ok) return;
       const data: RunStatus = await res.json();
       setRunStatus(data);
+      setLoading(false);
 
-      if (data.status === "complete" && !isFirstFetch.current) {
-        // Only auto-redirect if it just finished during this session's polling.
-        // If already complete on load, show the pipeline summary — don't whisk away.
-        setTimeout(() => {
-          router.push(`/studies/${studyId}/phase1/report`);
-        }, 1200);
+      if (data.status === "complete") {
+        // Stop polling — no need to keep checking once done
+        if (intervalRef.current) clearInterval(intervalRef.current);
+
+        // Only auto-redirect to report if it just finished while the user was watching.
+        // If already complete when they navigated here, stay on this page.
+        if (!isFirstFetch.current) {
+          setTimeout(() => {
+            router.push(`/studies/${studyId}/phase1/report`);
+          }, 1200);
+        }
+      }
+
+      if (data.status === "error") {
+        if (intervalRef.current) clearInterval(intervalRef.current);
       }
 
       isFirstFetch.current = false;
@@ -100,8 +112,10 @@ export default function Phase1ProcessingPage() {
 
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 2500);
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(fetchStatus, 2500);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [fetchStatus]);
 
   // Animated dots — only while processing
@@ -125,6 +139,27 @@ export default function Phase1ProcessingPage() {
 
   const isComplete = runStatus?.status === "complete";
   const isError = runStatus?.status === "error";
+
+  // ── Loading skeleton — shown only on first render before first fetch returns ─
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto px-8 py-12">
+        <div className="mb-10">
+          <div className="h-3 w-24 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
+          <div className="h-7 w-64 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
+          <div className="h-4 w-96 bg-[#1E3A5F] rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          {ALL_STEPS.map((name) => (
+            <div key={name} className="flex items-center gap-3 p-3 rounded-lg border border-[#0D1F3A] bg-[#080F1F]">
+              <div className="w-5 h-5 rounded-full bg-[#1E3A5F] animate-pulse flex-shrink-0" />
+              <div className="h-4 w-48 bg-[#1E3A5F] rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // ── Complete state ──────────────────────────────────────────────────────────
   if (isComplete) {
