@@ -50,7 +50,7 @@ export default function Sidebar({ study }: SidebarProps) {
       <div className="px-5 py-4 border-b border-[#1E3A5F]">
         <p className="text-[#8BA3C7] text-[10px] uppercase tracking-wider mb-1">Active Project</p>
         <p className="text-[#F0F4FF] text-sm font-semibold">{study.sponsor} · {study.drug_name}</p>
-        <p className="text-[#8BA3C7] text-xs mt-0.5">{study.indication} · Phase 1{study.trial_size ? ` · N=${study.trial_size}` : ''}</p>
+        <p className="text-[#8BA3C7] text-xs mt-0.5">{study.indication} · Phase 1 — Preclinical</p>
       </div>
 
       {/* Navigation */}
@@ -65,7 +65,7 @@ export default function Sidebar({ study }: SidebarProps) {
           </button>
           <div className="mt-1 space-y-0.5 ml-2">
             <SidebarItem
-              href={`${base}/phase1`}
+              href={hasPhase1 ? `${base}/phase1/processing` : `${base}/phase1`}
               label={hasPhase1 ? "Processing Complete" : "Lumos Processing"}
               icon="⚡"
               active={pathname.includes('/phase1') && !pathname.includes('/report')}
