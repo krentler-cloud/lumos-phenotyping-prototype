@@ -1,21 +1,101 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
-  corpusSources?: number; // how many corpus chunks grounded this response
+  corpusSources?: number;
 }
 
 interface StudyChatProps {
   studyId: string;
   drugName: string;
-  suggestions: string[];
+  topBiomarker?: string;       // e.g. "BDNF" — from phase1 report rank 1
+  predictedSubtype?: string;   // e.g. "Subtype A" — from phase2 ML result
 }
 
-export default function StudyChat({ studyId, drugName, suggestions }: StudyChatProps) {
+// ── Page-specific skeptical suggestion chips ──────────────────────────────────
+function getSuggestions(
+  pathname: string,
+  drugName: string,
+  topBiomarker: string,
+  predictedSubtype: string | null
+): string[] {
+  if (pathname.includes("/phase1/processing")) {
+    return [
+      "How do you ensure the corpus retrieval actually surfaces the most relevant science, rather than just text that matches surface keywords?",
+      "The Bayesian priors are computed from keyword mentions in retrieved chunks — how is that a valid proxy for actual response rates?",
+      "Why four search aspects? What's the justification for that decomposition, and what might it miss?",
+      "What stops Claude from drawing on its training data rather than the retrieved corpus when synthesizing phenotypes?",
+      "How was the 1.20× source weight for clinical trial documents calibrated?",
+    ];
+  }
+
+  if (pathname.includes("/phase1/report")) {
+    return [
+      `What specific corpus text actually supports the ${topBiomarker} threshold — can you cite the document and passage?`,
+      "The confidence score reflects how consistent the corpus evidence is, not clinical validation — so what meaningful decision does it support?",
+      "How much of this responder profile is grounded in the XYL-1001 IND documents specifically, versus analogous drugs in the broader corpus?",
+      "Which of these efficacy signals has the weakest supporting evidence, and why was it still included?",
+      "How would you expect these preclinical phenotype predictions to hold up in a human Phase 1 cohort?",
+    ];
+  }
+
+  if (pathname.includes("/phase2/subtyping")) {
+    return [
+      "How stable are these subtype assignments — would enrolling 10 additional patients meaningfully shift them?",
+      `What's the biological basis for distinguishing${predictedSubtype ? ` ${predictedSubtype}` : " the subtypes"} — are these clusters truly distinct or a continuous spectrum forced into categories?`,
+      "How do the SHAP attributions from the clinical model compare to what the pre-clinical analysis predicted would matter?",
+      "What's the estimated misclassification rate given this cohort size?",
+      "Where did the clinical subtype assignments agree with and diverge from the pre-clinical predictions?",
+    ];
+  }
+
+  if (pathname.includes("/phase2/patients")) {
+    return [
+      "How representative is this patient cohort of the broader MDD population you'd want to enroll?",
+      "Which patients are most likely to be subtype boundary cases — and how does that affect confidence in the subtype model?",
+      "Are there demographic confounders in this cohort that could bias the biomarker analysis?",
+      "What's the MADRS trajectory variance within each subtype — are the subtypes actually clinically homogeneous?",
+      `How does the inflammatory profile distribution here compare to what the ${drugName} pre-clinical analysis predicted?`,
+    ];
+  }
+
+  if (pathname.includes("/phase2/report") || pathname.includes("/phase2/processing")) {
+    return [
+      "How should a CRO interpret these prompts — are they inclusion criteria, hypotheses to test, or exploratory add-ons?",
+      `What's the projected responder rate if enrollment was restricted to the predicted responder subtype for ${drugName}?`,
+      "How do the final CRO recommendations compare to what the pre-clinical analysis predicted — where did the clinical data shift the conclusion?",
+      "Which recommendation has the weakest evidential support, and what would strengthen it?",
+      "If Phase 2 results differed significantly from pre-clinical predictions, what would that tell us about the corpus and model?",
+    ];
+  }
+
+  if (pathname.includes("/phase2")) {
+    return [
+      "Is logistic regression on this cohort size statistically defensible for subtype prediction?",
+      "How do the Phase 1 Bayesian priors propagate into the Phase 2 ML model — and could they introduce bias?",
+      "What's the confidence interval on the predicted subtype assignment given N patients?",
+      `How does adding the clinical data change your confidence in ${drugName}'s responder profile relative to the pre-clinical prediction?`,
+      "At what sample size would you consider the subtype model sufficiently validated?",
+    ];
+  }
+
+  // Default (corpus, history, or unknown page)
+  return [
+    `What specific corpus evidence supports the ${topBiomarker} signal — can you cite the document?`,
+    `What are the key uncertainties in the ${drugName} pre-clinical analysis that clinical data will need to resolve?`,
+    "Which pipeline step introduces the most potential for error, and why?",
+    "How does adding the neuroplastigen and ketamine regulatory documents change the analysis versus the earlier corpus?",
+    "What would make you more or less confident in the exploratory biomarker hypotheses?",
+  ];
+}
+
+export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", predictedSubtype }: StudyChatProps) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -24,9 +104,11 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Recompute chips when page changes; clear messages so new chips show
+  const suggestions = getSuggestions(pathname, drugName, topBiomarker, predictedSubtype ?? null);
+
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      // Focus input when opening with no messages
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen, messages.length]);
@@ -74,7 +156,6 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
         });
       }
 
-      // Finalize — remove streaming flag
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = { role: "assistant", content: accumulated, corpusSources };
@@ -108,7 +189,16 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
     setIsOpen(false);
   };
 
-  const showSuggestions = messages.length === 0 && suggestions.length > 0;
+  const showSuggestions = messages.length === 0;
+
+  // Page label for header context
+  const pageLabel = pathname.includes("/phase1/processing") ? "Processing"
+    : pathname.includes("/phase1/report") ? "Pre-Clinical Report"
+    : pathname.includes("/phase2/subtyping") ? "Subtyping Results"
+    : pathname.includes("/phase2/patients") ? "Patient Population"
+    : pathname.includes("/phase2/report") ? "Final Report"
+    : pathname.includes("/phase2") ? "Clinical Analysis"
+    : "Analysis";
 
   return (
     <>
@@ -135,9 +225,10 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-22 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] flex flex-col bg-[#070F1E] border border-[#1E3A5F] rounded-2xl shadow-2xl print-hide"
-          style={{ height: "520px", bottom: "5rem" }}>
-
+        <div
+          className="fixed z-50 w-[440px] max-w-[calc(100vw-2rem)] flex flex-col bg-[#070F1E] border border-[#1E3A5F] rounded-2xl shadow-2xl print-hide"
+          style={{ height: "560px", bottom: "5rem", right: "1.5rem" }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E3A5F] flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -147,8 +238,8 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
                 </svg>
               </div>
               <div>
-                <p className="text-[#F0F4FF] text-xs font-semibold">Ask AI</p>
-                <p className="text-[#4A6580] text-[10px]">Grounded in this analysis</p>
+                <p className="text-[#F0F4FF] text-xs font-semibold">Ask AI · {pageLabel}</p>
+                <p className="text-[#4A6580] text-[10px]">Live corpus retrieval · Grounded answers</p>
               </div>
             </div>
             {messages.length > 0 && (
@@ -163,27 +254,26 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {/* Welcome + suggestions */}
             {showSuggestions && (
               <div>
-                <p className="text-[#8BA3C7] text-xs mb-3 leading-relaxed">
-                  Each question retrieves live passages from the scientific corpus, so I can cite specific documents — not just summarize conclusions. Ask anything about the analysis, methodology, or underlying evidence.
-                </p>
+                <p className="text-[#4A6580] text-[10px] uppercase tracking-wider mb-2">Questions to consider</p>
                 <div className="space-y-1.5">
                   {suggestions.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(s)}
-                      className="w-full text-left text-xs px-3 py-2 rounded-lg bg-[#0F1F3D] border border-[#1E3A5F] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors"
+                      className="w-full text-left text-xs px-3 py-2 rounded-lg bg-[#0F1F3D] border border-[#1E3A5F] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors leading-relaxed"
                     >
                       {s}
                     </button>
                   ))}
                 </div>
+                <p className="text-[#2A4060] text-[10px] mt-3">
+                  Each response retrieves live passages from the scientific corpus.
+                </p>
               </div>
             )}
 
-            {/* Message thread */}
             {messages.map((msg, i) => (
               <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
@@ -199,7 +289,7 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
                     </span>
                   ) : "")}
                 </div>
-                {msg.role === "assistant" && !msg.streaming && msg.corpusSources !== undefined && msg.corpusSources > 0 && (
+                {msg.role === "assistant" && !msg.streaming && !!msg.corpusSources && (
                   <p className="text-[10px] text-[#2A4060] mt-1 flex items-center gap-1">
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>

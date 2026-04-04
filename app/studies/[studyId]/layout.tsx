@@ -53,17 +53,6 @@ export default async function StudyLayout({
 
   const predictedSubtype = phase2Report?.ml_result?.predicted_subtype ?? null;
 
-  const chatSuggestions: string[] = [
-    `Why is ${topBiomarker} the strongest efficacy signal?`,
-    `What corpus evidence underpins the responder phenotype?`,
-    `What are the top safety signals for ${study.drug_name}?`,
-    "Compare the responder and non-responder inflammatory profiles",
-    ...(predictedSubtype ? [`What drove the ${predictedSubtype} subtype prediction?`] : []),
-    ...(phase1Report?.exploratory_biomarkers?.length
-      ? ["What exploratory biomarkers are worth adding to a Phase 2 assay panel?"]
-      : []),
-  ].slice(0, 5);
-
   return (
     <div className="flex h-screen overflow-hidden bg-[#0A1628]">
       <div className="print-hide"><Sidebar study={study} /></div>
@@ -80,8 +69,13 @@ export default async function StudyLayout({
         </main>
       </div>
 
-      {/* AI Chat — floating panel, persists across study tabs */}
-      <StudyChat studyId={studyId} drugName={study.drug_name} suggestions={chatSuggestions} />
+      {/* AI Chat — chips are computed client-side from current pathname */}
+      <StudyChat
+        studyId={studyId}
+        drugName={study.drug_name}
+        topBiomarker={topBiomarker}
+        predictedSubtype={predictedSubtype ?? undefined}
+      />
     </div>
   );
 }
