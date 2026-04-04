@@ -6,6 +6,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  corpusSources?: number; // how many corpus chunks grounded this response
 }
 
 interface StudyChatProps {
@@ -57,6 +58,7 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
 
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
+      const corpusSources = parseInt(res.headers.get("X-Corpus-Sources") ?? "0", 10);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
@@ -67,7 +69,7 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
         accumulated += decoder.decode(value, { stream: true });
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: "assistant", content: accumulated, streaming: true };
+          updated[updated.length - 1] = { role: "assistant", content: accumulated, streaming: true, corpusSources };
           return updated;
         });
       }
@@ -75,7 +77,7 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
       // Finalize — remove streaming flag
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: accumulated };
+        updated[updated.length - 1] = { role: "assistant", content: accumulated, corpusSources };
         return updated;
       });
     } catch (err) {
@@ -165,7 +167,7 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
             {showSuggestions && (
               <div>
                 <p className="text-[#8BA3C7] text-xs mb-3 leading-relaxed">
-                  I have the full pre-clinical analysis in context. Ask me anything about the responder phenotype, efficacy signals, safety, or the methodology.
+                  Each question retrieves live passages from the scientific corpus, so I can cite specific documents — not just summarize conclusions. Ask anything about the analysis, methodology, or underlying evidence.
                 </p>
                 <div className="space-y-1.5">
                   {suggestions.map((s, i) => (
@@ -183,8 +185,8 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
 
             {/* Message thread */}
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed ${
+              <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
                     ? "bg-[#4F8EF7] text-white"
                     : "bg-[#0F1F3D] border border-[#1E3A5F] text-[#D0DCF0]"
@@ -197,6 +199,14 @@ export default function StudyChat({ studyId, drugName, suggestions }: StudyChatP
                     </span>
                   ) : "")}
                 </div>
+                {msg.role === "assistant" && !msg.streaming && msg.corpusSources !== undefined && msg.corpusSources > 0 && (
+                  <p className="text-[10px] text-[#2A4060] mt-1 flex items-center gap-1">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    Grounded in {msg.corpusSources} corpus source{msg.corpusSources !== 1 ? "s" : ""}
+                  </p>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
