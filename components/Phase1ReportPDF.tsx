@@ -254,10 +254,10 @@ export function Phase1PDF({
         </View>
       </Page>
 
-      {/* ══ PAGE 2: Biomarker Protocol ════════════════════════════════ */}
+      {/* ══ PAGE 2: Efficacy Signals ════════════════════════════════ */}
       <Page size="A4" style={s.page}>
         <Footer drugName={drugName} date={genDate} />
-        <SectionLabel text="📊  BIOMARKER COLLECTION PROTOCOL" color={c.blue} />
+        <SectionLabel text="📊  EFFICACY SIGNALS" color={c.blue} />
 
         {(report.primary_endpoint_recommendation || report.early_response_indicator) && (
           <View style={[s.grid2, { marginBottom: 12 }]}>

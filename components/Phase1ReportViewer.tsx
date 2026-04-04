@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
+import { ExploratoryBiomarker } from "@/lib/types";
 import Phase1ExportButton from "@/components/Phase1ExportButton";
 
 interface Props {
@@ -214,8 +215,88 @@ function MethodologyNarrative({ text }: { text: string }) {
   );
 }
 
+// ── Exploratory Biomarkers tab ────────────────────────────────────────────────
+function ExploratoryBiomarkersTab({ biomarkers }: { biomarkers: ExploratoryBiomarker[] }) {
+  const classColors: Record<string, string> = {
+    "neuroinflammatory": "#EF4444",
+    "synaptic plasticity": "#A855F7",
+    "HPA axis": "#F59E0B",
+    "circadian": "#06B6D4",
+    "metabolic": "#22C55E",
+    "genetic": "#3B82F6",
+    "imaging": "#4F8EF7",
+  };
+  const evidenceColors: Record<string, string> = {
+    emerging: "#F59E0B",
+    preclinical_only: "#D97706",
+    theoretical: "#6B7280",
+  };
+  const feasibilityMeta: Record<string, { icon: string; color: string }> = {
+    high: { icon: "✓", color: "#22C55E" },
+    moderate: { icon: "~", color: "#F59E0B" },
+    low: { icon: "✗", color: "#EF4444" },
+  };
+
+  return (
+    <div>
+      {/* Disclaimer */}
+      <div className="mb-5 p-4 bg-[#0F1120] border border-[#F59E0B]/30 rounded-xl flex items-start gap-3">
+        <span className="text-[#F59E0B] flex-shrink-0 mt-0.5">⚠</span>
+        <p className="text-[#C0A060] text-xs leading-relaxed">
+          <span className="font-semibold text-[#F59E0B]">Exploratory only.</span>{" "}
+          These biomarkers are hypothesis-generating and are not part of the validated efficacy signal panel. They require further study before clinical use. Treat as signals for add-on assays or future trial design — not as inclusion/exclusion criteria.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {biomarkers.map((bm, i) => {
+          const classColor = classColors[bm.biomarker_class] ?? "#6B7280";
+          const evidenceColor = evidenceColors[bm.evidence_level] ?? "#6B7280";
+          const feas = feasibilityMeta[bm.feasibility] ?? feasibilityMeta.moderate;
+          return (
+            <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[#F0F4FF] text-sm font-medium">{bm.name}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full capitalize font-medium"
+                    style={{ color: classColor, background: `${classColor}20` }}>
+                    {bm.biomarker_class}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full capitalize"
+                    style={{ color: evidenceColor, background: `${evidenceColor}20` }}>
+                    {bm.evidence_level.replace('_', ' ')}
+                  </span>
+                </div>
+                <span className="text-xs font-semibold flex-shrink-0 flex items-center gap-1"
+                  style={{ color: feas.color }}>
+                  <span>{feas.icon}</span>
+                  <span className="capitalize">{bm.feasibility}</span>
+                </span>
+              </div>
+              <p className="text-[#8BA3C7] text-xs leading-relaxed mb-3">{bm.rationale}</p>
+              {bm.corpus_refs?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {bm.corpus_refs.map((ref, j) => (
+                    <span key={j} className="text-[10px] px-2 py-0.5 bg-[#0A1628] border border-[#1E3A5F] text-[#4A6580] rounded italic truncate max-w-xs">
+                      {ref}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="pt-2.5 border-t border-[#1E3A5F]">
+                <span className="text-[#4F8EF7] text-[10px] uppercase tracking-wider font-semibold">→ Learning objective: </span>
+                <span className="text-[#8BA3C7] text-xs">{bm.learning_objective}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
-  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology">("methodology");
+  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology" | "exploratory">("methodology");
   const [showConfidence, setShowConfidence] = useState(false);
 
   const genDate = new Date(generatedAt).toLocaleDateString("en-US", {
@@ -268,8 +349,11 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       <div className="flex border-b border-[#1E3A5F] mb-6 -mx-1 overflow-x-auto">
         <Tab label="Methodology" active={activeTab === "methodology"} onClick={() => setActiveTab("methodology")} />
         <Tab label="Overview" active={activeTab === "overview"} onClick={() => setActiveTab("overview")} />
-        <Tab label="Biomarker Protocol" active={activeTab === "biomarkers"} onClick={() => setActiveTab("biomarkers")} count={report.biomarker_recommendations?.length} />
+        <Tab label="Efficacy Signals" active={activeTab === "biomarkers"} onClick={() => setActiveTab("biomarkers")} count={report.biomarker_recommendations?.length} />
         <Tab label="Evidence & Safety" active={activeTab === "evidence"} onClick={() => setActiveTab("evidence")} count={(report.cross_species_evidence?.length ?? 0) + (report.safety_flags?.length ?? 0)} />
+        {report.exploratory_biomarkers && report.exploratory_biomarkers.length > 0 && (
+          <Tab label="Exploratory Biomarkers" active={activeTab === "exploratory"} onClick={() => setActiveTab("exploratory")} count={report.exploratory_biomarkers.length} />
+        )}
       </div>
 
       {/* ══ OVERVIEW TAB ══════════════════════════════════════════════ */}
@@ -461,6 +545,11 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             </div>
           )}
         </div>
+      )}
+
+      {/* ══ EXPLORATORY BIOMARKERS TAB ════════════════════════════════ */}
+      {activeTab === "exploratory" && report.exploratory_biomarkers && (
+        <ExploratoryBiomarkersTab biomarkers={report.exploratory_biomarkers} />
       )}
 
       {/* ══ METHODOLOGY TAB ═══════════════════════════════════════════ */}

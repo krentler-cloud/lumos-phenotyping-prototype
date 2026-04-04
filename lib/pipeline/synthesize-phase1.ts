@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { MechanismContext, BayesianPrior } from '@/lib/types'
+import { MechanismContext, BayesianPrior, ExploratoryBiomarker } from '@/lib/types'
 import { MatchedChunk } from '@/lib/pipeline/search'
 import { computeMaxTokens } from '@/lib/pipeline/tokens'
 
@@ -240,6 +240,7 @@ export interface Phase1ReportData {
   early_response_indicator: string
   methodology_narrative: string
   overall_confidence: number
+  exploratory_biomarkers?: ExploratoryBiomarker[]
 }
 
 export async function synthesizePhase1Report(
@@ -309,4 +310,73 @@ export async function synthesizePhase1Report(
     ...(coreReport as Omit<Phase1ReportData, 'biomarker_recommendations' | 'protocol_notes' | 'primary_endpoint_recommendation' | 'early_response_indicator'>),
     ...(biomarkerReport as Pick<Phase1ReportData, 'biomarker_recommendations' | 'protocol_notes' | 'primary_endpoint_recommendation' | 'early_response_indicator'>),
   }
+}
+
+// ── CALL 3: Exploratory biomarkers (Sonnet — supplemental, non-blocking) ──────
+export async function synthesizeExploratoryBiomarkers(
+  drugName: string,
+  indication: string,
+  chunks: MatchedChunk[],
+  primaryReport: Phase1ReportData
+): Promise<ExploratoryBiomarker[]> {
+  const client = getClient()
+
+  const alreadyValidated = (primaryReport.biomarker_recommendations ?? [])
+    .map((b: { name: string; domain: string }) => `- ${b.name} (${b.domain})`)
+    .join('\n')
+
+  const excerpts = chunks
+    .slice(0, 20)
+    .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}) — ${c.content.slice(0, 400)}`)
+    .join('\n\n---\n\n')
+
+  const prompt = `You are a translational neuroscience researcher at Headlamp AI analyzing pre-clinical corpus evidence for ${drugName} in ${indication}.
+
+The primary efficacy signal panel has already been established. Your task is to identify EXPLORATORY biomarkers — signals that emerge from the corpus evidence that are NOT yet in the standard protocol and warrant hypothesis-driven investigation.
+
+ALREADY ESTABLISHED EFFICACY SIGNALS (DO NOT REPEAT):
+${alreadyValidated || '(none yet)'}
+
+TOP CORPUS EXCERPTS:
+${excerpts}
+
+TASK:
+Generate 6–8 exploratory biomarker hypotheses that:
+- Appear in the corpus but are speculative or understudied relative to ${drugName}'s mechanism
+- Draw from adjacent mechanisms: neuroinflammation, synaptic remodeling, HPA axis, circadian biology, microbiome-gut-brain axis, epigenetics
+- Are clearly labeled as hypothesis-generating, not validated protocol markers
+
+For each exploratory biomarker, cite the specific corpus document(s) that hint at the signal. Be precise about the learning objective — what measurement in what assay at what timepoint would test this hypothesis.
+
+OUTPUT FORMAT — respond with valid JSON only, no markdown, no code fences:
+{
+  "exploratory_biomarkers": [
+    {
+      "name": "",
+      "biomarker_class": "neuroinflammatory|synaptic plasticity|HPA axis|circadian|metabolic|genetic|imaging",
+      "rationale": "",
+      "evidence_level": "emerging|preclinical_only|theoretical",
+      "corpus_refs": [""],
+      "learning_objective": "",
+      "feasibility": "high|moderate|low"
+    }
+  ]
+}`
+
+  const system = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
+  const stream = await client.messages.stream({
+    model: 'claude-sonnet-4-5',
+    max_tokens: computeMaxTokens('claude-sonnet-4-5', prompt, system),
+    system,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const msg = await stream.finalMessage()
+  const raw = msg.content
+    .filter(b => b.type === 'text')
+    .map(b => (b as { type: 'text'; text: string }).text)
+    .join('')
+
+  const parsed = parseJson(raw, 'exploratory-biomarkers') as { exploratory_biomarkers?: unknown[] }
+  return (parsed.exploratory_biomarkers ?? []) as ExploratoryBiomarker[]
 }

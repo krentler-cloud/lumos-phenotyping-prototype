@@ -24,6 +24,7 @@ const STEP_ICONS: Record<string, string> = {
   "Bayesian prior computation": "∑",
   "Phenotype synthesis (Opus)": "🤖",
   "Store report": "💾",
+  "Exploratory biomarker synthesis": "🔭",
   "Error": "❌",
 };
 
@@ -53,8 +54,12 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     why: "This is the step where retrieval becomes interpretation. The model is asked to do what a scientific reviewer does — weigh evidence quality, resolve conflicting signals, and commit to ranked hypotheses about which patient characteristics predict response. Opus-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
   },
   "Store report": {
-    what: "Saved the complete structured output — phenotype profiles, biomarker protocol, confidence scores, methodology narrative, corpus chunk references, and the Bayesian priors used to generate them — to the database as a versioned record. Every claim in the report is traceable to the specific corpus evidence and model version that produced it. This also makes the output portable: the same record feeds the interactive viewer, the PDF export, and eventually the Phase 2 study design inputs.",
+    what: "Saved the complete structured output — phenotype profiles, efficacy signals, confidence scores, methodology narrative, corpus chunk references, and the Bayesian priors used to generate them — to the database as a versioned record. Every claim in the report is traceable to the specific corpus evidence and model version that produced it. This also makes the output portable: the same record feeds the interactive viewer, the PDF export, and eventually the Phase 2 study design inputs.",
     why: "Reproducibility and auditability are non-negotiable in a clinical context. Persisting the full evidential chain means a medical affairs team can reconstruct exactly why a particular biomarker was ranked first, which studies it rested on, and how confident the model was — months after the analysis ran.",
+  },
+  "Exploratory biomarker synthesis": {
+    what: "Claude Sonnet scanned the same corpus excerpts for adjacent, speculative biomarker signals that didn't make it into the primary efficacy panel — signals that appear in the literature but aren't yet validated or routinely measured in MDD trials. This is a separate, non-blocking call: if it fails, the main report is unaffected. The output is 6–8 hypothesis-generating candidates drawn from neuroinflammation, synaptic remodeling, HPA axis biology, circadian markers, and other adjacent mechanisms with mechanistic plausibility for neuroplastogen response.",
+    why: "The primary efficacy panel is deliberately conservative — only biomarkers with strong preclinical grounding. But early-stage drug development is also where exploratory hypotheses are cheapest to test. Surfacing these signals now gives the study team the option to add low-cost add-on assays or biological samples at baseline that cost almost nothing to collect but could yield important signal for the next trial.",
   },
 };
 
@@ -66,6 +71,7 @@ const ALL_STEPS = [
   "Bayesian prior computation",
   "Phenotype synthesis (Opus)",
   "Store report",
+  "Exploratory biomarker synthesis",
 ];
 
 export default function Phase1ProcessingPage() {
@@ -172,7 +178,7 @@ export default function Phase1ProcessingPage() {
             <p className="text-[#22C55E] text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis</p>
             <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">Analysis Complete</h1>
             <p className="text-[#8BA3C7] text-sm">
-              7 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
+              8 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
             </p>
           </div>
           <a

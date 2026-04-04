@@ -207,6 +207,18 @@ export interface PhenotypeReport {
   in_silico_twin?: InSilicoTwin            // Claude-generated
 }
 
+// ── Exploratory Biomarkers ────────────────────────────────────────────────────
+
+export interface ExploratoryBiomarker {
+  name: string
+  biomarker_class: string   // e.g. "neuroinflammatory", "synaptic plasticity"
+  rationale: string         // 1–2 sentence mechanistic hypothesis
+  evidence_level: 'emerging' | 'preclinical_only' | 'theoretical'
+  corpus_refs: string[]     // titles of supporting corpus documents
+  learning_objective: string // what a future study would measure
+  feasibility: 'high' | 'moderate' | 'low'
+}
+
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
 export interface ChatMessage {

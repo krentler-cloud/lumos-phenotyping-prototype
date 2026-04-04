@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { embedTexts } from '@/lib/pipeline/embed'
 import { searchCorpusMultiAspect } from '@/lib/pipeline/search'
 import { computeBayesianPrior } from '@/lib/pipeline/score'
-import { synthesizePhase1Report } from '@/lib/pipeline/synthesize-phase1'
+import { synthesizePhase1Report, synthesizeExploratoryBiomarkers } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
 // Internal route — protected by shared secret
@@ -148,6 +148,31 @@ export async function POST(
 
     if (reportError) throw new Error(`Failed to store Phase 1 report: ${reportError.message}`)
     await log('Store report', 'complete')
+
+    // ── STEP 8: Exploratory biomarker synthesis (non-blocking — won't fail the run) ──
+    await log('Exploratory biomarker synthesis', 'running')
+    try {
+      const exploratoryBiomarkers = await synthesizeExploratoryBiomarkers(
+        drugName,
+        indication,
+        matchedChunks,
+        report
+      )
+      // Merge into the stored report_data
+      await supabase.from('phase1_reports')
+        .update({ report_data: { ...report, exploratory_biomarkers: exploratoryBiomarkers } })
+        .eq('run_id', run_id)
+      await log(
+        'Exploratory biomarker synthesis',
+        'complete',
+        `${exploratoryBiomarkers.length} exploratory signals identified`
+      )
+    } catch (exploratoryErr: unknown) {
+      const exploratoryMsg = exploratoryErr instanceof Error ? exploratoryErr.message : 'Unknown error'
+      console.error('[process-phase1] exploratory biomarkers failed (non-blocking):', exploratoryMsg)
+      await log('Exploratory biomarker synthesis', 'error', exploratoryMsg)
+      // Non-blocking: continue to mark run complete
+    }
 
     // Mark run complete
     await supabase.from('runs').update({
