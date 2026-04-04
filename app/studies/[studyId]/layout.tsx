@@ -4,7 +4,6 @@ import { createServiceClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
 import StudyChat from "@/components/StudyChat";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
 
 export default async function StudyLayout({
@@ -24,9 +23,6 @@ export default async function StudyLayout({
     .single();
 
   if (!study) notFound();
-
-  const isPhase1 = true; // always available once study exists
-  const isPhase2 = !!study.phase2_run_id;
 
   // Build suggestion chips for AI chat (optionally grounded in actual report values)
   let phase1Report: Phase1ReportData | null = null;
@@ -73,31 +69,9 @@ export default async function StudyLayout({
       <div className="print-hide"><Sidebar study={study} /></div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar with phase toggle */}
-        <header className="print-hide flex-shrink-0 h-14 bg-[#070F1E] border-b border-[#1E3A5F] flex items-center justify-between px-6">
+        {/* Top bar */}
+        <header className="print-hide flex-shrink-0 h-14 bg-[#070F1E] border-b border-[#1E3A5F] flex items-center px-6">
           <div className="text-[#8BA3C7] text-sm" id="page-title" />
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/studies/${studyId}/phase1`}
-              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                !isPhase2
-                  ? "bg-[#4F8EF7] text-white"
-                  : "text-[#8BA3C7] hover:text-[#F0F4FF] border border-[#1E3A5F]"
-              }`}
-            >
-              Phase 1 — Preclinical
-            </Link>
-            <Link
-              href={isPhase1 ? `/studies/${studyId}/phase2` : "#"}
-              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                isPhase2
-                  ? "bg-[#22C55E] text-white"
-                  : "text-[#2A4060] border border-[#1E3A5F] cursor-not-allowed"
-              }`}
-            >
-              Phase 2 — Clinical
-            </Link>
-          </div>
         </header>
 
         {/* Scrollable main content */}

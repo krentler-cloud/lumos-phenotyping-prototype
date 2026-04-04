@@ -150,17 +150,34 @@ export default function Sidebar({ study }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-[#1E3A5F] space-y-2">
-        <p className="text-[#1E3A5F] text-[10px]">HIPAA · SOC 2</p>
-        <p className="text-[#1E3A5F] text-[10px]">headlamp.com/lumosai</p>
-        <form action="/api/auth/logout" method="POST">
-          <button
-            type="submit"
-            className="text-[#2A4060] hover:text-[#8BA3C7] text-[10px] transition-colors"
-          >
-            Sign out
-          </button>
-        </form>
+      <div className="px-3 py-3 border-t border-[#1E3A5F] space-y-1">
+        {/* Admin links */}
+        <Link
+          href="/corpus"
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[#4A6580] hover:text-[#8BA3C7] hover:bg-[#0F1F3D] transition-colors"
+        >
+          <span className="text-[10px] w-3 text-center flex-shrink-0">◈</span>
+          <span>Corpus</span>
+        </Link>
+        <Link
+          href="/runs"
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[#4A6580] hover:text-[#8BA3C7] hover:bg-[#0F1F3D] transition-colors"
+        >
+          <span className="text-[10px] w-3 text-center flex-shrink-0">≡</span>
+          <span>Analysis History</span>
+        </Link>
+        {/* Sign out + compliance */}
+        <div className="pt-2 mt-1 border-t border-[#0D1F3A] flex items-center justify-between">
+          <p className="text-[#1E3A5F] text-[10px]">HIPAA · SOC 2</p>
+          <form action="/api/auth/logout" method="POST">
+            <button
+              type="submit"
+              className="text-[#2A4060] hover:text-[#8BA3C7] text-[10px] transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   );
