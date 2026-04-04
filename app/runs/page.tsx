@@ -18,16 +18,26 @@ const PHASE_LABELS: Record<string, { label: string; color: string }> = {
 export default async function AnalysisHistoryPage() {
   const supabase = createServiceClient();
 
-  // Fetch all runs with study context
+  // Fetch runs without FK join (more reliable if FK isn't defined in Supabase schema)
   const { data: runs } = await supabase
     .from("runs")
-    .select("id, created_at, status, phase, study_id, step_log, studies(drug_name, indication, sponsor)")
+    .select("id, created_at, status, phase, study_id, step_log")
     .order("created_at", { ascending: false });
 
-  // Also fetch phase1_reports for corpus size at time of run
+  // Fetch studies separately and build a lookup map
+  const studyIds = [...new Set((runs ?? []).map((r: { study_id: string }) => r.study_id).filter(Boolean))];
+  const { data: studies } = studyIds.length
+    ? await supabase
+        .from("studies")
+        .select("id, drug_name, indication, sponsor")
+        .in("id", studyIds)
+    : { data: [] };
+  const studyMap = Object.fromEntries((studies ?? []).map((s: { id: string; drug_name: string; indication: string; sponsor: string }) => [s.id, s]));
+
+  // Phase1 report lookup (to confirm report exists before linking)
   const { data: phase1Reports } = await supabase
     .from("phase1_reports")
-    .select("run_id, created_at");
+    .select("run_id");
 
   const phase1ReportRunIds = new Set((phase1Reports ?? []).map((r: { run_id: string }) => r.run_id));
 
@@ -63,8 +73,7 @@ export default async function AnalysisHistoryPage() {
             <tbody>
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(runs as any[]).map((run) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const study = run.studies as any;
+                const study = studyMap[run.study_id] ?? null;
                 const phase = PHASE_LABELS[run.phase] ?? { label: run.phase, color: "#8BA3C7" };
                 const stepLog = (run.step_log ?? []) as { status: string }[];
                 const completeSteps = stepLog.filter((s) => s.status === "complete").length;
