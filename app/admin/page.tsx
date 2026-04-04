@@ -15,18 +15,15 @@ export default async function AdminPage() {
 
   const [
     { data: docs },
-    { data: chunks },
+    { count: totalChunks },
     { data: allRuns },
-    { data: patients },
+    { count: totalPatients },
   ] = await Promise.all([
     supabase.from("corpus_docs").select("id, title, source_type, chunk_count, status, created_at").order("created_at", { ascending: false }),
-    supabase.from("corpus_chunks").select("id", { count: "exact", head: true }),
-    supabase.from("runs").select("id, status, created_at, study_id, error_message, patients(patient_code)").order("created_at", { ascending: false }).limit(50),
-    supabase.from("patients").select("id", { count: "exact", head: true }),
+    supabase.from("corpus_chunks").select("*", { count: "exact", head: true }),
+    supabase.from("runs").select("id, status, phase, created_at, study_id, error_message").order("created_at", { ascending: false }).limit(50),
+    supabase.from("clinical_patients").select("*", { count: "exact", head: true }),
   ]);
-
-  const totalChunks = (chunks as unknown as { count: number } | null)?.count ?? 0;
-  const totalPatients = (patients as unknown as { count: number } | null)?.count ?? 0;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const runs = (allRuns as any[]) ?? []
@@ -55,8 +52,8 @@ export default async function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Corpus Docs", value: readyDocs.length, icon: "📄" },
-          { label: "Embeddings", value: totalChunks.toLocaleString(), icon: "🧩" },
-          { label: "Patients", value: totalPatients, icon: "👤" },
+          { label: "Embeddings", value: (totalChunks ?? 0).toLocaleString(), icon: "🧩" },
+          { label: "Clinical Patients", value: totalPatients ?? 0, icon: "👤" },
           { label: "Completed Runs", value: goodRuns.filter((r: { status: string }) => r.status === "complete").length, icon: "▶" },
         ].map(s => (
           <div key={s.label} className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-5">
@@ -126,16 +123,21 @@ export default async function AdminPage() {
           <p className="text-[#8BA3C7] text-sm">No runs yet.</p>
         ) : (
           <div className="space-y-2">
-            {goodRuns.map((run: { id: string; status: string; created_at: string; study_id: string; patients: { patient_code: string } }) => (
+            {goodRuns.map((run: { id: string; status: string; phase: string; created_at: string; study_id: string }) => (
               <div key={run.id} className="flex items-center justify-between text-sm py-2 border-b border-[#1E3A5F] last:border-0">
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs border capitalize ${statusColors[run.status] ?? ""}`}>{run.status}</span>
-                  <span className="text-[#8BA3C7] font-mono text-xs">{run.patients?.patient_code ?? run.id.slice(0, 8)}</span>
-                  <span className="text-[#8BA3C7] text-xs">{run.study_id}</span>
+                  <span className="text-[#8BA3C7] text-xs capitalize">{run.phase ?? "—"}</span>
+                  <span className="text-[#4A6580] font-mono text-xs">{run.id.slice(0, 8)}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  {run.status === "complete" && (
-                    <Link href={`/runs/${run.id}/report`} className="text-[#4F8EF7] text-xs hover:underline">View report →</Link>
+                  {run.status === "complete" && run.study_id && (
+                    <Link
+                      href={run.phase === "clinical" ? `/studies/${run.study_id}/phase2/report` : `/studies/${run.study_id}/phase1/report`}
+                      className="text-[#4F8EF7] text-xs hover:underline"
+                    >
+                      View report →
+                    </Link>
                   )}
                   <span className="text-[#8BA3C7] text-xs">{new Date(run.created_at).toLocaleString()}</span>
                 </div>
@@ -163,10 +165,10 @@ export default async function AdminPage() {
               <div>
                 <p className="text-[#8BA3C7] text-xs uppercase mb-2">Failed Runs</p>
                 <div className="space-y-2">
-                  {failedRuns.map((run: { id: string; created_at: string; study_id: string; error_message: string; patients: { patient_code: string } }) => (
+                  {failedRuns.map((run: { id: string; created_at: string; study_id: string; error_message: string; phase: string }) => (
                     <div key={run.id} className="flex items-start justify-between text-xs py-2 border-b border-[#1E3A5F] last:border-0">
                       <div className="space-y-0.5">
-                        <span className="text-[#8BA3C7] font-mono">{run.patients?.patient_code ?? run.id.slice(0, 8)}</span>
+                        <span className="text-[#8BA3C7] font-mono">{run.id.slice(0, 8)} · {run.phase ?? "unknown"}</span>
                         {run.error_message && (
                           <p className="text-[#EF4444] max-w-lg truncate">{run.error_message}</p>
                         )}
