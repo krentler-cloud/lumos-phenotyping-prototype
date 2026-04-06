@@ -6,5 +6,5 @@ export default async function StudyPage({
   params: Promise<{ studyId: string }>;
 }) {
   const { studyId } = await params;
-  redirect(`/studies/${studyId}/phase1`);
+  redirect(`/studies/${studyId}/overview`);
 }

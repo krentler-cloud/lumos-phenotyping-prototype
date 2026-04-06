@@ -56,6 +56,16 @@ export default function Sidebar({ study }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
 
+        {/* Study Overview */}
+        <div>
+          <SidebarItem
+            href={`${base}/overview`}
+            label="Study Overview"
+            icon="◎"
+            active={isActive(`${base}/overview`)}
+          />
+        </div>
+
         {/* Phase 1 */}
         <div>
           <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left group">
