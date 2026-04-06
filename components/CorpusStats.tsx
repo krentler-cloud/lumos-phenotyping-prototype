@@ -39,7 +39,7 @@ export default function CorpusStats({ refreshTrigger, polling }: { refreshTrigge
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-5 animate-pulse h-24" />
+          <div key={i} className="bg-bg-surface border border-border-subtle rounded-xl p-5 animate-pulse h-24" />
         ))}
       </div>
     );
@@ -55,7 +55,7 @@ export default function CorpusStats({ refreshTrigger, polling }: { refreshTrigge
         ))}
       </div>
       {stats?.last_updated && (
-        <p className="text-[#8BA3C7] text-xs">
+        <p className="text-text-muted text-xs">
           Last updated: {new Date(stats.last_updated).toLocaleString()}
         </p>
       )}
@@ -65,10 +65,10 @@ export default function CorpusStats({ refreshTrigger, polling }: { refreshTrigge
 
 function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
   return (
-    <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-5">
+    <div className="bg-bg-surface border border-border-subtle rounded-xl p-5">
       <div className="text-xl mb-2">{icon}</div>
-      <div className="text-2xl font-bold text-[#F0F4FF]">{value.toLocaleString()}</div>
-      <div className="text-[#8BA3C7] text-sm mt-0.5">{label}</div>
+      <div className="text-2xl font-bold text-text-heading">{value.toLocaleString()}</div>
+      <div className="text-text-muted text-sm mt-0.5">{label}</div>
     </div>
   );
 }

@@ -4,15 +4,15 @@ import { createServiceClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
-  complete:   "text-[#22C55E] bg-[#22C55E20] border-[#22C55E]",
-  processing: "text-[#4F8EF7] bg-[#4F8EF720] border-[#4F8EF7]",
-  queued:     "text-[#F59E0B] bg-[#F59E0B20] border-[#F59E0B]",
-  error:      "text-[#EF4444] bg-[#EF444420] border-[#EF4444]",
+  complete:   "text-status-success bg-status-success/12 border-status-success",
+  processing: "text-brand-core bg-brand-core/12 border-brand-core",
+  queued:     "text-status-warning bg-status-warning/12 border-status-warning",
+  error:      "text-status-danger bg-status-danger/12 border-status-danger",
 };
 
 const PHASE_LABELS: Record<string, { label: string; color: string }> = {
-  preclinical: { label: "Pre-Clinical Analysis", color: "#4F8EF7" },
-  clinical:    { label: "Clinical Analysis",      color: "#22C55E" },
+  preclinical: { label: "Pre-Clinical Analysis", color: "var(--brand-core)" },
+  clinical:    { label: "Clinical Analysis",      color: "var(--status-success)" },
 };
 
 export default async function AnalysisHistoryPage() {
@@ -44,24 +44,24 @@ export default async function AnalysisHistoryPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-12 w-full">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">Analysis History</h1>
-        <p className="text-[#8BA3C7] text-sm">
+        <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis History</h1>
+        <p className="text-text-muted text-sm">
           All pre-clinical and clinical analysis runs for this project.
         </p>
       </div>
 
       {!runs?.length ? (
-        <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-12 text-center">
-          <p className="text-[#8BA3C7] mb-2">No analysis runs yet.</p>
-          <Link href="/" className="text-[#4F8EF7] text-sm hover:underline">
+        <div className="bg-bg-surface border border-border-subtle rounded-xl p-12 text-center">
+          <p className="text-text-muted mb-2">No analysis runs yet.</p>
+          <Link href="/" className="text-brand-core text-sm hover:underline">
             Go to study →
           </Link>
         </div>
       ) : (
-        <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl overflow-hidden">
+        <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1E3A5F] text-[#8BA3C7] text-xs uppercase">
+              <tr className="border-b border-border-subtle text-text-muted text-xs uppercase">
                 <th className="text-left px-6 py-3">Study</th>
                 <th className="text-left px-6 py-3">Phase</th>
                 <th className="text-left px-6 py-3">Status</th>
@@ -74,7 +74,7 @@ export default async function AnalysisHistoryPage() {
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(runs as any[]).map((run) => {
                 const study = studyMap[run.study_id] ?? null;
-                const phase = PHASE_LABELS[run.phase] ?? { label: run.phase, color: "#8BA3C7" };
+                const phase = PHASE_LABELS[run.phase] ?? { label: run.phase, color: "var(--text-muted)" };
                 const stepLog = (run.step_log ?? []) as { status: string }[];
                 const completeSteps = stepLog.filter((s) => s.status === "complete").length;
                 const totalSteps = stepLog.length;
@@ -98,13 +98,13 @@ export default async function AnalysisHistoryPage() {
                 return (
                   <tr
                     key={run.id}
-                    className="border-b border-[#1E3A5F] last:border-0 hover:bg-[#1E3A5F20] transition-colors"
+                    className="border-b border-border-subtle last:border-0 hover:bg-nav-item-active-bg/12 transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <p className="text-[#F0F4FF] font-medium text-sm">
+                      <p className="text-text-heading font-medium text-sm">
                         {study?.drug_name ?? "—"} · {study?.indication ?? ""}
                       </p>
-                      <p className="text-[#8BA3C7] text-xs mt-0.5">{study?.sponsor ?? ""}</p>
+                      <p className="text-text-muted text-xs mt-0.5">{study?.sponsor ?? ""}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-xs font-semibold" style={{ color: phase.color }}>
@@ -116,19 +116,19 @@ export default async function AnalysisHistoryPage() {
                         {run.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#8BA3C7] text-xs font-mono">
+                    <td className="px-6 py-4 text-text-muted text-xs font-mono">
                       {totalSteps > 0 ? `${completeSteps}/${totalSteps}` : "—"}
                     </td>
-                    <td className="px-6 py-4 text-[#8BA3C7] text-xs">
+                    <td className="px-6 py-4 text-text-muted text-xs">
                       {new Date(run.created_at).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {reportHref ? (
-                        <Link href={reportHref} className="text-[#4F8EF7] hover:underline text-xs">
+                        <Link href={reportHref} className="text-brand-core hover:underline text-xs">
                           View report →
                         </Link>
                       ) : processingHref && (run.status === "processing" || run.status === "queued") ? (
-                        <Link href={processingHref} className="text-[#F59E0B] hover:underline text-xs">
+                        <Link href={processingHref} className="text-status-warning hover:underline text-xs">
                           View progress →
                         </Link>
                       ) : "—"}

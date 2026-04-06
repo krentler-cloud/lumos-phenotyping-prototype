@@ -91,15 +91,15 @@ export default function Phase1Steps({ drugName }: { drugName: string }) {
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
               className={`flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-default transition-colors duration-100 ${
-                isHovered ? "bg-[#0A1628]" : "hover:bg-[#0A1628]/40"
+                isHovered ? "bg-bg-page" : "hover:bg-bg-page/40"
               }`}
             >
               <span className="text-base flex-shrink-0 w-5 text-center mt-0.5">{step.icon}</span>
               <div className="min-w-0">
-                <p className={`text-sm font-medium leading-snug transition-colors duration-100 ${isHovered ? "text-[#F0F4FF]" : "text-[#C0CFEA]"}`}>
+                <p className={`text-sm font-medium leading-snug transition-colors duration-100 ${isHovered ? "text-text-heading" : "text-text-body"}`}>
                   {step.label}
                 </p>
-                <p className="text-xs text-[#4A6580] mt-0.5 leading-snug">{step.detail}</p>
+                <p className="text-xs text-text-secondary mt-0.5 leading-snug">{step.detail}</p>
               </div>
             </div>
           );
@@ -114,21 +114,21 @@ export default function Phase1Steps({ drugName }: { drugName: string }) {
             active ? "opacity-0" : "opacity-100"
           }`}
         >
-          <p className="text-[#2A4060] text-xs">↑ Hover any step to learn more</p>
+          <p className="text-nav-item-muted text-xs">↑ Hover any step to learn more</p>
         </div>
 
         {/* Active explanation */}
         <div
-          className={`absolute inset-0 p-4 bg-[#060D1A] border border-[#4F8EF7]/30 rounded-xl transition-opacity duration-150 ${
+          className={`absolute inset-0 p-4 bg-bg-overlay border border-brand-core/30 rounded-xl transition-opacity duration-150 ${
             active ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           {active && (
             <>
-              <p className="text-[#4F8EF7] text-xs font-semibold mb-1.5">
+              <p className="text-brand-core text-xs font-semibold mb-1.5">
                 {active.tooltip.title}
               </p>
-              <p className="text-[#C0CFEA] text-xs leading-relaxed line-clamp-4">
+              <p className="text-text-body text-xs leading-relaxed line-clamp-4">
                 {active.tooltip.body}
               </p>
             </>

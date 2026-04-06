@@ -14,10 +14,10 @@ interface CorpusDoc {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  ready:      "text-[#22C55E] bg-[#22C55E20] border-[#22C55E]",
-  processing: "text-[#4F8EF7] bg-[#4F8EF720] border-[#4F8EF7]",
-  pending:    "text-[#F59E0B] bg-[#F59E0B20] border-[#F59E0B]",
-  error:      "text-[#EF4444] bg-[#EF444420] border-[#EF4444]",
+  ready:      "text-status-success bg-status-success/12 border-status-success",
+  processing: "text-brand-core bg-brand-core/12 border-brand-core",
+  pending:    "text-status-warning bg-status-warning/12 border-status-warning",
+  error:      "text-status-danger bg-status-danger/12 border-status-danger",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -58,7 +58,7 @@ function SourceTypeSelect({ doc, onUpdated }: { doc: CorpusDoc; onUpdated: () =>
       value={doc.source_type}
       onChange={handleChange}
       disabled={saving}
-      className="bg-[#0A1628] border border-[#1E3A5F] text-[#8BA3C7] text-xs rounded px-2 py-1 cursor-pointer hover:border-[#4F8EF7] transition-colors disabled:opacity-50"
+      className="bg-bg-page border border-border-subtle text-text-muted text-xs rounded px-2 py-1 cursor-pointer hover:border-brand-core transition-colors disabled:opacity-50"
     >
       {SOURCE_OPTIONS.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -93,7 +93,7 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
     return (
       <div className="space-y-2">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-10 bg-[#0F1F3D] border border-[#1E3A5F] rounded-lg animate-pulse" />
+          <div key={i} className="h-10 bg-bg-surface border border-border-subtle rounded-lg animate-pulse" />
         ))}
       </div>
     );
@@ -101,7 +101,7 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
 
   if (docs.length === 0) {
     return (
-      <p className="text-[#8BA3C7] text-sm py-4">
+      <p className="text-text-muted text-sm py-4">
         No documents ingested yet. Upload one to get started.
       </p>
     );
@@ -115,25 +115,25 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
     <div className="space-y-3">
       {/* In-progress banner */}
       {processing.length > 0 && (
-        <div className="flex items-center gap-2 bg-[#4F8EF720] border border-[#4F8EF7] rounded-lg px-4 py-2.5 text-sm text-[#4F8EF7]">
+        <div className="flex items-center gap-2 bg-brand-core/12 border border-brand-core rounded-lg px-4 py-2.5 text-sm text-brand-core">
           <span className="animate-spin inline-block">⟳</span>
           {processing.length} document{processing.length > 1 ? "s" : ""} still processing…
         </div>
       )}
 
       {/* Document table */}
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#1E3A5F]">
-          <span className="text-[#F0F4FF] font-medium text-sm">
+      <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle">
+          <span className="text-text-heading font-medium text-sm">
             {ready.length} document{ready.length !== 1 ? "s" : ""} ready
           </span>
           {errors.length > 0 && (
-            <span className="text-[#EF4444] text-xs">{errors.length} failed</span>
+            <span className="text-status-danger text-xs">{errors.length} failed</span>
           )}
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1E3A5F] text-[#8BA3C7] text-xs uppercase">
+            <tr className="border-b border-border-subtle text-text-muted text-xs uppercase">
               <th className="text-left px-5 py-2.5">Title</th>
               <th className="text-left px-5 py-2.5 hidden md:table-cell">Type</th>
               <th className="text-left px-5 py-2.5">Status</th>
@@ -143,14 +143,14 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
           </thead>
           <tbody>
             {docs.map(doc => (
-              <tr key={doc.id} className="border-b border-[#1E3A5F] last:border-0 hover:bg-[#1E3A5F20]">
+              <tr key={doc.id} className="border-b border-border-subtle last:border-0 hover:bg-nav-item-active-bg/12">
                 <td className="px-5 py-3">
-                  <span className="text-[#F0F4FF]">{doc.title}</span>
+                  <span className="text-text-heading">{doc.title}</span>
                   {doc.filename && doc.filename !== doc.title && (
-                    <span className="block text-[#8BA3C7] text-xs truncate max-w-xs">{doc.filename}</span>
+                    <span className="block text-text-muted text-xs truncate max-w-xs">{doc.filename}</span>
                   )}
                   {doc.status === "error" && doc.metadata?.error && (
-                    <span className="block text-[#EF4444] text-xs mt-0.5 max-w-xs">{doc.metadata.error}</span>
+                    <span className="block text-status-danger text-xs mt-0.5 max-w-xs">{doc.metadata.error}</span>
                   )}
                 </td>
                 <td className="px-5 py-3 hidden md:table-cell">
@@ -165,10 +165,10 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
                     ) : doc.status}
                   </span>
                 </td>
-                <td className="px-5 py-3 text-[#4F8EF7] font-mono text-xs hidden md:table-cell">
+                <td className="px-5 py-3 text-brand-core font-mono text-xs hidden md:table-cell">
                   {doc.status === "ready" ? (doc.chunk_count ?? "—") : "—"}
                 </td>
-                <td className="px-5 py-3 text-[#8BA3C7] text-xs hidden lg:table-cell">
+                <td className="px-5 py-3 text-text-muted text-xs hidden lg:table-cell">
                   {new Date(doc.created_at).toLocaleDateString()}
                 </td>
               </tr>

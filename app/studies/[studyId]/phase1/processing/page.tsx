@@ -151,15 +151,15 @@ export default function Phase1ProcessingPage() {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
         <div className="mb-10">
-          <div className="h-3 w-24 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
-          <div className="h-7 w-64 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
-          <div className="h-4 w-96 bg-[#1E3A5F] rounded animate-pulse" />
+          <div className="h-3 w-24 bg-nav-item-active-bg rounded mb-3 animate-pulse" />
+          <div className="h-7 w-64 bg-nav-item-active-bg rounded mb-3 animate-pulse" />
+          <div className="h-4 w-96 bg-nav-item-active-bg rounded animate-pulse" />
         </div>
         <div className="space-y-2">
           {ALL_STEPS.map((name) => (
-            <div key={name} className="flex items-center gap-3 p-3 rounded-lg border border-[#0D1F3A] bg-[#080F1F]">
-              <div className="w-5 h-5 rounded-full bg-[#1E3A5F] animate-pulse flex-shrink-0" />
-              <div className="h-4 w-48 bg-[#1E3A5F] rounded animate-pulse" />
+            <div key={name} className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-bg-overlay">
+              <div className="w-5 h-5 rounded-full bg-nav-item-active-bg animate-pulse flex-shrink-0" />
+              <div className="h-4 w-48 bg-nav-item-active-bg rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -175,15 +175,15 @@ export default function Phase1ProcessingPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-[#22C55E] text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis</p>
-            <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">Analysis Complete</h1>
-            <p className="text-[#8BA3C7] text-sm">
+            <p className="text-status-success text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis</p>
+            <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis Complete</h1>
+            <p className="text-text-muted text-sm">
               8 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
             </p>
           </div>
           <a
             href={`/studies/${studyId}/phase1/report`}
-            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-[#4F8EF7] text-white font-semibold text-sm rounded-xl hover:bg-[#3A7AE8] transition-colors ml-6"
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors ml-6"
           >
             View Report
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -200,17 +200,17 @@ export default function Phase1ProcessingPage() {
             const logged = stepLog.find((s) => s.step === step.step);
 
             return (
-              <div key={step.step} className="bg-[#0A1628] border border-[#1E3A5F] rounded-xl p-4">
+              <div key={step.step} className="bg-bg-page border border-border-subtle rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   {/* Step number + check */}
                   <div className="flex-shrink-0 flex flex-col items-center gap-1 pt-0.5">
-                    <div className="w-5 h-5 rounded-full bg-[#0A1A0A] border border-[#22C55E] flex items-center justify-center">
-                      <svg className="w-3 h-3 text-[#22C55E]" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-5 h-5 rounded-full bg-status-success/5 border border-status-success flex items-center justify-center">
+                      <svg className="w-3 h-3 text-status-success" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                     {i < displaySteps.length - 1 && (
-                      <div className="w-px h-3 bg-[#1E3A5F]" />
+                      <div className="w-px h-3 bg-nav-item-active-bg" />
                     )}
                   </div>
 
@@ -218,16 +218,16 @@ export default function Phase1ProcessingPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-base">{icon}</span>
-                      <span className="text-sm font-semibold text-[#F0F4FF]">{step.step}</span>
+                      <span className="text-sm font-semibold text-text-heading">{step.step}</span>
                       {logged?.detail && (
-                        <span className="text-[10px] text-[#4A6580] font-mono ml-auto flex-shrink-0">{logged.detail}</span>
+                        <span className="text-[10px] text-text-secondary font-mono ml-auto flex-shrink-0">{logged.detail}</span>
                       )}
                     </div>
                     {desc && (
                       <>
-                        <p className="text-xs text-[#D0DCF0] leading-relaxed mb-1.5">{desc.what}</p>
-                        <p className="text-xs text-[#4A6580] leading-relaxed">
-                          <span className="text-[#4F8EF7] font-medium">Why it matters: </span>
+                        <p className="text-xs text-text-body leading-relaxed mb-1.5">{desc.what}</p>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          <span className="text-brand-core font-medium">Why it matters: </span>
                           {desc.why}
                         </p>
                       </>
@@ -242,7 +242,7 @@ export default function Phase1ProcessingPage() {
         <div className="mt-6 flex justify-center">
           <a
             href={`/studies/${studyId}/phase1/report`}
-            className="flex items-center gap-2 px-6 py-3 bg-[#4F8EF7] text-white font-semibold text-sm rounded-xl hover:bg-[#3A7AE8] transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
           >
             View Full Report
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -251,7 +251,7 @@ export default function Phase1ProcessingPage() {
           </a>
         </div>
 
-        <p className="text-center text-[#4A6580] text-xs mt-4">
+        <p className="text-center text-text-secondary text-xs mt-4">
           Questions about the methodology? See the Methodology tab in the report.
         </p>
       </div>
@@ -263,13 +263,13 @@ export default function Phase1ProcessingPage() {
     <div className="max-w-2xl mx-auto px-8 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-2">
+        <p className="text-brand-core text-xs uppercase tracking-widest mb-2">
           Pre-Clinical Analysis
         </p>
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">
+        <h1 className="text-2xl font-bold text-text-heading mb-2">
           {isError ? "Analysis Failed" : `Lumos AI™ is analyzing${dots}`}
         </h1>
-        <p className="text-[#8BA3C7] text-sm">
+        <p className="text-text-muted text-sm">
           {isError
             ? "An error occurred during corpus analysis. You can re-run from the pre-clinical analysis page."
             : "Running pre-clinical corpus analysis — no patient data required. This typically takes 60–90 seconds."}
@@ -279,13 +279,13 @@ export default function Phase1ProcessingPage() {
       {/* Progress bar */}
       {!isError && (
         <div className="mb-8">
-          <div className="flex justify-between text-xs text-[#8BA3C7] mb-2">
+          <div className="flex justify-between text-xs text-text-muted mb-2">
             <span>{runningStep ? runningStep.step : "Initialising"}</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#4F8EF7] rounded-full transition-all duration-700"
+              className="h-full bg-brand-core rounded-full transition-all duration-700"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -306,26 +306,26 @@ export default function Phase1ProcessingPage() {
               key={step.step}
               className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                 isStepRunning
-                  ? "bg-[#0F1F3D] border-[#4F8EF7]"
+                  ? "bg-bg-surface border-brand-core"
                   : isStepComplete
-                  ? "bg-[#0A1628] border-[#1E3A5F]"
+                  ? "bg-bg-page border-border-subtle"
                   : isStepError
-                  ? "bg-[#1A0A0A] border-[#EF4444]"
-                  : "bg-[#080F1F] border-[#0D1F3A] opacity-50"
+                  ? "bg-status-danger/5 border-status-danger"
+                  : "bg-bg-overlay border-border-subtle opacity-50"
               }`}
             >
               {/* Status indicator */}
               <div className="flex-shrink-0 w-5 h-5 mt-0.5 flex items-center justify-center">
                 {isStepComplete ? (
-                  <svg className="w-4 h-4 text-[#22C55E]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-status-success" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 ) : isStepRunning ? (
-                  <div className="w-3 h-3 rounded-full bg-[#4F8EF7] animate-pulse" />
+                  <div className="w-3 h-3 rounded-full bg-brand-core animate-pulse" />
                 ) : isStepError ? (
-                  <span className="text-[#EF4444] text-xs">✕</span>
+                  <span className="text-status-danger text-xs">✕</span>
                 ) : (
-                  <div className="w-2 h-2 rounded-full bg-[#1E3A5F]" />
+                  <div className="w-2 h-2 rounded-full bg-nav-item-active-bg" />
                 )}
               </div>
 
@@ -335,14 +335,14 @@ export default function Phase1ProcessingPage() {
                   <span className="text-sm">{icon}</span>
                   <span
                     className={`text-sm font-medium ${
-                      isStepComplete ? "text-[#F0F4FF]" : isStepRunning ? "text-[#4F8EF7]" : isStepError ? "text-[#EF4444]" : "text-[#4A6580]"
+                      isStepComplete ? "text-text-heading" : isStepRunning ? "text-brand-core" : isStepError ? "text-status-danger" : "text-text-secondary"
                     }`}
                   >
                     {step.step}
                   </span>
                 </div>
                 {step.detail && (
-                  <p className="text-xs text-[#8BA3C7] mt-0.5 ml-6 truncate">{step.detail}</p>
+                  <p className="text-xs text-text-muted mt-0.5 ml-6 truncate">{step.detail}</p>
                 )}
               </div>
             </div>
@@ -352,12 +352,12 @@ export default function Phase1ProcessingPage() {
 
       {/* Error state */}
       {isError && runStatus?.error_message && (
-        <div className="mt-6 p-4 bg-[#1A0808] border border-[#EF4444] rounded-xl">
-          <p className="text-[#EF4444] text-sm font-medium mb-1">Processing error</p>
-          <p className="text-[#FCA5A5] text-xs font-mono">{runStatus.error_message}</p>
+        <div className="mt-6 p-4 bg-status-danger/5 border border-status-danger rounded-xl">
+          <p className="text-status-danger text-sm font-medium mb-1">Processing error</p>
+          <p className="text-status-danger text-xs font-mono">{runStatus.error_message}</p>
           <a
             href={`/studies/${studyId}/phase1`}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#8BA3C7] hover:text-[#F0F4FF] transition-colors"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-heading transition-colors"
           >
             ← Return to re-run
           </a>
@@ -365,7 +365,7 @@ export default function Phase1ProcessingPage() {
       )}
 
       {/* Footer note */}
-      <p className="text-center text-[#4A6580] text-xs mt-8">
+      <p className="text-center text-text-secondary text-xs mt-8">
         Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
       </p>
     </div>

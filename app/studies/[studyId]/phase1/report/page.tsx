@@ -25,7 +25,7 @@ export default async function Phase1ReportPage({
   if (!study.phase1_run_id) {
     return (
       <div className="max-w-2xl mx-auto px-8 py-16 text-center">
-        <p className="text-[#8BA3C7]">No Phase 1 report yet. Run the analysis first.</p>
+        <p className="text-text-muted">No Phase 1 report yet. Run the analysis first.</p>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export default async function Phase1ReportPage({
     // Run might still be processing
     return (
       <div className="max-w-2xl mx-auto px-8 py-16 text-center">
-        <p className="text-[#8BA3C7]">Report is still being generated…</p>
+        <p className="text-text-muted">Report is still being generated…</p>
       </div>
     );
   }

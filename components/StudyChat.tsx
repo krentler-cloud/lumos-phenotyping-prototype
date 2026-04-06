@@ -207,8 +207,8 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
         onClick={() => isOpen ? handleClose() : setIsOpen(true)}
         className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 print-hide ${
           isOpen
-            ? "bg-[#1E3A5F] text-[#8BA3C7] hover:bg-[#2A4A70]"
-            : "bg-[#4F8EF7] text-white hover:bg-[#3A7AE8]"
+            ? "bg-nav-item-active-bg text-text-muted hover:bg-nav-item-active-bg"
+            : "bg-brand-core text-white hover:bg-brand-hover"
         }`}
         title={isOpen ? "Close AI Chat" : `Ask AI about ${drugName}`}
       >
@@ -226,26 +226,26 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
       {/* Chat panel */}
       {isOpen && (
         <div
-          className="fixed z-50 w-[440px] max-w-[calc(100vw-2rem)] flex flex-col bg-[#070F1E] border border-[#1E3A5F] rounded-2xl shadow-2xl print-hide"
+          className="fixed z-50 w-[440px] max-w-[calc(100vw-2rem)] flex flex-col bg-bg-overlay border border-border-subtle rounded-2xl shadow-2xl print-hide"
           style={{ height: "560px", bottom: "5rem", right: "1.5rem" }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E3A5F] flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle flex-shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#4F8EF7]/20 border border-[#4F8EF7]/40 flex items-center justify-center">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4F8EF7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-6 h-6 rounded-full bg-brand-core/20 border border-brand-core/40 flex items-center justify-center">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--brand-core)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
               </div>
               <div>
-                <p className="text-[#F0F4FF] text-xs font-semibold">Ask AI · {pageLabel}</p>
-                <p className="text-[#4A6580] text-[10px]">Live corpus retrieval · Grounded answers</p>
+                <p className="text-text-heading text-xs font-semibold">Ask AI · {pageLabel}</p>
+                <p className="text-text-secondary text-[10px]">Live corpus retrieval · Grounded answers</p>
               </div>
             </div>
             {messages.length > 0 && (
               <button
                 onClick={() => setMessages([])}
-                className="text-[10px] text-[#4A6580] hover:text-[#8BA3C7] transition-colors px-2 py-1 rounded border border-[#1E3A5F] hover:border-[#4F8EF7]"
+                className="text-[10px] text-text-secondary hover:text-text-muted transition-colors px-2 py-1 rounded border border-border-subtle hover:border-brand-core"
               >
                 Clear
               </button>
@@ -256,19 +256,19 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {showSuggestions && (
               <div>
-                <p className="text-[#4A6580] text-[10px] uppercase tracking-wider mb-2">Questions to consider</p>
+                <p className="text-text-secondary text-[10px] uppercase tracking-wider mb-2">Questions to consider</p>
                 <div className="space-y-1.5">
                   {suggestions.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(s)}
-                      className="w-full text-left text-xs px-3 py-2 rounded-lg bg-[#0F1F3D] border border-[#1E3A5F] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors leading-relaxed"
+                      className="w-full text-left text-xs px-3 py-2 rounded-lg bg-bg-surface border border-border-subtle text-text-muted hover:text-text-heading hover:border-brand-core transition-colors leading-relaxed"
                     >
                       {s}
                     </button>
                   ))}
                 </div>
-                <p className="text-[#2A4060] text-[10px] mt-3">
+                <p className="text-nav-item-muted text-[10px] mt-3">
                   Each response retrieves live passages from the scientific corpus.
                 </p>
               </div>
@@ -278,11 +278,11 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
               <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-[#4F8EF7] text-white"
-                    : "bg-[#0F1F3D] border border-[#1E3A5F] text-[#D0DCF0]"
+                    ? "bg-brand-core text-white"
+                    : "bg-bg-surface border border-border-subtle text-text-body"
                 }`}>
                   {msg.content || (msg.streaming ? (
-                    <span className="flex items-center gap-1.5 text-[#4A6580]">
+                    <span className="flex items-center gap-1.5 text-text-secondary">
                       <span className="animate-pulse">●</span>
                       <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>
                       <span className="animate-pulse" style={{ animationDelay: "0.3s" }}>●</span>
@@ -290,7 +290,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
                   ) : "")}
                 </div>
                 {msg.role === "assistant" && !msg.streaming && !!msg.corpusSources && (
-                  <p className="text-[10px] text-[#2A4060] mt-1 flex items-center gap-1">
+                  <p className="text-[10px] text-nav-item-muted mt-1 flex items-center gap-1">
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                     </svg>
@@ -303,7 +303,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
           </div>
 
           {/* Input */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-[#1E3A5F]">
+          <div className="flex-shrink-0 px-4 py-3 border-t border-border-subtle">
             <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}
@@ -313,20 +313,20 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
                 placeholder="Ask about the analysis…"
                 rows={1}
                 disabled={isStreaming}
-                className="flex-1 resize-none bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl px-3 py-2 text-xs text-[#F0F4FF] placeholder-[#4A6580] focus:outline-none focus:border-[#4F8EF7] transition-colors disabled:opacity-50"
+                className="flex-1 resize-none bg-bg-surface border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-heading placeholder-text-secondary focus:outline-none focus:border-brand-core transition-colors disabled:opacity-50"
                 style={{ minHeight: "36px", maxHeight: "100px" }}
               />
               <button
                 onClick={() => sendMessage(input)}
                 disabled={!input.trim() || isStreaming}
-                className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#4F8EF7] text-white flex items-center justify-center hover:bg-[#3A7AE8] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex-shrink-0 w-8 h-8 rounded-lg bg-brand-core text-white flex items-center justify-center hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
               </button>
             </div>
-            <p className="text-[10px] text-[#2A4060] mt-1.5 text-center">Enter to send · Shift+Enter for newline</p>
+            <p className="text-[10px] text-nav-item-muted mt-1.5 text-center">Enter to send · Shift+Enter for newline</p>
           </div>
         </div>
       )}

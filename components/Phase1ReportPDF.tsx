@@ -11,16 +11,16 @@ import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
 // ── Styles ────────────────────────────────────────────────────────────────────
 const c = {
   navy:    "#0A1628",
-  blue:    "#4F8EF7",
-  green:   "#22C55E",
-  red:     "#EF4444",
-  amber:   "#F59E0B",
-  purple:  "#A855F7",
-  white:   "#F0F4FF",
-  muted:   "#8BA3C7",
-  dim:     "#4A6580",
-  border:  "#1E3A5F",
-  card:    "#0F1F3D",
+  blue:    "var(--brand-core)",
+  green:   "var(--status-success)",
+  red:     "var(--status-danger)",
+  amber:   "var(--status-warning)",
+  purple:  "var(--status-purple)",
+  white:   "var(--text-heading)",
+  muted:   "var(--text-muted)",
+  dim:     "var(--text-secondary)",
+  border:  "var(--border-subtle)",
+  card:    "var(--bg-surface)",
   dark:    "#070F1E",
 };
 
@@ -58,7 +58,7 @@ const s = StyleSheet.create({
   // ── Typography
   h2: { color: c.white, fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 4 },
   h3: { color: c.white, fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 2 },
-  body: { color: "#D0DCF0", fontSize: 8, lineHeight: 1.5 },
+  body: { color: "var(--text-body)", fontSize: 8, lineHeight: 1.5 },
   label: { color: c.muted, fontSize: 6.5, letterSpacing: 0.8, marginBottom: 2, fontFamily: "Helvetica-Bold" },
   small: { color: c.dim, fontSize: 7, lineHeight: 1.4 },
   italic: { color: c.dim, fontSize: 7, fontStyle: "italic" },

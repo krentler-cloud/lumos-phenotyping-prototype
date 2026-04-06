@@ -27,7 +27,7 @@ export default async function ReportPage({
       <div className="max-w-5xl mx-auto px-6 pt-6">
         <Link
           href="/runs"
-          className="text-[#8BA3C7] hover:text-[#F0F4FF] text-sm transition-colors"
+          className="text-text-muted hover:text-text-heading text-sm transition-colors"
         >
           ← All Runs
         </Link>

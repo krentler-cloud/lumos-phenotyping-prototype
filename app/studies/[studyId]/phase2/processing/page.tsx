@@ -120,15 +120,15 @@ export default function Phase2ProcessingPage() {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
         <div className="mb-10">
-          <div className="h-3 w-24 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
-          <div className="h-7 w-64 bg-[#1E3A5F] rounded mb-3 animate-pulse" />
-          <div className="h-4 w-96 bg-[#1E3A5F] rounded animate-pulse" />
+          <div className="h-3 w-24 bg-nav-item-active-bg rounded mb-3 animate-pulse" />
+          <div className="h-7 w-64 bg-nav-item-active-bg rounded mb-3 animate-pulse" />
+          <div className="h-4 w-96 bg-nav-item-active-bg rounded animate-pulse" />
         </div>
         <div className="space-y-2">
           {ALL_STEPS.map(name => (
-            <div key={name} className="flex items-center gap-3 p-3 rounded-lg border border-[#0D1F3A] bg-[#080F1F]">
-              <div className="w-5 h-5 rounded-full bg-[#1E3A5F] animate-pulse flex-shrink-0" />
-              <div className="h-4 w-48 bg-[#1E3A5F] rounded animate-pulse" />
+            <div key={name} className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-bg-overlay">
+              <div className="w-5 h-5 rounded-full bg-nav-item-active-bg animate-pulse flex-shrink-0" />
+              <div className="h-4 w-48 bg-nav-item-active-bg rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -141,14 +141,14 @@ export default function Phase2ProcessingPage() {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
         <div className="mb-8">
-          <p className="text-[#22C55E] text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
-          <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">Analysis Complete</h1>
-          <p className="text-[#8BA3C7] text-sm">
+          <p className="text-status-success text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
+          <h1 className="text-2xl font-bold text-text-heading mb-2">Analysis Complete</h1>
+          <p className="text-text-muted text-sm">
             {ALL_STEPS.length} pipeline steps completed · Powered by Claude Sonnet · N=16 clinical patients
           </p>
           <a
             href={`/studies/${studyId}/phase2/subtyping`}
-            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-[#4F8EF7] text-white font-semibold text-sm rounded-xl hover:bg-[#3A7AE8] transition-colors"
+            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
           >
             View Subtyping Results →
           </a>
@@ -160,21 +160,21 @@ export default function Phase2ProcessingPage() {
             const isLast = idx === ALL_STEPS.length - 1;
             return (
               <div key={name}>
-                <div className="p-4 rounded-xl border border-[#1A4A1A] bg-[#0A1F0A]">
+                <div className="p-4 rounded-xl border border-status-success/30 bg-status-success/5">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-[#22C55E] text-base">✓</span>
+                    <span className="text-status-success text-base">✓</span>
                     <span className="text-base">{STEP_ICONS[name]}</span>
-                    <span className="text-[#F0F4FF] font-semibold text-sm">{name}</span>
+                    <span className="text-text-heading font-semibold text-sm">{name}</span>
                   </div>
-                  <p className="text-[#D0DCF0] text-xs leading-relaxed mb-2">{desc?.what}</p>
-                  <p className="text-[#4F8EF7] text-xs leading-relaxed">
-                    <span className="font-semibold text-[#4F8EF7]">Why it matters: </span>
+                  <p className="text-text-body text-xs leading-relaxed mb-2">{desc?.what}</p>
+                  <p className="text-brand-core text-xs leading-relaxed">
+                    <span className="font-semibold text-brand-core">Why it matters: </span>
                     {desc?.why}
                   </p>
                 </div>
                 {!isLast && (
                   <div className="flex justify-center py-1">
-                    <div className="w-px h-4 bg-[#22C55E] opacity-40" />
+                    <div className="w-px h-4 bg-status-success opacity-40" />
                   </div>
                 )}
               </div>
@@ -185,11 +185,11 @@ export default function Phase2ProcessingPage() {
         <div className="mt-8 text-center">
           <a
             href={`/studies/${studyId}/phase2/subtyping`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F8EF7] text-white font-semibold text-sm rounded-xl hover:bg-[#3A7AE8] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
           >
             View Subtyping Results →
           </a>
-          <p className="text-[#4A6580] text-xs mt-3">
+          <p className="text-text-secondary text-xs mt-3">
             Questions about the methodology? See the Methodology tab in the report.
           </p>
         </div>
@@ -201,9 +201,9 @@ export default function Phase2ProcessingPage() {
   if (isError) {
     return (
       <div className="max-w-2xl mx-auto px-8 py-12">
-        <div className="p-6 rounded-xl border border-[#EF4444]/30 bg-[#1A0A0A]">
-          <p className="text-[#EF4444] font-semibold mb-2">Clinical Analysis Failed</p>
-          <p className="text-[#8BA3C7] text-sm">{runStatus?.error_message ?? "Unknown error"}</p>
+        <div className="p-6 rounded-xl border border-status-danger/30 bg-status-danger/5">
+          <p className="text-status-danger font-semibold mb-2">Clinical Analysis Failed</p>
+          <p className="text-text-muted text-sm">{runStatus?.error_message ?? "Unknown error"}</p>
         </div>
       </div>
     );
@@ -213,20 +213,20 @@ export default function Phase2ProcessingPage() {
   return (
     <div className="max-w-2xl mx-auto px-8 py-12">
       <div className="mb-8">
-        <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">
+        <p className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
+        <h1 className="text-2xl font-bold text-text-heading mb-2">
           {runningStep ? `${runningStep.step}${dots}` : `Initializing${dots}`}
         </h1>
-        <p className="text-[#8BA3C7] text-sm">
+        <p className="text-text-muted text-sm">
           Running Lumos v2.1 · N=16 patient outcomes · Powered by Claude Sonnet
         </p>
-        <div className="mt-4 h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
+        <div className="mt-4 h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#A855F7] to-[#4F8EF7] rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-status-purple to-brand-core rounded-full transition-all duration-500"
             style={{ width: `${Math.max(progress, 3)}%` }}
           />
         </div>
-        <p className="text-[#4A6580] text-xs mt-1">{completeCount} of {ALL_STEPS.length} steps complete</p>
+        <p className="text-text-secondary text-xs mt-1">{completeCount} of {ALL_STEPS.length} steps complete</p>
       </div>
 
       <div className="space-y-2">
@@ -242,36 +242,36 @@ export default function Phase2ProcessingPage() {
               key={s.step}
               className="rounded-lg border transition-all"
               style={{
-                borderColor: isRunning ? "#A855F740" : isComplete ? "#22C55E30" : "#0D1F3A",
-                background: isRunning ? "#130A2A" : isComplete ? "#0A1A0A" : "#080F1F",
+                borderColor: isRunning ? "var(--status-purple, #A855F7)" : isComplete ? "var(--status-success, #22C55E)" : "var(--border-subtle)",
+                background: isRunning ? "var(--bg-overlay)" : isComplete ? "var(--bg-overlay)" : "var(--bg-overlay)",
               }}
             >
               {/* Step header row */}
               <div className="flex items-center gap-3 p-3">
                 <span
                   className="text-sm font-bold flex-shrink-0 w-4 text-center"
-                  style={{ color: isComplete ? "#22C55E" : isRunning ? "#A855F7" : isError ? "#EF4444" : "#1E3A5F" }}
+                  style={{ color: isComplete ? "var(--status-success)" : isRunning ? "var(--status-purple)" : isError ? "var(--status-danger)" : "var(--border-subtle)" }}
                 >
                   {isComplete ? "✓" : isRunning ? "●" : isError ? "✕" : "○"}
                 </span>
                 <span className="text-sm">{STEP_ICONS[s.step]}</span>
-                <span className="text-sm font-medium" style={{ color: isPending ? "#4A6580" : isRunning ? "#A855F7" : "#F0F4FF" }}>
+                <span className="text-sm font-medium" style={{ color: isPending ? "var(--text-secondary)" : isRunning ? "var(--status-purple)" : "var(--text-heading)" }}>
                   {s.step}
                 </span>
                 {isRunning && (
-                  <span className="ml-auto text-[#A855F7] text-xs animate-pulse">Running{dots}</span>
+                  <span className="ml-auto text-status-purple text-xs animate-pulse">Running{dots}</span>
                 )}
                 {s.detail && !isRunning && (
-                  <span className="ml-auto text-[#4A6580] text-xs font-mono">{s.detail}</span>
+                  <span className="ml-auto text-text-secondary text-xs font-mono">{s.detail}</span>
                 )}
               </div>
 
               {/* Expanded description for completed steps */}
               {isComplete && desc && (
-                <div className="px-4 pb-3 ml-7 border-t border-[#22C55E20] pt-2.5 space-y-1.5">
-                  <p className="text-xs text-[#D0DCF0] leading-relaxed">{desc.what}</p>
-                  <p className="text-xs text-[#4A6580] leading-relaxed">
-                    <span className="text-[#4F8EF7] font-medium">Why it matters: </span>
+                <div className="px-4 pb-3 ml-7 border-t border-status-success/12 pt-2.5 space-y-1.5">
+                  <p className="text-xs text-text-body leading-relaxed">{desc.what}</p>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    <span className="text-brand-core font-medium">Why it matters: </span>
                     {desc.why}
                   </p>
                 </div>
@@ -279,8 +279,8 @@ export default function Phase2ProcessingPage() {
 
               {/* Running step — show description preview */}
               {isRunning && desc && (
-                <div className="px-4 pb-3 ml-7 border-t border-[#A855F720] pt-2.5">
-                  <p className="text-xs text-[#8BA3C7] leading-relaxed italic">{desc.what}</p>
+                <div className="px-4 pb-3 ml-7 border-t border-status-purple/12 pt-2.5">
+                  <p className="text-xs text-text-muted leading-relaxed italic">{desc.what}</p>
                 </div>
               )}
             </div>

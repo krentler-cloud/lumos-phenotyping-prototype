@@ -44,23 +44,23 @@ function LoginForm() {
       <div className="mb-8">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-9 h-9 rounded-xl bg-[#4F8EF7] flex items-center justify-center font-bold text-white text-base">
+          <div className="w-9 h-9 rounded-xl bg-brand-core flex items-center justify-center font-bold text-white text-base">
             L
           </div>
           <div>
-            <div className="text-[#F0F4FF] font-semibold text-sm">Lumos AI™</div>
-            <div className="text-[#4F8EF7] text-[10px] uppercase tracking-widest">Headlamp Health</div>
+            <div className="text-text-heading font-semibold text-sm">Lumos AI™</div>
+            <div className="text-brand-core text-[10px] uppercase tracking-widest">Headlamp Health</div>
           </div>
         </div>
 
-        <h1 className="text-xl font-bold text-[#F0F4FF] mb-1">Private Preview</h1>
-        <p className="text-[#8BA3C7] text-sm">
+        <h1 className="text-xl font-bold text-text-heading mb-1">Private Preview</h1>
+        <p className="text-text-muted text-sm">
           Enter the access password shared by the Headlamp team.
         </p>
       </div>
 
       <div className="mb-4">
-        <label className="block text-[#8BA3C7] text-xs uppercase tracking-widest mb-2">
+        <label className="block text-text-muted text-xs uppercase tracking-widest mb-2">
           Access Password
         </label>
         <input
@@ -70,23 +70,23 @@ function LoginForm() {
           placeholder="••••••••••••"
           autoFocus
           required
-          className="w-full px-4 py-3 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl text-[#F0F4FF] placeholder-[#2A4060] text-sm focus:outline-none focus:border-[#4F8EF7] transition-colors"
+          className="w-full px-4 py-3 bg-bg-surface border border-border-subtle rounded-xl text-text-heading placeholder-nav-item-muted text-sm focus:outline-none focus:border-brand-core transition-colors"
         />
       </div>
 
       {error && (
-        <p className="text-[#EF4444] text-xs mb-4">{error}</p>
+        <p className="text-status-danger text-xs mb-4">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading || !password}
-        className="w-full py-3 bg-[#4F8EF7] text-white font-semibold text-sm rounded-xl hover:bg-[#3A7AE8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-3 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Checking…" : "Enter"}
       </button>
 
-      <p className="text-center text-[#4A6580] text-xs mt-6">
+      <p className="text-center text-text-secondary text-xs mt-6">
         Need access? Contact the Headlamp team.
       </p>
     </form>
@@ -95,7 +95,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#0A1628] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-bg-page flex items-center justify-center px-6">
       <Suspense>
         <LoginForm />
       </Suspense>

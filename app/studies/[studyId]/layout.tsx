@@ -54,13 +54,13 @@ export default async function StudyLayout({
   const predictedSubtype = phase2Report?.ml_result?.predicted_subtype ?? null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0A1628]">
+    <div className="flex h-screen overflow-hidden bg-bg-page">
       <div className="print-hide"><Sidebar study={study} /></div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="print-hide flex-shrink-0 h-14 bg-[#070F1E] border-b border-[#1E3A5F] flex items-center px-6">
-          <div className="text-[#8BA3C7] text-sm" id="page-title" />
+        <header className="print-hide flex-shrink-0 h-14 bg-bg-surface border-b border-border-subtle flex items-center px-6">
+          <div className="text-text-muted text-sm" id="page-title" />
         </header>
 
         {/* Scrollable main content */}

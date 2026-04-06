@@ -41,15 +41,15 @@ type SortKey =
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SUBTYPE_COLORS: Record<string, string> = {
-  A: "#22C55E",
-  B: "#EF4444",
-  C: "#F59E0B",
+  A: "var(--status-success)",
+  B: "var(--status-danger)",
+  C: "var(--status-warning)",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  responder: "#22C55E",
-  nonresponder: "#EF4444",
-  uncertain: "#F59E0B",
+  responder: "var(--status-success)",
+  nonresponder: "var(--status-danger)",
+  uncertain: "var(--status-warning)",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -95,7 +95,7 @@ function MadrsSparkline({ p }: { p: ClinicalPatientFull }) {
 
   const reduction = wk8 !== null ? (p.baseline_madrs - wk8) / p.baseline_madrs : null;
   const color =
-    reduction === null ? "#F59E0B" : reduction >= 0.5 ? "#22C55E" : reduction >= 0 ? "#4F8EF7" : "#EF4444";
+    reduction === null ? "var(--status-warning)" : reduction >= 0.5 ? "var(--status-success)" : reduction >= 0 ? "var(--brand-core)" : "var(--status-danger)";
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
@@ -118,7 +118,7 @@ function MadrsSparkline({ p }: { p: ClinicalPatientFull }) {
 // ── Patient detail panel ──────────────────────────────────────────────────────
 
 function DetailPanel({ p }: { p: ClinicalPatientFull }) {
-  const subtypeColor = SUBTYPE_COLORS[p.subtype_label] ?? "#8BA3C7";
+  const subtypeColor = SUBTYPE_COLORS[p.subtype_label] ?? "var(--text-muted)";
   const reduction = madrsReduction(p);
 
   // Mini MADRS trajectory SVG (larger)
@@ -128,28 +128,28 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
   const xs = [PAD, PAD + (W - PAD * 2) / 3, PAD + (2 * (W - PAD * 2)) / 3, W - PAD];
   const scaleY = (v: number) => PAD + ((vMax - v) / (vMax - vMin)) * (H - PAD * 2);
   const polyPts = timepoints.map((v, i) => `${xs[i]},${scaleY(v)}`).join(" ");
-  const lineColor = reduction === null ? "#F59E0B" : reduction >= 0.5 ? "#22C55E" : reduction >= 0 ? "#4F8EF7" : "#EF4444";
+  const lineColor = reduction === null ? "var(--status-warning)" : reduction >= 0.5 ? "var(--status-success)" : reduction >= 0 ? "var(--brand-core)" : "var(--status-danger)";
   const labels = ["Wk 0", "Wk 2", "Wk 4", "Wk 8"];
 
   return (
     <div
       className="p-5 border-t-2"
-      style={{ background: "#0B1829", borderColor: subtypeColor }}
+      style={{ background: "var(--bg-overlay)", borderColor: subtypeColor }}
     >
       <div className="grid grid-cols-5 gap-5">
         {/* Left col — biomarkers + trajectory */}
         <div className="col-span-3 space-y-4">
           {/* MADRS trajectory */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">MADRS Trajectory</p>
-            <div className="bg-[#080F1F] rounded-lg p-3 border border-[#1E3A5F]">
+            <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">MADRS Trajectory</p>
+            <div className="bg-bg-overlay rounded-lg p-3 border border-border-subtle">
               <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block w-full">
                 {/* Grid lines */}
                 {[10, 20, 30, 40].map(v => (
                   <line
                     key={v}
                     x1={PAD} y1={scaleY(v)} x2={W - PAD} y2={scaleY(v)}
-                    stroke="#1E3A5F" strokeWidth="0.5" strokeDasharray="2,2"
+                    stroke="var(--border-subtle)" strokeWidth="0.5" strokeDasharray="2,2"
                   />
                 ))}
                 <polyline points={polyPts} fill="none" stroke={lineColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -158,8 +158,8 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
                 {timepoints.map((v, i) => (
                   <g key={i}>
                     <circle cx={xs[i]} cy={scaleY(v)} r="3" fill={lineColor} />
-                    <text x={xs[i]} y={scaleY(v) - 6} textAnchor="middle" fontSize="8" fill="#8BA3C7">{v}</text>
-                    <text x={xs[i]} y={H - 2} textAnchor="middle" fontSize="8" fill="#4A6580">{labels[i]}</text>
+                    <text x={xs[i]} y={scaleY(v) - 6} textAnchor="middle" fontSize="8" fill="var(--text-muted)">{v}</text>
+                    <text x={xs[i]} y={H - 2} textAnchor="middle" fontSize="8" fill="var(--text-secondary)">{labels[i]}</text>
                   </g>
                 ))}
               </svg>
@@ -168,7 +168,7 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
 
           {/* Baseline biomarkers grid */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">Baseline Biomarkers</p>
+            <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Baseline Biomarkers</p>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "BDNF", value: `${fmt1(p.baseline_bdnf_ng_ml)} ng/mL`, highlight: p.baseline_bdnf_ng_ml < 15 },
@@ -182,12 +182,12 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
                   key={b.label}
                   className="p-2 rounded-lg border"
                   style={{
-                    background: b.highlight ? `${subtypeColor}10` : "#080F1F",
-                    borderColor: b.highlight ? `${subtypeColor}40` : "#1E3A5F",
+                    background: b.highlight ? `${subtypeColor}10` : "var(--bg-overlay)",
+                    borderColor: b.highlight ? `${subtypeColor}40` : "var(--border-subtle)",
                   }}
                 >
-                  <p className="text-[9px] uppercase tracking-wider text-[#4A6580]">{b.label}</p>
-                  <p className="text-xs font-mono font-semibold mt-0.5" style={{ color: b.highlight ? subtypeColor : "#D0DCF0" }}>
+                  <p className="text-[9px] uppercase tracking-wider text-text-secondary">{b.label}</p>
+                  <p className="text-xs font-mono font-semibold mt-0.5" style={{ color: b.highlight ? subtypeColor : "var(--text-body)" }}>
                     {b.value}
                   </p>
                 </div>
@@ -198,18 +198,18 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
           {/* Follow-up biomarkers */}
           {(p.wk2_bdnf !== null || p.wk4_il6 !== null) && (
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">Follow-Up Biomarkers</p>
+              <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Follow-Up Biomarkers</p>
               <div className="grid grid-cols-2 gap-2">
                 {p.wk2_bdnf !== null && (
-                  <div className="p-2 rounded-lg border border-[#1E3A5F] bg-[#080F1F]">
-                    <p className="text-[9px] uppercase tracking-wider text-[#4A6580]">BDNF Wk 2</p>
-                    <p className="text-xs font-mono font-semibold text-[#D0DCF0] mt-0.5">{fmt1(p.wk2_bdnf)} ng/mL</p>
+                  <div className="p-2 rounded-lg border border-border-subtle bg-bg-overlay">
+                    <p className="text-[9px] uppercase tracking-wider text-text-secondary">BDNF Wk 2</p>
+                    <p className="text-xs font-mono font-semibold text-text-body mt-0.5">{fmt1(p.wk2_bdnf)} ng/mL</p>
                   </div>
                 )}
                 {p.wk4_il6 !== null && (
-                  <div className="p-2 rounded-lg border border-[#1E3A5F] bg-[#080F1F]">
-                    <p className="text-[9px] uppercase tracking-wider text-[#4A6580]">IL-6 Wk 4</p>
-                    <p className="text-xs font-mono font-semibold text-[#D0DCF0] mt-0.5">{fmt1(p.wk4_il6)} pg/mL</p>
+                  <div className="p-2 rounded-lg border border-border-subtle bg-bg-overlay">
+                    <p className="text-[9px] uppercase tracking-wider text-text-secondary">IL-6 Wk 4</p>
+                    <p className="text-xs font-mono font-semibold text-text-body mt-0.5">{fmt1(p.wk4_il6)} pg/mL</p>
                   </div>
                 )}
               </div>
@@ -235,11 +235,11 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
                 {STATUS_LABELS[p.response_status]}
               </span>
             </div>
-            <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">Subtype Assignment</p>
-            <p className="text-[#8BA3C7] text-xs leading-relaxed">{subtypeRationale(p)}</p>
+            <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Subtype Assignment</p>
+            <p className="text-text-muted text-xs leading-relaxed">{subtypeRationale(p)}</p>
             {reduction !== null && (
               <div className="mt-3 pt-3 border-t" style={{ borderColor: `${subtypeColor}20` }}>
-                <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">MADRS Reduction (Wk 8)</p>
+                <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">MADRS Reduction (Wk 8)</p>
                 <p className="text-xl font-bold" style={{ color: lineColor }}>
                   {reduction >= 0 ? "-" : "+"}{Math.abs(reduction).toFixed(0)}%
                 </p>
@@ -248,8 +248,8 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
           </div>
 
           {/* Demographics */}
-          <div className="p-4 rounded-xl border border-[#1E3A5F] bg-[#080F1F]">
-            <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-3">Demographics & History</p>
+          <div className="p-4 rounded-xl border border-border-subtle bg-bg-overlay">
+            <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-3">Demographics & History</p>
             <div className="space-y-2">
               {[
                 { label: "Age", value: `${p.age} years` },
@@ -259,8 +259,8 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
                 { label: "Anhedonia subscale", value: `${p.baseline_anhedonia_subscale}/14` },
               ].map(r => (
                 <div key={r.label} className="flex justify-between">
-                  <span className="text-[#4A6580] text-xs">{r.label}</span>
-                  <span className="text-[#D0DCF0] text-xs font-mono">{r.value}</span>
+                  <span className="text-text-secondary text-xs">{r.label}</span>
+                  <span className="text-text-body text-xs font-mono">{r.value}</span>
                 </div>
               ))}
             </div>
@@ -287,18 +287,18 @@ function CohortOverview({ patients }: { patients: ClinicalPatientFull[] }) {
 
   return (
     <div className="grid grid-cols-5 gap-3 mb-6">
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4">
-        <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">Cohort Size</p>
-        <p className="text-2xl font-bold text-[#F0F4FF]">N={n}</p>
-        <p className="text-[#4A6580] text-xs mt-0.5">XYL-1001 Phase 1</p>
+      <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+        <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Cohort Size</p>
+        <p className="text-2xl font-bold text-text-heading">N={n}</p>
+        <p className="text-text-secondary text-xs mt-0.5">XYL-1001 Phase 1</p>
       </div>
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4">
-        <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">Response Rate</p>
-        <p className="text-2xl font-bold text-[#22C55E]">{Math.round((responders / n) * 100)}%</p>
-        <p className="text-[#4A6580] text-xs mt-0.5">{responders} responders</p>
+      <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+        <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Response Rate</p>
+        <p className="text-2xl font-bold text-status-success">{Math.round((responders / n) * 100)}%</p>
+        <p className="text-text-secondary text-xs mt-0.5">{responders} responders</p>
       </div>
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4">
-        <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">Subtypes</p>
+      <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+        <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Subtypes</p>
         <div className="flex items-center gap-2 flex-wrap">
           {[{ label: "A", n: subtypeA }, { label: "B", n: subtypeB }, { label: "C", n: subtypeC }].map(s => (
             <span
@@ -310,17 +310,17 @@ function CohortOverview({ patients }: { patients: ClinicalPatientFull[] }) {
             </span>
           ))}
         </div>
-        <p className="text-[#4A6580] text-xs mt-1.5">{nonresponders} non-resp · {uncertain} uncertain</p>
+        <p className="text-text-secondary text-xs mt-1.5">{nonresponders} non-resp · {uncertain} uncertain</p>
       </div>
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4">
-        <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">Demographics</p>
-        <p className="text-lg font-bold text-[#F0F4FF]">{Math.round(avgAge)} yrs avg</p>
-        <p className="text-[#4A6580] text-xs mt-0.5">{female}F / {n - female}M</p>
+      <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+        <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Demographics</p>
+        <p className="text-lg font-bold text-text-heading">{Math.round(avgAge)} yrs avg</p>
+        <p className="text-text-secondary text-xs mt-0.5">{female}F / {n - female}M</p>
       </div>
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4">
-        <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-1">Avg Baseline MADRS</p>
-        <p className="text-2xl font-bold text-[#F0F4FF]">{fmt1(avgMadrs)}</p>
-        <p className="text-[#4A6580] text-xs mt-0.5">Moderate–severe MDD</p>
+      <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+        <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Avg Baseline MADRS</p>
+        <p className="text-2xl font-bold text-text-heading">{fmt1(avgMadrs)}</p>
+        <p className="text-text-secondary text-xs mt-0.5">Moderate–severe MDD</p>
       </div>
     </div>
   );
@@ -329,8 +329,8 @@ function CohortOverview({ patients }: { patients: ClinicalPatientFull[] }) {
 // ── Sort indicator ────────────────────────────────────────────────────────────
 
 function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
-  if (col !== sortKey) return <span className="text-[#2A4060] ml-1">↕</span>;
-  return <span className="text-[#4F8EF7] ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  if (col !== sortKey) return <span className="text-nav-item-muted ml-1">↕</span>;
+  return <span className="text-brand-core ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -380,17 +380,17 @@ export default function PatientPopulation({
     return list;
   }, [patients, subtypeFilter, sortKey, sortDir]);
 
-  const thClass = "px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-[#4A6580] cursor-pointer hover:text-[#8BA3C7] select-none whitespace-nowrap";
+  const thClass = "px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-text-secondary cursor-pointer hover:text-text-muted select-none whitespace-nowrap";
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-10">
       {/* Header */}
       <div className="mb-8">
-        <p className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-1">
+        <p className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-1">
           Clinical Analysis · Patient Data
         </p>
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">Patient Population</h1>
-        <p className="text-[#8BA3C7] text-sm">
+        <h1 className="text-2xl font-bold text-text-heading mb-1">Patient Population</h1>
+        <p className="text-text-muted text-sm">
           {drugName} · XYL-1001 Phase 1 trial · N={patients.length} enrolled participants
         </p>
       </div>
@@ -409,11 +409,11 @@ export default function PatientPopulation({
               style={
                 subtypeFilter === f
                   ? {
-                      background: f === "All" ? "#1E3A5F" : `${SUBTYPE_COLORS[f]}20`,
-                      color: f === "All" ? "#F0F4FF" : SUBTYPE_COLORS[f],
-                      border: `1px solid ${f === "All" ? "#1E3A5F" : `${SUBTYPE_COLORS[f]}50`}`,
+                      background: f === "All" ? "var(--border-subtle)" : `${SUBTYPE_COLORS[f]}20`,
+                      color: f === "All" ? "var(--text-heading)" : SUBTYPE_COLORS[f],
+                      border: `1px solid ${f === "All" ? "var(--border-subtle)" : `${SUBTYPE_COLORS[f]}50`}`,
                     }
-                  : { background: "transparent", color: "#4A6580", border: "1px solid #1E3A5F" }
+                  : { background: "transparent", color: "var(--text-secondary)", border: "1px solid #1E3A5F" }
               }
             >
               {f === "All" ? "All Patients" : (
@@ -425,7 +425,7 @@ export default function PatientPopulation({
             </button>
           ))}
         </div>
-        <p className="text-[#4A6580] text-xs">
+        <p className="text-text-secondary text-xs">
           {subtypeFilter === "All"
             ? `Showing all ${visible.length} patients`
             : `Showing ${visible.length} Subtype ${subtypeFilter} patients`}
@@ -433,10 +433,10 @@ export default function PatientPopulation({
       </div>
 
       {/* Table */}
-      <div className="bg-[#080F1F] border border-[#1E3A5F] rounded-xl overflow-hidden">
+      <div className="bg-bg-overlay border border-border-subtle rounded-xl overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#0F1F3D] border-b border-[#1E3A5F]">
+            <tr className="bg-bg-surface border-b border-border-subtle">
               <th className={thClass} onClick={() => handleSort("patient_code")}>
                 Patient <SortIcon col="patient_code" sortKey={sortKey} sortDir={sortDir} />
               </th>
@@ -461,7 +461,7 @@ export default function PatientPopulation({
               <th className={thClass} onClick={() => handleSort("madrs_reduction")}>
                 Reduction <SortIcon col="madrs_reduction" sortKey={sortKey} sortDir={sortDir} />
               </th>
-              <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-[#4A6580] whitespace-nowrap">
+              <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-widest text-text-secondary whitespace-nowrap">
                 Trajectory
               </th>
             </tr>
@@ -479,13 +479,13 @@ export default function PatientPopulation({
                   <tr
                     key={p.patient_code}
                     onClick={() => setSelected(isSelected ? null : p.patient_code)}
-                    className="cursor-pointer transition-colors border-b border-[#0D1A2E]"
-                    style={{ background: isSelected ? "#1E3A5F30" : isEven ? "#080F1F" : "#07111F" }}
-                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "#0F1F3D"; }}
-                    onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = isEven ? "#080F1F" : "#07111F"; }}
+                    className="cursor-pointer transition-colors border-b border-border-subtle"
+                    style={{ background: isSelected ? "rgba(var(--border-subtle), 0.18)" : isEven ? "var(--bg-overlay)" : "var(--bg-overlay)" }}
+                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)"; }}
+                    onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = isEven ? "var(--bg-overlay)" : "var(--bg-overlay)"; }}
                   >
                     <td className="px-3 py-2.5">
-                      <span className="text-xs font-mono font-semibold text-[#F0F4FF]">{p.patient_code}</span>
+                      <span className="text-xs font-mono font-semibold text-text-heading">{p.patient_code}</span>
                     </td>
                     <td className="px-3 py-2.5">
                       <span
@@ -503,23 +503,23 @@ export default function PatientPopulation({
                         {STATUS_LABELS[p.response_status]}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-xs font-mono text-[#D0DCF0]">{p.baseline_madrs}</td>
-                    <td className="px-3 py-2.5 text-xs font-mono" style={{ color: p.baseline_bdnf_ng_ml < 15 ? "#22C55E" : "#D0DCF0" }}>
+                    <td className="px-3 py-2.5 text-xs font-mono text-text-body">{p.baseline_madrs}</td>
+                    <td className="px-3 py-2.5 text-xs font-mono" style={{ color: p.baseline_bdnf_ng_ml < 15 ? "var(--status-success)" : "var(--text-body)" }}>
                       {fmt1(p.baseline_bdnf_ng_ml)}
                     </td>
-                    <td className="px-3 py-2.5 text-xs font-mono" style={{ color: p.baseline_il6_pg_ml >= 4 ? "#EF4444" : "#D0DCF0" }}>
+                    <td className="px-3 py-2.5 text-xs font-mono" style={{ color: p.baseline_il6_pg_ml >= 4 ? "var(--status-danger)" : "var(--text-body)" }}>
                       {fmt1(p.baseline_il6_pg_ml)}
                     </td>
-                    <td className="px-3 py-2.5 text-xs font-mono text-[#D0DCF0]">
-                      {p.wk8_madrs !== null ? p.wk8_madrs : <span className="text-[#2A4060]">—</span>}
+                    <td className="px-3 py-2.5 text-xs font-mono text-text-body">
+                      {p.wk8_madrs !== null ? p.wk8_madrs : <span className="text-nav-item-muted">—</span>}
                     </td>
                     <td className="px-3 py-2.5 text-xs font-mono font-semibold">
                       {reduction !== null ? (
-                        <span style={{ color: reduction >= 50 ? "#22C55E" : reduction >= 0 ? "#4F8EF7" : "#EF4444" }}>
+                        <span style={{ color: reduction >= 50 ? "var(--status-success)" : reduction >= 0 ? "var(--brand-core)" : "var(--status-danger)" }}>
                           {reduction >= 0 ? "-" : "+"}{Math.abs(reduction).toFixed(0)}%
                         </span>
                       ) : (
-                        <span className="text-[#2A4060]">N/A</span>
+                        <span className="text-nav-item-muted">N/A</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5">
@@ -540,7 +540,7 @@ export default function PatientPopulation({
         </table>
       </div>
 
-      <p className="text-center text-[#2A4060] text-xs mt-6">
+      <p className="text-center text-nav-item-muted text-xs mt-6">
         Click any row to expand patient detail · Subtype thresholds: BDNF &lt; 15 ng/mL → A · IL-6 ≥ 4 pg/mL → B · Mixed → C
       </p>
     </div>

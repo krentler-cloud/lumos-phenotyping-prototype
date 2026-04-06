@@ -131,19 +131,19 @@ export default async function StudyOverviewPage({
     <div className="max-w-4xl mx-auto px-8 py-12 space-y-10">
       {/* Header */}
       <div>
-        <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-2">
+        <p className="text-brand-core text-xs uppercase tracking-widest mb-2">
           Lumos AI™ · Precision Phenotyping Study
         </p>
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-1">
+        <h1 className="text-2xl font-bold text-text-heading mb-1">
           {study.drug_name}
-          <span className="text-[#8BA3C7] font-normal"> in {study.indication}</span>
+          <span className="text-text-muted font-normal"> in {study.indication}</span>
         </h1>
-        <p className="text-[#4A6580] text-sm">{study.sponsor}</p>
+        <p className="text-text-secondary text-sm">{study.sponsor}</p>
       </div>
 
       {/* Objectives */}
       <div>
-        <h2 className="text-[#8BA3C7] text-xs uppercase tracking-widest mb-4">Study Objectives</h2>
+        <h2 className="text-text-muted text-xs uppercase tracking-widest mb-4">Study Objectives</h2>
         <div className="space-y-3">
           {OBJECTIVES.map((obj) => {
             const status = objectiveStatus(obj.phaseKey);
@@ -157,37 +157,37 @@ export default async function StudyOverviewPage({
               status === "complete" ? "Complete" : status === "active" ? "In Progress" : "Not Started";
             const statusColor =
               status === "complete"
-                ? "text-[#22C55E] bg-[#22C55E20] border-[#22C55E]"
+                ? "text-status-success bg-status-success/12 border-status-success"
                 : status === "active"
-                ? "text-[#4F8EF7] bg-[#4F8EF720] border-[#4F8EF7]"
-                : "text-[#4A6580] bg-[#0F1F3D] border-[#1E3A5F]";
+                ? "text-brand-core bg-brand-core/12 border-brand-core"
+                : "text-text-secondary bg-bg-surface border-border-subtle";
 
             return (
               <div
                 key={obj.number}
-                className={`bg-[#0F1F3D] border border-[#1E3A5F] border-l-4 ${borderColor} rounded-xl p-5`}
+                className={`bg-bg-surface border border-border-subtle border-l-4 ${borderColor} rounded-xl p-5`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1.5">
-                      <span className="text-[#4A6580] font-mono text-xs">{obj.number}</span>
-                      <span className="text-[#F0F4FF] font-semibold text-sm">{obj.title}</span>
+                      <span className="text-text-secondary font-mono text-xs">{obj.number}</span>
+                      <span className="text-text-heading font-semibold text-sm">{obj.title}</span>
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] border ${statusColor}`}
                       >
                         {statusLabel}
                       </span>
                     </div>
-                    <p className="text-[#8BA3C7] text-xs leading-relaxed">{obj.description}</p>
+                    <p className="text-text-muted text-xs leading-relaxed">{obj.description}</p>
                   </div>
                   <div className="flex-shrink-0 text-right">
-                    <p className="text-[#4A6580] text-[10px] uppercase tracking-wider mb-1">
+                    <p className="text-text-secondary text-[10px] uppercase tracking-wider mb-1">
                       {obj.phase}
                     </p>
                     {status === "complete" && (
                       <Link
                         href={`/studies/${studyId}/${obj.reportPath}`}
-                        className="text-[#4F8EF7] text-xs hover:underline"
+                        className="text-brand-core text-xs hover:underline"
                       >
                         View report →
                       </Link>
@@ -202,48 +202,48 @@ export default async function StudyOverviewPage({
 
       {/* Deliverables */}
       <div>
-        <h2 className="text-[#8BA3C7] text-xs uppercase tracking-widest mb-4">Deliverables</h2>
-        <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl overflow-hidden">
+        <h2 className="text-text-muted text-xs uppercase tracking-widest mb-4">Deliverables</h2>
+        <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1E3A5F]">
-                <th className="text-left px-5 py-3 text-[#8BA3C7] text-xs uppercase tracking-wider font-medium">
+              <tr className="border-b border-border-subtle">
+                <th className="text-left px-5 py-3 text-text-muted text-xs uppercase tracking-wider font-medium">
                   Deliverable
                 </th>
-                <th className="text-left px-5 py-3 text-[#8BA3C7] text-xs uppercase tracking-wider font-medium">
+                <th className="text-left px-5 py-3 text-text-muted text-xs uppercase tracking-wider font-medium">
                   Contents
                 </th>
-                <th className="text-left px-5 py-3 text-[#8BA3C7] text-xs uppercase tracking-wider font-medium">
+                <th className="text-left px-5 py-3 text-text-muted text-xs uppercase tracking-wider font-medium">
                   Status
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[#1E3A5F]">
+              <tr className="border-b border-border-subtle">
                 <td className="px-5 py-4">
-                  <p className="text-[#F0F4FF] text-sm font-medium">Pre-Clinical Report</p>
-                  <p className="text-[#4A6580] text-xs mt-0.5">Phase 1 complete</p>
+                  <p className="text-text-heading text-sm font-medium">Pre-Clinical Report</p>
+                  <p className="text-text-secondary text-xs mt-0.5">Phase 1 complete</p>
                 </td>
-                <td className="px-5 py-4 text-[#8BA3C7] text-xs">
+                <td className="px-5 py-4 text-text-muted text-xs">
                   Responder phenotype · Efficacy signals · Cross-species evidence · Exploratory biomarkers
                 </td>
                 <td className="px-5 py-4">
                   {phase1Complete ? (
                     <Link
                       href={`/studies/${studyId}/phase1/report`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-[#22C55E] bg-[#22C55E20] border-[#22C55E] hover:bg-[#22C55E30] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-status-success bg-status-success/12 border-status-success hover:bg-status-success/18 transition-colors"
                     >
                       Complete →
                     </Link>
                   ) : study.phase1_run_id ? (
                     <Link
                       href={`/studies/${studyId}/phase1/processing`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-[#4F8EF7] bg-[#4F8EF720] border-[#4F8EF7]"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-brand-core bg-brand-core/12 border-brand-core"
                     >
                       Processing
                     </Link>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-full text-xs border text-[#4A6580] bg-[#0A1628] border-[#1E3A5F]">
+                    <span className="px-2.5 py-1 rounded-full text-xs border text-text-secondary bg-bg-page border-border-subtle">
                       Pending
                     </span>
                   )}
@@ -251,29 +251,29 @@ export default async function StudyOverviewPage({
               </tr>
               <tr>
                 <td className="px-5 py-4">
-                  <p className="text-[#F0F4FF] text-sm font-medium">Final Report + CRO Recommendations</p>
-                  <p className="text-[#4A6580] text-xs mt-0.5">Phase 2 complete</p>
+                  <p className="text-text-heading text-sm font-medium">Final Report + CRO Recommendations</p>
+                  <p className="text-text-secondary text-xs mt-0.5">Phase 2 complete</p>
                 </td>
-                <td className="px-5 py-4 text-[#8BA3C7] text-xs">
+                <td className="px-5 py-4 text-text-muted text-xs">
                   Clinical subtyping · ML predictions · SHAP attributions · CRO screening prompts
                 </td>
                 <td className="px-5 py-4">
                   {phase2Complete ? (
                     <Link
                       href={`/studies/${studyId}/phase2/report`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-[#22C55E] bg-[#22C55E20] border-[#22C55E] hover:bg-[#22C55E30] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-status-success bg-status-success/12 border-status-success hover:bg-status-success/18 transition-colors"
                     >
                       Complete →
                     </Link>
                   ) : study.phase2_run_id ? (
                     <Link
                       href={`/studies/${studyId}/phase2/processing`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-[#4F8EF7] bg-[#4F8EF720] border-[#4F8EF7]"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border text-brand-core bg-brand-core/12 border-brand-core"
                     >
                       Processing
                     </Link>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-full text-xs border text-[#4A6580] bg-[#0A1628] border-[#1E3A5F]">
+                    <span className="px-2.5 py-1 rounded-full text-xs border text-text-secondary bg-bg-page border-border-subtle">
                       Pending
                     </span>
                   )}
@@ -286,19 +286,19 @@ export default async function StudyOverviewPage({
 
       {/* How Lumos Works */}
       <div>
-        <h2 className="text-[#8BA3C7] text-xs uppercase tracking-widest mb-4">How Lumos AI Works</h2>
+        <h2 className="text-text-muted text-xs uppercase tracking-widest mb-4">How Lumos AI Works</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {METHODOLOGY_STEPS.map((step, i) => (
             <div key={step.title} className="relative">
               {i < METHODOLOGY_STEPS.length - 1 && (
-                <div className="hidden md:block absolute top-6 left-full w-3 z-10 text-center text-[#1E3A5F] text-xs">
+                <div className="hidden md:block absolute top-6 left-full w-3 z-10 text-center text-nav-item-muted text-xs">
                   →
                 </div>
               )}
-              <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4 h-full">
-                <div className="text-[#4F8EF7] text-lg mb-2">{step.icon}</div>
-                <p className="text-[#F0F4FF] text-xs font-semibold mb-1.5">{step.title}</p>
-                <p className="text-[#4A6580] text-[11px] leading-relaxed">{step.description}</p>
+              <div className="bg-bg-surface border border-border-subtle rounded-xl p-4 h-full">
+                <div className="text-brand-core text-lg mb-2">{step.icon}</div>
+                <p className="text-text-heading text-xs font-semibold mb-1.5">{step.title}</p>
+                <p className="text-text-secondary text-[11px] leading-relaxed">{step.description}</p>
               </div>
             </div>
           ))}
@@ -310,7 +310,7 @@ export default async function StudyOverviewPage({
         {ctaPrimary && (
           <Link
             href={ctaPrimary.href}
-            className="bg-[#4F8EF7] hover:bg-[#3A7AE4] text-white font-semibold py-3 px-6 rounded-xl text-sm transition-colors flex items-center gap-2"
+            className="bg-brand-core hover:bg-brand-hover text-white font-semibold py-3 px-6 rounded-xl text-sm transition-colors flex items-center gap-2"
           >
             <span>⚡</span>
             {ctaPrimary.label}
@@ -319,7 +319,7 @@ export default async function StudyOverviewPage({
         {ctaSecondary && (
           <Link
             href={ctaSecondary.href}
-            className="bg-[#0F1F3D] hover:bg-[#1E3A5F] text-[#8BA3C7] hover:text-[#F0F4FF] border border-[#1E3A5F] font-medium py-3 px-6 rounded-xl text-sm transition-colors"
+            className="bg-bg-surface hover:bg-nav-item-hover text-text-muted hover:text-text-heading border border-border-subtle font-medium py-3 px-6 rounded-xl text-sm transition-colors"
           >
             {ctaSecondary.label}
           </Link>

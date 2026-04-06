@@ -97,34 +97,34 @@ export default function ReportChat({ runId }: { runId: string }) {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 text-sm text-[#4F8EF7] hover:text-[#F0F4FF] transition-colors mb-4"
+        className="flex items-center gap-2 text-sm text-brand-core hover:text-text-heading transition-colors mb-4"
       >
         <span className="text-lg">{open ? "▼" : "▶"}</span>
         Ask the corpus — Q&A about this report
         {messages.length > 0 && (
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-[#4F8EF720] text-[#4F8EF7] text-xs">
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-brand-core/12 text-brand-core text-xs">
             {messages.filter(m => m.role === "assistant").length} answer{messages.filter(m => m.role === "assistant").length !== 1 ? "s" : ""}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-2xl overflow-hidden">
-          <div className="px-5 pt-4 pb-2 border-b border-[#1E3A5F] flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 rounded-full border border-[#F59E0B40] bg-[#F59E0B10] text-[#F59E0B] font-medium">◆ AI Estimate</span>
-            <span className="text-[#8BA3C7] text-xs">Answers are synthesized by Claude from the report and corpus — always verify against primary sources.</span>
+        <div className="bg-bg-surface border border-border-subtle rounded-2xl overflow-hidden">
+          <div className="px-5 pt-4 pb-2 border-b border-border-subtle flex items-center gap-2">
+            <span className="text-xs px-2 py-0.5 rounded-full border border-status-warning/25 bg-status-warning/6 text-status-warning font-medium">◆ AI Estimate</span>
+            <span className="text-text-muted text-xs">Answers are synthesized by Claude from the report and corpus — always verify against primary sources.</span>
           </div>
           {/* Messages */}
           <div className="h-96 overflow-y-auto p-5 space-y-4">
             {messages.length === 0 && (
               <div>
-                <p className="text-[#8BA3C7] text-sm mb-4">Ask anything about this report or the underlying corpus.</p>
+                <p className="text-text-muted text-sm mb-4">Ask anything about this report or the underlying corpus.</p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTED_QUESTIONS.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => send(q)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-[#1E3A5F] text-[#8BA3C7] hover:border-[#4F8EF7] hover:text-[#4F8EF7] transition-colors text-left"
+                      className="text-xs px-3 py-1.5 rounded-full border border-border-subtle text-text-muted hover:border-brand-core hover:text-brand-core transition-colors text-left"
                     >
                       {q}
                     </button>
@@ -137,12 +137,12 @@ export default function ReportChat({ runId }: { runId: string }) {
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm ${
                   msg.role === "user"
-                    ? "bg-[#4F8EF7] text-white"
-                    : "bg-[#0A1628] border border-[#1E3A5F] text-[#F0F4FF]"
+                    ? "bg-brand-core text-white"
+                    : "bg-bg-page border border-border-subtle text-text-heading"
                 }`}>
                   <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   {msg.role === "assistant" && msg.corpus_sources !== undefined && msg.corpus_sources > 0 && (
-                    <p className="text-[#8BA3C7] text-xs mt-2 border-t border-[#1E3A5F] pt-2">
+                    <p className="text-text-muted text-xs mt-2 border-t border-border-subtle pt-2">
                       Grounded in {msg.corpus_sources} corpus source{msg.corpus_sources !== 1 ? "s" : ""}
                     </p>
                   )}
@@ -156,7 +156,7 @@ export default function ReportChat({ runId }: { runId: string }) {
           </div>
 
           {/* Input */}
-          <div className="border-t border-[#1E3A5F] p-4 flex gap-3">
+          <div className="border-t border-border-subtle p-4 flex gap-3">
             <input
               type="text"
               value={input}
@@ -164,12 +164,12 @@ export default function ReportChat({ runId }: { runId: string }) {
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && send(input)}
               placeholder="Ask about biomarkers, mechanism, screening criteria…"
               disabled={loading}
-              className="flex-1 bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-4 py-2.5 text-[#F0F4FF] text-sm placeholder-[#8BA3C7] focus:outline-none focus:border-[#4F8EF7] transition-colors disabled:opacity-50"
+              className="flex-1 bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors disabled:opacity-50"
             />
             <button
               onClick={() => send(input)}
               disabled={loading || !input.trim()}
-              className="px-4 py-2.5 bg-[#4F8EF7] hover:bg-[#3A7AE4] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2.5 bg-brand-core hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
             >
               {loading ? "⟳" : "Send"}
             </button>

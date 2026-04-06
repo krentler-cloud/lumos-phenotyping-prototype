@@ -41,11 +41,11 @@ export default async function Phase1Page({
     <div className="max-w-3xl mx-auto px-8 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-2">Phase 1 — Preclinical</p>
-        <h1 className="text-2xl font-bold text-[#F0F4FF] mb-2">
+        <p className="text-brand-core text-xs uppercase tracking-widest mb-2">Phase 1 — Preclinical</p>
+        <h1 className="text-2xl font-bold text-text-heading mb-2">
           Lumos AI™ Preclinical Analysis
         </h1>
-        <p className="text-[#8BA3C7] text-sm leading-relaxed">
+        <p className="text-text-muted text-sm leading-relaxed">
           Lumos will analyze the {study.drug_name} IND package and Headlamp&apos;s MDD corpus to generate
           predicted responder and non-responder phenotypes, biomarker collection protocols, and
           cross-species evidence — all before any patient data is collected.
@@ -53,8 +53,8 @@ export default async function Phase1Page({
       </div>
 
       {/* What Lumos will do */}
-      <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-2xl p-6 mb-6">
-        <h2 className="text-[#F0F4FF] font-semibold mb-4">What Lumos AI will do</h2>
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 mb-6">
+        <h2 className="text-text-heading font-semibold mb-4">What Lumos AI will do</h2>
         <Phase1Steps drugName={study.drug_name} />
       </div>
 
@@ -65,10 +65,10 @@ export default async function Phase1Page({
           { label: "MDD Corpus", value: "107", sub: "indexed documents" },
           { label: "Corpus Chunks", value: "~2,400", sub: "vector embeddings" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-[#4F8EF7]">{stat.value}</div>
-            <div className="text-[#F0F4FF] text-xs font-medium mt-0.5">{stat.label}</div>
-            <div className="text-[#8BA3C7] text-xs">{stat.sub}</div>
+          <div key={stat.label} className="bg-bg-surface border border-border-subtle rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-brand-core">{stat.value}</div>
+            <div className="text-text-heading text-xs font-medium mt-0.5">{stat.label}</div>
+            <div className="text-text-muted text-xs">{stat.sub}</div>
           </div>
         ))}
       </div>
@@ -77,13 +77,13 @@ export default async function Phase1Page({
       <form action={`/api/studies/${studyId}/run-phase1`} method="POST">
         <button
           type="submit"
-          className="w-full bg-[#4F8EF7] hover:bg-[#3A7AE4] text-white font-semibold py-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-brand-core hover:bg-brand-hover text-white font-semibold py-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
         >
           <span>⚡</span>
           Run Lumos Phase 1 Analysis
         </button>
       </form>
-      <p className="text-center text-[#8BA3C7] text-xs mt-3">
+      <p className="text-center text-text-muted text-xs mt-3">
         Estimated time: 60–90 seconds · No patient data required
       </p>
     </div>

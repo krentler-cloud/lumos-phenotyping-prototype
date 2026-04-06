@@ -108,11 +108,11 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
   const allDone = fileStatuses.length > 0 && done + skipped + errors === fileStatuses.length;
 
   return (
-    <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-6">
+    <div className="bg-bg-surface border border-border-subtle rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[#F0F4FF] font-semibold">Upload Documents</h3>
+        <h3 className="text-text-heading font-semibold">Upload Documents</h3>
         {/* Mode toggle */}
-        <div className="flex rounded-lg overflow-hidden border border-[#1E3A5F] text-sm">
+        <div className="flex rounded-lg overflow-hidden border border-border-subtle text-sm">
           {(["file", "folder"] as const).map(m => (
             <button
               key={m}
@@ -120,8 +120,8 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
               onClick={() => { setMode(m); reset(); }}
               className={`px-4 py-1.5 transition-colors capitalize ${
                 mode === m
-                  ? "bg-[#4F8EF7] text-white"
-                  : "text-[#8BA3C7] hover:text-[#F0F4FF]"
+                  ? "bg-brand-core text-white"
+                  : "text-text-muted hover:text-text-heading"
               }`}
             >
               {m === "file" ? "Single file" : "Folder"}
@@ -138,10 +138,10 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
             dragging
-              ? "border-[#4F8EF7] bg-[#1E3A5F]"
+              ? "border-brand-core bg-nav-item-active-bg"
               : fileStatuses.length > 0
-              ? "border-[#22C55E] bg-[#0A1628]"
-              : "border-[#1E3A5F] hover:border-[#4F8EF7]"
+              ? "border-status-success bg-bg-page"
+              : "border-border-subtle hover:border-brand-core"
           }`}
           onClick={() => document.getElementById(mode === "folder" ? "folder-input" : "file-input")?.click()}
         >
@@ -165,13 +165,13 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           {fileStatuses.length > 0 ? (
             <div>
               <div className="text-2xl mb-1">{mode === "folder" ? "📁" : "📄"}</div>
-              <p className="text-[#22C55E] font-medium text-sm">
+              <p className="text-status-success font-medium text-sm">
                 {fileStatuses.length === 1
                   ? fileStatuses[0].file.name
                   : `${fileStatuses.length} files selected`}
               </p>
               {mode === "folder" && (
-                <p className="text-[#8BA3C7] text-xs mt-1">
+                <p className="text-text-muted text-xs mt-1">
                   {ACCEPTED_EXTENSIONS.join(", ")} files only
                 </p>
               )}
@@ -179,7 +179,7 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           ) : (
             <div>
               <div className="text-3xl mb-2">{mode === "folder" ? "📁" : "⬆"}</div>
-              <p className="text-[#8BA3C7] text-sm">
+              <p className="text-text-muted text-sm">
                 {mode === "folder"
                   ? "Click to select a folder — all .pdf, .docx, and .csv files will be ingested"
                   : "Drag & drop a file here, or click to browse (.pdf, .docx, .csv)"}
@@ -191,25 +191,25 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
         {/* Title (single file only) */}
         {mode === "file" && (
           <div>
-            <label className="block text-sm text-[#8BA3C7] mb-1.5">Document title</label>
+            <label className="block text-sm text-text-muted mb-1.5">Document title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Phase II Clinical Trial Protocol"
               required
-              className="w-full bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-4 py-2.5 text-[#F0F4FF] text-sm placeholder-[#8BA3C7] focus:outline-none focus:border-[#4F8EF7] transition-colors"
+              className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors"
             />
           </div>
         )}
 
         {/* Source type */}
         <div>
-          <label className="block text-sm text-[#8BA3C7] mb-1.5">Document type</label>
+          <label className="block text-sm text-text-muted mb-1.5">Document type</label>
           <select
             value={sourceType}
             onChange={(e) => setSourceType(e.target.value)}
-            className="w-full bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-4 py-2.5 text-[#F0F4FF] text-sm focus:outline-none focus:border-[#4F8EF7] transition-colors"
+            className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm focus:outline-none focus:border-brand-core transition-colors"
           >
             {SOURCE_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -221,28 +221,28 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
         {fileStatuses.length > 0 && (mode === "folder" || uploading || allDone) && (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {fileStatuses.map((fs, i) => (
-              <div key={i} className="flex items-center gap-3 text-xs px-3 py-2 bg-[#0A1628] rounded-lg">
+              <div key={i} className="flex items-center gap-3 text-xs px-3 py-2 bg-bg-page rounded-lg">
                 <span className={`flex-shrink-0 ${
-                  fs.state === "done" ? "text-[#22C55E]" :
-                  fs.state === "skipped" ? "text-[#8BA3C7]" :
-                  fs.state === "error" ? "text-[#EF4444]" :
-                  fs.state === "uploading" ? "text-[#4F8EF7]" :
-                  "text-[#8BA3C7]"
+                  fs.state === "done" ? "text-status-success" :
+                  fs.state === "skipped" ? "text-text-muted" :
+                  fs.state === "error" ? "text-status-danger" :
+                  fs.state === "uploading" ? "text-brand-core" :
+                  "text-text-muted"
                 }`}>
                   {fs.state === "done" ? "✓" :
                    fs.state === "skipped" ? "–" :
                    fs.state === "error" ? "✗" :
                    fs.state === "uploading" ? "⟳" : "○"}
                 </span>
-                <span className="flex-1 truncate text-[#8BA3C7]">{fs.file.name}</span>
+                <span className="flex-1 truncate text-text-muted">{fs.file.name}</span>
                 {fs.state === "done" && (
-                  <span className="text-[#22C55E]">{fs.chunkCount} chunks</span>
+                  <span className="text-status-success">{fs.chunkCount} chunks</span>
                 )}
                 {fs.state === "skipped" && (
-                  <span className="text-[#8BA3C7]">already ingested</span>
+                  <span className="text-text-muted">already ingested</span>
                 )}
                 {fs.state === "error" && (
-                  <span className="text-[#EF4444] break-all">{fs.error}</span>
+                  <span className="text-status-danger break-all">{fs.error}</span>
                 )}
               </div>
             ))}
@@ -251,11 +251,11 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
 
         {/* Summary when done */}
         {allDone && (
-          <div className={`rounded-lg p-4 border ${errors > 0 ? "bg-[#F59E0B20] border-[#F59E0B]" : "bg-[#22C55E20] border-[#22C55E]"}`}>
-            <p className={`font-medium text-sm ${errors > 0 ? "text-[#F59E0B]" : "text-[#22C55E]"}`}>
+          <div className={`rounded-lg p-4 border ${errors > 0 ? "bg-status-warning/12 border-status-warning" : "bg-status-success/12 border-status-success"}`}>
+            <p className={`font-medium text-sm ${errors > 0 ? "text-status-warning" : "text-status-success"}`}>
               {done} ingested{skipped > 0 ? `, ${skipped} already existed` : ""}{errors > 0 ? `, ${errors} failed` : ""}
             </p>
-            <button type="button" onClick={reset} className="text-[#8BA3C7] text-xs mt-1 hover:underline">
+            <button type="button" onClick={reset} className="text-text-muted text-xs mt-1 hover:underline">
               Upload more
             </button>
           </div>
@@ -265,7 +265,7 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           <button
             type="submit"
             disabled={fileStatuses.length === 0 || uploading || (mode === "file" && !title)}
-            className="w-full bg-[#4F8EF7] hover:bg-[#3A7AE4] disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+            className="w-full bg-brand-core hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
           >
             {uploading
               ? `Ingesting${mode === "folder" ? ` (${done + skipped}/${fileStatuses.length})` : "…"}`

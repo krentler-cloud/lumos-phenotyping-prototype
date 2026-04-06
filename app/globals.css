@@ -1,39 +1,158 @@
 @import "tailwindcss";
 
+/* ─── LIGHT MODE (default) ─────────────────────────────────────────── */
 :root {
-  --navy: #0A1628;
-  --navy-light: #0F1F3D;
-  --navy-border: #1E3A5F;
-  --accent: #4F8EF7;
-  --accent-hover: #3A7AE4;
-  --text-primary: #F0F4FF;
-  --text-secondary: #8BA3C7;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
+  /* Backgrounds */
+  --bg-page:     #F7F6F3;
+  --bg-surface:  #FDFCF9;
+  --bg-overlay:  #F0EDE6;
+  --bg-raised:   #FFFFFF;
+
+  /* Borders */
+  --border-subtle:   #DDD9D0;
+  --border-emphasis: #E4E1D9;
+  --border-strong:   #C8C4BA;
+
+  /* Text */
+  --text-heading:   #1C1E2E;
+  --text-body:      #4A4740;
+  --text-muted:     #9A968E;
+  --text-secondary: #6B6760;
+  --text-inverse:   #FDFCF9;
+
+  /* Brand navy */
+  --brand-core:  #2E3460;
+  --brand-tint:  #ECEAF4;
+  --brand-deep:  #1A1D3A;
+  --brand-hover: #252A52;
+  --brand-mid:   #6B6898;
+
+  /* Gold accent */
+  --gold-icon:   #C8A550;
+  --gold-label:  #B8892A;
+  --gold-active: #DBA428;
+
+  /* Pipeline */
+  --pipeline-done: #7B85CC;
+
+  /* Nav chrome */
+  --nav-bg:               #F7F6F3;
+  --nav-border:           #DDD9D0;
+  --nav-item-hover:       #ECEAF4;
+  --nav-item-active-bg:   #ECEAF4;
+  --nav-item-active-text: #2E3460;
+  --nav-item-muted:       #C8C4BA;
+
+  /* Status — theme-invariant */
+  --status-success: #22C55E;
+  --status-warning: #F59E0B;
+  --status-danger:  #EF4444;
+  --status-info:    #4F8EF7;
+  --status-purple:  #A855F7;
 }
 
+/* ─── DARK MODE OVERRIDE ───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-page:     #0A1628;
+  --bg-surface:  #0F1F3D;
+  --bg-overlay:  #070F1E;
+  --bg-raised:   #080F1F;
+
+  --border-subtle:   #1E3A5F;
+  --border-emphasis: #1E3A5F;
+  --border-strong:   #4F8EF7;
+
+  --text-heading:   #F0F4FF;
+  --text-body:      #D0DCF0;
+  --text-muted:     #8BA3C7;
+  --text-secondary: #4A6580;
+  --text-inverse:   #F0F4FF;
+
+  --brand-core:  #4F8EF7;
+  --brand-tint:  #1E3A5F;
+  --brand-deep:  #0A1628;
+  --brand-hover: #3A7AE4;
+  --brand-mid:   #8BA3C7;
+
+  --gold-icon:   #C0A060;
+  --gold-label:  #C0A060;
+  --gold-active: #F59E0B;
+
+  --pipeline-done: #A855F7;
+
+  --nav-bg:               #070F1E;
+  --nav-border:           #1E3A5F;
+  --nav-item-hover:       #0F1F3D;
+  --nav-item-active-bg:   #1E3A5F;
+  --nav-item-active-text: #F0F4FF;
+  --nav-item-muted:       #2A4060;
+}
+
+/* ─── TAILWIND V4 SEMANTIC TOKENS ──────────────────────────────────── */
 @theme inline {
-  --color-background: var(--navy);
-  --color-foreground: var(--text-primary);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'Courier New', Courier, monospace;
+
+  /* Backgrounds */
+  --color-bg-page:    var(--bg-page);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-overlay: var(--bg-overlay);
+  --color-bg-raised:  var(--bg-raised);
+
+  /* Borders */
+  --color-border-subtle:   var(--border-subtle);
+  --color-border-emphasis: var(--border-emphasis);
+  --color-border-strong:   var(--border-strong);
+
+  /* Text */
+  --color-text-heading:   var(--text-heading);
+  --color-text-body:      var(--text-body);
+  --color-text-muted:     var(--text-muted);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-inverse:   var(--text-inverse);
+
+  /* Brand */
+  --color-brand-core:  var(--brand-core);
+  --color-brand-tint:  var(--brand-tint);
+  --color-brand-deep:  var(--brand-deep);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-mid:   var(--brand-mid);
+
+  /* Gold */
+  --color-gold-icon:   var(--gold-icon);
+  --color-gold-label:  var(--gold-label);
+  --color-gold-active: var(--gold-active);
+
+  /* Pipeline */
+  --color-pipeline-done: var(--pipeline-done);
+
+  /* Nav */
+  --color-nav-bg:               var(--nav-bg);
+  --color-nav-border:           var(--nav-border);
+  --color-nav-item-hover:       var(--nav-item-hover);
+  --color-nav-item-active-bg:   var(--nav-item-active-bg);
+  --color-nav-item-active-text: var(--nav-item-active-text);
+  --color-nav-item-muted:       var(--nav-item-muted);
+
+  /* Status */
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger:  var(--status-danger);
+  --color-status-info:    var(--status-info);
+  --color-status-purple:  var(--status-purple);
 }
 
 body {
-  background: var(--navy);
-  color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-body);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 @media print {
-  /* Preserve dark theme colors exactly */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-
-  /* Remove scroll/height constraints set by the layout */
   html, body {
     height: auto !important;
     overflow: visible !important;
@@ -42,18 +161,12 @@ body {
     height: auto !important;
     overflow: visible !important;
   }
-
-  /* Hide sidebar, top nav bar, and any print-hide elements */
   .print-hide {
     display: none !important;
   }
-
-  /* Show hidden tab panels */
   .print-show {
     display: block !important;
   }
-
-  /* Section divider between printed tab sections */
   .print-section-heading {
     display: block !important;
     page-break-before: always;
@@ -61,7 +174,7 @@ body {
     margin-bottom: 1.5rem;
     font-size: 1rem;
     font-weight: 700;
-    color: #A855F7;
+    color: var(--status-purple);
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }

@@ -22,10 +22,10 @@ function Input({ label, value, onChange, type = "text", placeholder }: {
 }) {
   return (
     <div>
-      <label className="block text-xs text-[#8BA3C7] mb-1">{label}</label>
+      <label className="block text-xs text-text-muted mb-1">{label}</label>
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-3 py-2 text-[#F0F4FF] text-sm placeholder-[#8BA3C7] focus:outline-none focus:border-[#4F8EF7] transition-colors"
+        className="w-full bg-bg-page border border-border-subtle rounded-lg px-3 py-2 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors"
       />
     </div>
   );
@@ -33,8 +33,8 @@ function Input({ label, value, onChange, type = "text", placeholder }: {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl p-5 space-y-3">
-      <h3 className="text-[#F0F4FF] font-medium text-sm">{title}</h3>
+    <div className="bg-bg-surface border border-border-subtle rounded-xl p-5 space-y-3">
+      <h3 className="text-text-heading font-medium text-sm">{title}</h3>
       {children}
     </div>
   );
@@ -125,22 +125,22 @@ export default function PatientDataForm() {
         <div className="grid grid-cols-3 gap-3">
           <Input label="Sleep efficiency (%)" type="number" value={data.functional.sleep_efficiency_pct ?? ""} onChange={v => set("functional", "sleep_efficiency_pct", Number(v))} />
           <div>
-            <label className="block text-xs text-[#8BA3C7] mb-1">Psychomotor retardation</label>
+            <label className="block text-xs text-text-muted mb-1">Psychomotor retardation</label>
             <select
               value={String(data.functional.psychomotor_retardation)}
               onChange={e => set("functional", "psychomotor_retardation", e.target.value === "true")}
-              className="w-full bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-3 py-2 text-[#F0F4FF] text-sm focus:outline-none focus:border-[#4F8EF7]"
+              className="w-full bg-bg-page border border-border-subtle rounded-lg px-3 py-2 text-text-heading text-sm focus:outline-none focus:border-brand-core"
             >
               <option value="true">Yes</option>
               <option value="false">No</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-[#8BA3C7] mb-1">Anhedonia</label>
+            <label className="block text-xs text-text-muted mb-1">Anhedonia</label>
             <select
               value={String(data.functional.anhedonia_present)}
               onChange={e => set("functional", "anhedonia_present", e.target.value === "true")}
-              className="w-full bg-[#0A1628] border border-[#1E3A5F] rounded-lg px-3 py-2 text-[#F0F4FF] text-sm focus:outline-none focus:border-[#4F8EF7]"
+              className="w-full bg-bg-page border border-border-subtle rounded-lg px-3 py-2 text-text-heading text-sm focus:outline-none focus:border-brand-core"
             >
               <option value="true">Yes</option>
               <option value="false">No</option>
@@ -178,20 +178,20 @@ export default function PatientDataForm() {
         <button
           type="button"
           onClick={() => setData(prev => ({ ...prev, prior_treatments: [...prev.prior_treatments, { drug: "", dose_mg: 0, response: "", duration_weeks: 0 }] }))}
-          className="text-[#4F8EF7] text-sm hover:underline"
+          className="text-brand-core text-sm hover:underline"
         >
           + Add treatment
         </button>
       </Section>
 
       {error && (
-        <div className="bg-[#EF444420] border border-[#EF4444] rounded-lg p-4 text-[#EF4444] text-sm">{error}</div>
+        <div className="bg-status-danger/12 border border-status-danger rounded-lg p-4 text-status-danger text-sm">{error}</div>
       )}
 
       <button
         type="submit"
         disabled={submitting || !studyId}
-        className="w-full bg-[#4F8EF7] hover:bg-[#3A7AE4] disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg text-sm transition-colors"
+        className="w-full bg-brand-core hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg text-sm transition-colors"
       >
         {submitting ? "Submitting…" : "Run phenotyping analysis"}
       </button>

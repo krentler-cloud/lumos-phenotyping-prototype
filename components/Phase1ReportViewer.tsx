@@ -24,7 +24,7 @@ function ConfidenceBadge({
   active?: boolean;
 }) {
   const pct = Math.round(value * 100);
-  const color = pct >= 70 ? "#22C55E" : pct >= 45 ? "#F59E0B" : "#EF4444";
+  const color = pct >= 70 ? "var(--status-success)" : pct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
   return (
     <button
       onClick={onClick}
@@ -45,8 +45,8 @@ function ConfidenceBadge({
 // ── Signal badge ─────────────────────────────────────────────────────────────
 function SignalBadge({ strength }: { strength: string }) {
   const map: Record<string, { color: string; label: string }> = {
-    strong:   { color: "#22C55E", label: "Strong" },
-    moderate: { color: "#F59E0B", label: "Moderate" },
+    strong:   { color: "var(--status-success)", label: "Strong" },
+    moderate: { color: "var(--status-warning)", label: "Moderate" },
     weak:     { color: "#6B7280", label: "Weak" },
   };
   const { color, label } = map[strength] ?? map.weak;
@@ -59,7 +59,7 @@ function SignalBadge({ strength }: { strength: string }) {
 
 // ── Severity badge ────────────────────────────────────────────────────────────
 function SeverityBadge({ severity }: { severity: string }) {
-  const map: Record<string, string> = { high: "#EF4444", medium: "#F59E0B", low: "#6B7280" };
+  const map: Record<string, string> = { high: "var(--status-danger)", medium: "var(--status-warning)", low: "#6B7280" };
   const color = map[severity] ?? "#6B7280";
   return (
     <span className="text-xs font-medium px-2 py-0.5 rounded-full capitalize" style={{ color, background: `${color}20` }}>
@@ -75,13 +75,13 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
       onClick={onClick}
       className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
         active
-          ? "border-[#4F8EF7] text-[#4F8EF7]"
-          : "border-transparent text-[#8BA3C7] hover:text-[#F0F4FF]"
+          ? "border-brand-core text-brand-core"
+          : "border-transparent text-text-muted hover:text-text-heading"
       }`}
     >
       {label}
       {count !== undefined && (
-        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-[#4F8EF7]/20" : "bg-[#1E3A5F]"}`}>
+        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-brand-core/20" : "bg-nav-item-active-bg"}`}>
           {count}
         </span>
       )}
@@ -94,20 +94,20 @@ function ProfileField({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
     <div className="mb-3">
-      <p className="text-[#8BA3C7] text-[10px] uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-[#D0DCF0] text-sm leading-relaxed">{value}</p>
+      <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-text-body text-sm leading-relaxed">{value}</p>
     </div>
   );
 }
 
 // ── Biomarker priority bar ────────────────────────────────────────────────────
 function PriorityBar({ pct }: { pct: number }) {
-  const color = pct >= 75 ? "#22C55E" : pct >= 50 ? "#4F8EF7" : "#F59E0B";
+  const color = pct >= 75 ? "var(--status-success)" : pct >= 50 ? "var(--brand-core)" : "var(--status-warning)";
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-[#4A6580] mb-1">Preclinical signal strength</p>
+      <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Preclinical signal strength</p>
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
         </div>
         <span className="text-xs font-medium w-8 text-right" style={{ color }}>{pct}</span>
@@ -121,19 +121,19 @@ function ConfidencePanel({ overall, narrative }: { overall: number; narrative: s
   const pct = Math.round(overall * 100);
   const drivers =
     pct >= 70
-      ? { label: "High confidence", color: "#22C55E", summary: "Strong mechanistic evidence with multiple converging preclinical signals." }
+      ? { label: "High confidence", color: "var(--status-success)", summary: "Strong mechanistic evidence with multiple converging preclinical signals." }
       : pct >= 45
-      ? { label: "Moderate confidence", color: "#F59E0B", summary: "Moderate mechanistic support with meaningful translational uncertainty." }
-      : { label: "Low confidence", color: "#EF4444", summary: "Limited or conflicting evidence. Treat predictions as directional hypotheses only." };
+      ? { label: "Moderate confidence", color: "var(--status-warning)", summary: "Moderate mechanistic support with meaningful translational uncertainty." }
+      : { label: "Low confidence", color: "var(--status-danger)", summary: "Limited or conflicting evidence. Treat predictions as directional hypotheses only." };
 
   return (
-    <div className="mt-3 p-4 bg-[#060D1A] border border-[#4F8EF7]/30 rounded-xl">
+    <div className="mt-3 p-4 bg-bg-overlay border border-brand-core/30 rounded-xl">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-semibold" style={{ color: drivers.color }}>{drivers.label} — {pct}%</span>
       </div>
-      <p className="text-[#8BA3C7] text-xs leading-relaxed mb-3">{drivers.summary}</p>
-      <p className="text-[#4F8EF7] text-[10px] uppercase tracking-wider mb-1">Full reasoning</p>
-      <p className="text-[#C0CFEA] text-xs leading-relaxed">{narrative}</p>
+      <p className="text-text-muted text-xs leading-relaxed mb-3">{drivers.summary}</p>
+      <p className="text-brand-core text-[10px] uppercase tracking-wider mb-1">Full reasoning</p>
+      <p className="text-text-body text-xs leading-relaxed">{narrative}</p>
     </div>
   );
 }
@@ -169,26 +169,26 @@ function MethodologyNarrative({ text }: { text: string }) {
     : limText;
 
   return (
-    <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl overflow-hidden">
+    <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">
       {/* Intro prose */}
       {intro && (
         <div className="px-5 pt-5 pb-4">
-          <p className="text-[#4F8EF7] text-[10px] uppercase tracking-widest font-semibold mb-2">Analysis Approach</p>
-          <p className="text-[#D0DCF0] text-sm leading-relaxed">{intro}</p>
+          <p className="text-brand-core text-[10px] uppercase tracking-widest font-semibold mb-2">Analysis Approach</p>
+          <p className="text-text-body text-sm leading-relaxed">{intro}</p>
         </div>
       )}
 
       {/* Evidence streams */}
       {streams.length > 0 && (
-        <div className="border-t border-[#1E3A5F]">
-          <p className="text-[#4F8EF7] text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Evidence Streams</p>
-          <div className="divide-y divide-[#1E3A5F]">
+        <div className="border-t border-border-subtle">
+          <p className="text-brand-core text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Evidence Streams</p>
+          <div className="divide-y divide-border-subtle">
             {streams.map(({ n, body }) => (
               <div key={n} className="flex items-start gap-4 px-5 py-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#0A1628] border border-[#4F8EF7] flex items-center justify-center">
-                  <span className="text-[#4F8EF7] text-[10px] font-bold">{n}</span>
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-bg-page border border-brand-core flex items-center justify-center">
+                  <span className="text-brand-core text-[10px] font-bold">{n}</span>
                 </div>
-                <p className="text-[#D0DCF0] text-xs leading-relaxed pt-0.5">{body}</p>
+                <p className="text-text-body text-xs leading-relaxed pt-0.5">{body}</p>
               </div>
             ))}
           </div>
@@ -197,14 +197,14 @@ function MethodologyNarrative({ text }: { text: string }) {
 
       {/* Limitations */}
       {(limitations.length > 0 || limIntro) && (
-        <div className="border-t border-[#1E3A5F] bg-[#0A1628]">
-          <p className="text-[#F59E0B] text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Key Limitations</p>
-          {limIntro && <p className="text-[#8BA3C7] text-xs px-5 pb-2 leading-relaxed">{limIntro}</p>}
-          <div className="divide-y divide-[#0F1F3D]">
+        <div className="border-t border-border-subtle bg-bg-page">
+          <p className="text-status-warning text-[10px] uppercase tracking-widest font-semibold px-5 pt-4 pb-2">Key Limitations</p>
+          {limIntro && <p className="text-text-muted text-xs px-5 pb-2 leading-relaxed">{limIntro}</p>}
+          <div className="divide-y divide-border-subtle">
             {limitations.map(({ letter, body }) => (
               <div key={letter} className="flex items-start gap-3 px-5 py-2.5">
-                <span className="flex-shrink-0 text-[#F59E0B] text-[10px] font-bold uppercase mt-0.5">({letter})</span>
-                <p className="text-[#8BA3C7] text-xs leading-relaxed">{body}</p>
+                <span className="flex-shrink-0 text-status-warning text-[10px] font-bold uppercase mt-0.5">({letter})</span>
+                <p className="text-text-muted text-xs leading-relaxed">{body}</p>
               </div>
             ))}
           </div>
@@ -218,32 +218,32 @@ function MethodologyNarrative({ text }: { text: string }) {
 // ── Exploratory Biomarkers tab ────────────────────────────────────────────────
 function ExploratoryBiomarkersTab({ biomarkers }: { biomarkers: ExploratoryBiomarker[] }) {
   const classColors: Record<string, string> = {
-    "neuroinflammatory": "#EF4444",
-    "synaptic plasticity": "#A855F7",
-    "HPA axis": "#F59E0B",
+    "neuroinflammatory": "var(--status-danger)",
+    "synaptic plasticity": "var(--status-purple)",
+    "HPA axis": "var(--status-warning)",
     "circadian": "#06B6D4",
-    "metabolic": "#22C55E",
+    "metabolic": "var(--status-success)",
     "genetic": "#3B82F6",
-    "imaging": "#4F8EF7",
+    "imaging": "var(--brand-core)",
   };
   const evidenceColors: Record<string, string> = {
-    emerging: "#F59E0B",
+    emerging: "var(--status-warning)",
     preclinical_only: "#D97706",
     theoretical: "#6B7280",
   };
   const feasibilityMeta: Record<string, { icon: string; color: string }> = {
-    high: { icon: "✓", color: "#22C55E" },
-    moderate: { icon: "~", color: "#F59E0B" },
-    low: { icon: "✗", color: "#EF4444" },
+    high: { icon: "✓", color: "var(--status-success)" },
+    moderate: { icon: "~", color: "var(--status-warning)" },
+    low: { icon: "✗", color: "var(--status-danger)" },
   };
 
   return (
     <div>
       {/* Disclaimer */}
-      <div className="mb-5 p-4 bg-[#0F1120] border border-[#F59E0B]/30 rounded-xl flex items-start gap-3">
-        <span className="text-[#F59E0B] flex-shrink-0 mt-0.5">⚠</span>
+      <div className="mb-5 p-4 bg-bg-overlay border border-status-warning/30 rounded-xl flex items-start gap-3">
+        <span className="text-status-warning flex-shrink-0 mt-0.5">⚠</span>
         <p className="text-[#C0A060] text-xs leading-relaxed">
-          <span className="font-semibold text-[#F59E0B]">Exploratory only.</span>{" "}
+          <span className="font-semibold text-status-warning">Exploratory only.</span>{" "}
           These biomarkers are hypothesis-generating and are not part of the validated efficacy signal panel. They require further study before clinical use. Treat as signals for add-on assays or future trial design — not as inclusion/exclusion criteria.
         </p>
       </div>
@@ -254,10 +254,10 @@ function ExploratoryBiomarkersTab({ biomarkers }: { biomarkers: ExploratoryBioma
           const evidenceColor = evidenceColors[bm.evidence_level] ?? "#6B7280";
           const feas = feasibilityMeta[bm.feasibility] ?? feasibilityMeta.moderate;
           return (
-            <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+            <div key={i} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-[#F0F4FF] text-sm font-medium">{bm.name}</span>
+                  <span className="text-text-heading text-sm font-medium">{bm.name}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full capitalize font-medium"
                     style={{ color: classColor, background: `${classColor}20` }}>
                     {bm.biomarker_class}
@@ -273,19 +273,19 @@ function ExploratoryBiomarkersTab({ biomarkers }: { biomarkers: ExploratoryBioma
                   <span className="capitalize">{bm.feasibility}</span>
                 </span>
               </div>
-              <p className="text-[#8BA3C7] text-xs leading-relaxed mb-3">{bm.rationale}</p>
+              <p className="text-text-muted text-xs leading-relaxed mb-3">{bm.rationale}</p>
               {bm.corpus_refs?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {bm.corpus_refs.map((ref, j) => (
-                    <span key={j} className="text-[10px] px-2 py-0.5 bg-[#0A1628] border border-[#1E3A5F] text-[#4A6580] rounded italic truncate max-w-xs">
+                    <span key={j} className="text-[10px] px-2 py-0.5 bg-bg-page border border-border-subtle text-text-secondary rounded italic truncate max-w-xs">
                       {ref}
                     </span>
                   ))}
                 </div>
               )}
-              <div className="pt-2.5 border-t border-[#1E3A5F]">
-                <span className="text-[#4F8EF7] text-[10px] uppercase tracking-wider font-semibold">→ Learning objective: </span>
-                <span className="text-[#8BA3C7] text-xs">{bm.learning_objective}</span>
+              <div className="pt-2.5 border-t border-border-subtle">
+                <span className="text-brand-core text-[10px] uppercase tracking-wider font-semibold">→ Learning objective: </span>
+                <span className="text-text-muted text-xs">{bm.learning_objective}</span>
               </div>
             </div>
           );
@@ -310,15 +310,15 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       <div className="mb-6">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-[#4F8EF7] text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis Report</p>
-            <h1 className="text-2xl font-bold text-[#F0F4FF]">{drugName} · {indication}</h1>
-            <p className="text-[#4A6580] text-xs mt-1">Generated {genDate}</p>
+            <p className="text-brand-core text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis Report</p>
+            <h1 className="text-2xl font-bold text-text-heading">{drugName} · {indication}</h1>
+            <p className="text-text-secondary text-xs mt-1">Generated {genDate}</p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0 print-hide">
             <form action={`/api/studies/${studyId}/rerun-phase1`} method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1E3A5F] bg-[#0F1F3D] text-[#8BA3C7] hover:text-[#F0F4FF] hover:border-[#4F8EF7] transition-colors text-xs font-medium"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-subtle bg-bg-surface text-text-muted hover:text-text-heading hover:border-brand-core transition-colors text-xs font-medium"
                 title="Clear this run and re-analyse with the current corpus"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -346,7 +346,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
-      <div className="flex border-b border-[#1E3A5F] mb-6 -mx-1 overflow-x-auto">
+      <div className="flex border-b border-border-subtle mb-6 -mx-1 overflow-x-auto">
         <Tab label="Methodology" active={activeTab === "methodology"} onClick={() => setActiveTab("methodology")} />
         <Tab label="Overview" active={activeTab === "overview"} onClick={() => setActiveTab("overview")} />
         <Tab label="Efficacy Signals" active={activeTab === "biomarkers"} onClick={() => setActiveTab("biomarkers")} count={report.biomarker_recommendations?.length} />
@@ -361,27 +361,27 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
         <div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             {/* Responder */}
-            <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-2xl p-6 min-w-0">
+            <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
               <div className="flex items-center justify-between gap-3 mb-1">
-                <p className="text-[#22C55E] text-[10px] uppercase tracking-widest">Predicted Responder</p>
+                <p className="text-status-success text-[10px] uppercase tracking-widest">Predicted Responder</p>
                 <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
               </div>
-              <h2 className="text-[#F0F4FF] font-semibold text-sm leading-snug mb-3 break-words">
+              <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
                 {report.responder_profile.primary_subtype}
               </h2>
-              <p className="text-[#D0DCF0] text-sm leading-relaxed mb-4">{report.responder_profile.summary}</p>
+              <p className="text-text-body text-sm leading-relaxed mb-4">{report.responder_profile.summary}</p>
               <ProfileField label="Demographics" value={report.responder_profile.demographics} />
               <ProfileField label="Core Clinical" value={report.responder_profile.core_clinical} />
               <ProfileField label="Inflammatory" value={report.responder_profile.inflammatory} />
               <ProfileField label="Neuroplasticity" value={report.responder_profile.neuroplasticity} />
               {report.responder_profile.imaging && <ProfileField label="Imaging" value={report.responder_profile.imaging} />}
               {report.responder_profile.key_inclusion_criteria?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[#1E3A5F]">
-                  <p className="text-[#8BA3C7] text-[10px] uppercase tracking-wider mb-2">Key Inclusion Criteria</p>
+                <div className="mt-4 pt-4 border-t border-border-subtle">
+                  <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Inclusion Criteria</p>
                   <ul className="space-y-1.5">
                     {report.responder_profile.key_inclusion_criteria.map((c, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#D0DCF0]">
-                        <span className="text-[#22C55E] flex-shrink-0 mt-0.5">✓</span>{c}
+                      <li key={i} className="flex items-start gap-2 text-xs text-text-body">
+                        <span className="text-status-success flex-shrink-0 mt-0.5">✓</span>{c}
                       </li>
                     ))}
                   </ul>
@@ -390,27 +390,27 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             </div>
 
             {/* Non-responder */}
-            <div className="bg-[#0F1F3D] border border-[#1E3A5F] rounded-2xl p-6 min-w-0">
+            <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
               <div className="flex items-center justify-between gap-3 mb-1">
-                <p className="text-[#EF4444] text-[10px] uppercase tracking-widest">Predicted Non-Responder</p>
+                <p className="text-status-danger text-[10px] uppercase tracking-widest">Predicted Non-Responder</p>
                 <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
               </div>
-              <h2 className="text-[#F0F4FF] font-semibold text-sm leading-snug mb-3 break-words">
+              <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
                 {report.nonresponder_profile.primary_subtype}
               </h2>
-              <p className="text-[#D0DCF0] text-sm leading-relaxed mb-4">{report.nonresponder_profile.summary}</p>
+              <p className="text-text-body text-sm leading-relaxed mb-4">{report.nonresponder_profile.summary}</p>
               <ProfileField label="Demographics" value={report.nonresponder_profile.demographics} />
               <ProfileField label="Core Clinical" value={report.nonresponder_profile.core_clinical} />
               <ProfileField label="Inflammatory" value={report.nonresponder_profile.inflammatory} />
               <ProfileField label="Neuroplasticity" value={report.nonresponder_profile.neuroplasticity} />
               {report.nonresponder_profile.imaging && <ProfileField label="Imaging" value={report.nonresponder_profile.imaging} />}
               {report.nonresponder_profile.key_exclusion_criteria?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[#1E3A5F]">
-                  <p className="text-[#8BA3C7] text-[10px] uppercase tracking-wider mb-2">Key Exclusion Criteria</p>
+                <div className="mt-4 pt-4 border-t border-border-subtle">
+                  <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Exclusion Criteria</p>
                   <ul className="space-y-1.5">
                     {report.nonresponder_profile.key_exclusion_criteria.map((c, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#D0DCF0]">
-                        <span className="text-[#EF4444] flex-shrink-0 mt-0.5">✕</span>{c}
+                      <li key={i} className="flex items-start gap-2 text-xs text-text-body">
+                        <span className="text-status-danger flex-shrink-0 mt-0.5">✕</span>{c}
                       </li>
                     ))}
                   </ul>
@@ -427,15 +427,15 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           {(report.primary_endpoint_recommendation || report.early_response_indicator) && (
             <div className="grid grid-cols-2 gap-4 mb-6">
               {report.primary_endpoint_recommendation && (
-                <div className="p-4 bg-[#0F1F3D] border border-[#4F8EF7]/30 rounded-xl">
-                  <p className="text-[#4F8EF7] text-[10px] uppercase tracking-wider mb-1.5">Primary Endpoint Recommendation</p>
-                  <p className="text-[#D0DCF0] text-sm leading-relaxed">{report.primary_endpoint_recommendation}</p>
+                <div className="p-4 bg-bg-surface border border-brand-core/30 rounded-xl">
+                  <p className="text-brand-core text-[10px] uppercase tracking-wider mb-1.5">Primary Endpoint Recommendation</p>
+                  <p className="text-text-body text-sm leading-relaxed">{report.primary_endpoint_recommendation}</p>
                 </div>
               )}
               {report.early_response_indicator && (
-                <div className="p-4 bg-[#0F1F3D] border border-[#22C55E]/30 rounded-xl">
-                  <p className="text-[#22C55E] text-[10px] uppercase tracking-wider mb-1.5">Early Response Indicator</p>
-                  <p className="text-[#D0DCF0] text-sm leading-relaxed">{report.early_response_indicator}</p>
+                <div className="p-4 bg-bg-surface border border-status-success/30 rounded-xl">
+                  <p className="text-status-success text-[10px] uppercase tracking-wider mb-1.5">Early Response Indicator</p>
+                  <p className="text-text-body text-sm leading-relaxed">{report.early_response_indicator}</p>
                 </div>
               )}
             </div>
@@ -444,18 +444,18 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           <div className="space-y-3">
             {report.biomarker_recommendations?.sort((a, b) => a.rank - b.rank).map((bm) => {
               const domainColors: Record<string, string> = {
-                inflammatory: "#EF4444", neuroplasticity: "#A855F7",
-                behavioral: "#F59E0B", imaging: "#4F8EF7", genetic: "#22C55E",
+                inflammatory: "var(--status-danger)", neuroplasticity: "var(--status-purple)",
+                behavioral: "var(--status-warning)", imaging: "var(--brand-core)", genetic: "var(--status-success)",
               };
               const dc = domainColors[bm.domain] ?? "#6B7280";
               return (
-                <div key={bm.rank} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+                <div key={bm.rank} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-[#1E3A5F] text-[#4F8EF7]">{bm.rank}</span>
+                      <span className="text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-nav-item-active-bg text-brand-core">{bm.rank}</span>
                       <div>
-                        <span className="text-[#F0F4FF] text-sm font-medium">{bm.name}</span>
-                        {bm.unit && <span className="text-[#8BA3C7] text-xs ml-1.5">({bm.unit})</span>}
+                        <span className="text-text-heading text-sm font-medium">{bm.name}</span>
+                        {bm.unit && <span className="text-text-muted text-xs ml-1.5">({bm.unit})</span>}
                       </div>
                     </div>
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0" style={{ color: dc, background: `${dc}20` }}>
@@ -463,30 +463,30 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                     </span>
                   </div>
                   <PriorityBar pct={bm.priority_pct} />
-                  <p className="text-[#8BA3C7] text-xs mt-3 leading-relaxed">{bm.preclinical_rationale}</p>
+                  <p className="text-text-muted text-xs mt-3 leading-relaxed">{bm.preclinical_rationale}</p>
                   <div className="grid grid-cols-2 gap-3 mt-3">
-                    <div className="p-2.5 bg-[#0A1F0A] border border-[#22C55E]/20 rounded-lg">
-                      <p className="text-[#22C55E] text-xs font-medium mb-0.5">Responder signal</p>
-                      <p className="text-[#D0DCF0] text-xs">{bm.responder_threshold}</p>
+                    <div className="p-2.5 bg-status-success/5 border border-status-success/20 rounded-lg">
+                      <p className="text-status-success text-xs font-medium mb-0.5">Responder signal</p>
+                      <p className="text-text-body text-xs">{bm.responder_threshold}</p>
                     </div>
-                    <div className="p-2.5 bg-[#1A0A0A] border border-[#EF4444]/20 rounded-lg">
-                      <p className="text-[#EF4444] text-xs font-medium mb-0.5">Non-responder signal</p>
-                      <p className="text-[#D0DCF0] text-xs">{bm.nonresponder_threshold}</p>
+                    <div className="p-2.5 bg-status-danger/5 border border-status-danger/20 rounded-lg">
+                      <p className="text-status-danger text-xs font-medium mb-0.5">Non-responder signal</p>
+                      <p className="text-text-body text-xs">{bm.nonresponder_threshold}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <p className="text-[#4A6580] text-xs">Timing:</p>
+                    <p className="text-text-secondary text-xs">Timing:</p>
                     {bm.timing.map((t) => (
-                      <span key={t} className="text-xs px-2 py-0.5 rounded bg-[#1E3A5F] text-[#8BA3C7]">{t}</span>
+                      <span key={t} className="text-xs px-2 py-0.5 rounded bg-nav-item-active-bg text-text-muted">{t}</span>
                     ))}
-                    <span className="text-[#4A6580] text-xs ml-1">· {bm.collection_method}</span>
+                    <span className="text-text-secondary text-xs ml-1">· {bm.collection_method}</span>
                   </div>
                 </div>
               );
             })}
           </div>
           {report.protocol_notes && (
-            <p className="mt-5 text-[#8BA3C7] text-xs leading-relaxed border-t border-[#1E3A5F] pt-4">{report.protocol_notes}</p>
+            <p className="mt-5 text-text-muted text-xs leading-relaxed border-t border-border-subtle pt-4">{report.protocol_notes}</p>
           )}
         </div>
       )}
@@ -496,30 +496,30 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
         <div className="space-y-6">
           {report.cross_species_evidence?.length > 0 && (
             <div>
-              <h3 className="text-[#A855F7] text-xs uppercase tracking-widest font-semibold mb-3">🐭 Cross-Species Evidence</h3>
+              <h3 className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-3">🐭 Cross-Species Evidence</h3>
               <div className="space-y-3">
                 {report.cross_species_evidence.map((ev, i) => (
-                  <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+                  <div key={i} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
                     {/* Header row: model name + badge */}
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <p className="text-[#F0F4FF] text-sm font-semibold leading-snug">{ev.animal_model}</p>
+                      <p className="text-text-heading text-sm font-semibold leading-snug">{ev.animal_model}</p>
                       <SignalBadge strength={ev.signal_strength} />
                     </div>
                     {/* Human mapping */}
                     <div className="flex items-start gap-2 mb-3">
-                      <span className="text-[#4A6580] text-xs mt-0.5 flex-shrink-0">↳</span>
-                      <p className="text-[#A855F7] text-xs leading-relaxed">{ev.human_subtype_mapping}</p>
+                      <span className="text-text-secondary text-xs mt-0.5 flex-shrink-0">↳</span>
+                      <p className="text-status-purple text-xs leading-relaxed">{ev.human_subtype_mapping}</p>
                     </div>
                     {/* Biomarker signal chips */}
                     {ev.key_biomarker_signals?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-2.5">
                         {ev.key_biomarker_signals.map((sig, j) => (
-                          <span key={j} className="text-xs px-2 py-1 rounded-md bg-[#0A1628] border border-[#1E3A5F] text-[#8BA3C7]">{sig}</span>
+                          <span key={j} className="text-xs px-2 py-1 rounded-md bg-bg-page border border-border-subtle text-text-muted">{sig}</span>
                         ))}
                       </div>
                     )}
                     {ev.corpus_ref && (
-                      <p className="text-[#4A6580] text-[11px] italic border-t border-[#1E3A5F] pt-2 mt-1">{ev.corpus_ref}</p>
+                      <p className="text-text-secondary text-[11px] italic border-t border-border-subtle pt-2 mt-1">{ev.corpus_ref}</p>
                     )}
                   </div>
                 ))}
@@ -529,16 +529,16 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
 
           {report.safety_flags?.length > 0 && (
             <div>
-              <h3 className="text-[#F59E0B] text-xs uppercase tracking-widest font-semibold mb-3">⚠️ Safety Signals</h3>
+              <h3 className="text-status-warning text-xs uppercase tracking-widest font-semibold mb-3">⚠️ Safety Signals</h3>
               <div className="space-y-3">
                 {report.safety_flags.map((flag, i) => (
-                  <div key={i} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+                  <div key={i} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
                     <div className="flex items-start justify-between gap-3 mb-2">
-                      <p className="text-[#F0F4FF] text-sm font-semibold leading-snug">{flag.signal}</p>
+                      <p className="text-text-heading text-sm font-semibold leading-snug">{flag.signal}</p>
                       <SeverityBadge severity={flag.severity} />
                     </div>
-                    <p className="text-[#8BA3C7] text-xs leading-relaxed mb-2">{flag.clinical_implication}</p>
-                    <p className="text-[#4A6580] text-[11px] italic border-t border-[#1E3A5F] pt-2">Source: {flag.source}</p>
+                    <p className="text-text-muted text-xs leading-relaxed mb-2">{flag.clinical_implication}</p>
+                    <p className="text-text-secondary text-[11px] italic border-t border-border-subtle pt-2">Source: {flag.source}</p>
                   </div>
                 ))}
               </div>
@@ -559,18 +559,18 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           {/* Confidence scores row */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Overall Analysis", value: report.overall_confidence, color: "#4F8EF7" },
-              { label: "Responder Hypothesis", value: report.responder_profile.corpus_hypothesis_confidence, color: "#22C55E" },
-              { label: "Non-Responder Hypothesis", value: report.nonresponder_profile.corpus_hypothesis_confidence, color: "#EF4444" },
+              { label: "Overall Analysis", value: report.overall_confidence, color: "var(--brand-core)" },
+              { label: "Responder Hypothesis", value: report.responder_profile.corpus_hypothesis_confidence, color: "var(--status-success)" },
+              { label: "Non-Responder Hypothesis", value: report.nonresponder_profile.corpus_hypothesis_confidence, color: "var(--status-danger)" },
             ].map(({ label, value, color }) => {
               const pct = Math.round(value * 100);
-              const barColor = pct >= 70 ? "#22C55E" : pct >= 45 ? "#F59E0B" : "#EF4444";
+              const barColor = pct >= 70 ? "var(--status-success)" : pct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
               return (
-                <div key={label} className="p-4 bg-[#0F1F3D] border border-[#1E3A5F] rounded-xl">
+                <div key={label} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
                   <p className="text-[10px] uppercase tracking-widest font-semibold mb-1" style={{ color }}>{label}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-[#4A6580] mb-2">Confidence Score</p>
+                  <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Confidence Score</p>
                   <p className="text-2xl font-bold mb-2" style={{ color: barColor }}>{pct}%</p>
-                  <div className="h-1 bg-[#1E3A5F] rounded-full overflow-hidden">
+                  <div className="h-1 bg-nav-item-active-bg rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
                   </div>
                 </div>
@@ -582,9 +582,9 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           <MethodologyNarrative text={report.methodology_narrative} />
 
           {/* Disclaimer */}
-          <div className="p-4 bg-[#080F1F] border border-[#1E3A5F] rounded-xl">
-            <p className="text-[#8BA3C7] text-xs leading-relaxed">
-              <span className="text-[#F59E0B] font-semibold">Important: </span>
+          <div className="p-4 bg-bg-overlay border border-border-subtle rounded-xl">
+            <p className="text-text-muted text-xs leading-relaxed">
+              <span className="text-status-warning font-semibold">Important: </span>
               All evidence is in vitro or animal-model — no human clinical data has been collected yet. Confidence scores reflect corpus evidence strength, not clinical validation. These are hypotheses to be tested in the clinical trial.
             </p>
           </div>
