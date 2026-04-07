@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
 
     // ── STEP 3: Multi-aspect weighted vector search ───────────────────────────
     await log('Weighted corpus search', 'running')
-    const matchedChunks = await searchCorpusMultiAspect(aspects, 30)
-    await log('Weighted corpus search', 'complete', `${matchedChunks.length} unique chunks (4 aspects, source-boosted)`)
+    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 20, 80, 3)
+    await log('Weighted corpus search', 'complete', `${searchStats.rawCandidates} raw → ${searchStats.afterDedup} deduped → ${searchStats.finalSent} sent to Claude | sim p50=${searchStats.similarityP50} p75=${searchStats.similarityP75}`)
 
     // ── STEP 3.5: Compute real ML scores ─────────────────────────────────────
     await log('Score computation', 'running')

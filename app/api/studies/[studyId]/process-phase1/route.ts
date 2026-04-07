@@ -101,11 +101,11 @@ export async function POST(
 
     // ── STEP 4: Multi-aspect weighted corpus search ────────────────────────────
     await log('Weighted corpus search', 'running')
-    const matchedChunks = await searchCorpusMultiAspect(aspects, 35)
+    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 20, 80, 3)
     await log(
       'Weighted corpus search',
       'complete',
-      `${matchedChunks.length} unique chunks across 4 aspects (source-boosted)`
+      `${searchStats.rawCandidates} raw → ${searchStats.afterDedup} deduped → ${searchStats.afterCap} after per-doc cap (max 3) → ${searchStats.finalSent} sent to Claude | sim p50=${searchStats.similarityP50} p75=${searchStats.similarityP75} min=${searchStats.similarityMin.toFixed(3)}`
     )
 
     // ── STEP 5: Compute Bayesian subtype priors ────────────────────────────────

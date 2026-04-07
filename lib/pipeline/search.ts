@@ -51,26 +51,44 @@ export async function searchCorpusWeighted(
   return data as MatchedChunk[]
 }
 
+export interface MultiAspectSearchStats {
+  rawCandidates: number
+  afterDedup: number
+  afterCap: number
+  finalSent: number
+  similarityMin: number
+  similarityMax: number
+  similarityMean: number
+  similarityP50: number
+  similarityP75: number
+}
+
 /**
  * Multi-aspect search: runs one weighted query per aspect, deduplicates by
- * chunk_id (keeping the best similarity score), returns top topK results.
+ * chunk_id (keeping the best similarity score), applies a per-doc chunk cap
+ * to prevent large docs from crowding out smaller ones, then returns the
+ * top finalK results.
  *
- * @param aspects  Map of aspect label → embedding vector
- * @param topK     Number of unique chunks to return
+ * @param aspects      Map of aspect label → embedding vector
+ * @param finalK       Number of chunks to return to the caller (sent to Claude)
+ * @param rawPerAspect Raw candidates to fetch per aspect before dedup + capping
+ * @param maxPerDoc    Max chunks any single document may contribute
  */
 export async function searchCorpusMultiAspect(
   aspects: Record<string, number[]>,
-  topK: number = 35
-): Promise<MatchedChunk[]> {
-  const perAspectK = Math.ceil(topK * 1.5)
-
+  finalK: number = 20,
+  rawPerAspect: number = 80,
+  maxPerDoc: number = 3
+): Promise<{ chunks: MatchedChunk[]; stats: MultiAspectSearchStats }> {
   // Run all aspect searches in parallel
   const results = await Promise.all(
     Object.entries(aspects).map(async ([aspect, vector]) => {
-      const chunks = await searchCorpusWeighted(vector, perAspectK)
+      const chunks = await searchCorpusWeighted(vector, rawPerAspect)
       return chunks.map(c => ({ ...c, aspect }))
     })
   )
+
+  const rawCandidates = results.reduce((n, r) => n + r.length, 0)
 
   // Deduplicate: keep best similarity score per chunk_id
   const best = new Map<string, MatchedChunk>()
@@ -83,8 +101,40 @@ export async function searchCorpusMultiAspect(
     }
   }
 
-  // Sort by best similarity and return top topK
-  return Array.from(best.values())
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, topK)
+  const afterDedup = best.size
+
+  // Sort by similarity descending, then apply per-doc cap
+  const sorted = Array.from(best.values()).sort((a, b) => b.similarity - a.similarity)
+  const docCounts = new Map<string, number>()
+  const capped: MatchedChunk[] = []
+  for (const chunk of sorted) {
+    const count = docCounts.get(chunk.doc_id) ?? 0
+    if (count < maxPerDoc) {
+      capped.push(chunk)
+      docCounts.set(chunk.doc_id, count + 1)
+    }
+  }
+
+  const afterCap = capped.length
+  const final = capped.slice(0, finalK)
+
+  // Compute similarity stats over the final set
+  const sims = final.map(c => c.similarity).sort((a, b) => a - b)
+  const mean = sims.length ? sims.reduce((s, v) => s + v, 0) / sims.length : 0
+  const p50 = sims.length ? sims[Math.floor(sims.length * 0.5)] : 0
+  const p75 = sims.length ? sims[Math.floor(sims.length * 0.75)] : 0
+
+  const stats: MultiAspectSearchStats = {
+    rawCandidates,
+    afterDedup,
+    afterCap,
+    finalSent: final.length,
+    similarityMin: sims[0] ?? 0,
+    similarityMax: sims[sims.length - 1] ?? 0,
+    similarityMean: Math.round(mean * 1000) / 1000,
+    similarityP50: Math.round(p50 * 1000) / 1000,
+    similarityP75: Math.round(p75 * 1000) / 1000,
+  }
+
+  return { chunks: final, stats }
 }
