@@ -105,8 +105,13 @@ function PriorityBar({ pct }: { pct: number }) {
   const color = pct >= 75 ? "var(--status-success)" : pct >= 50 ? "var(--brand-core)" : "var(--status-warning)";
   return (
     <div>
-      {/* SCIENCE-FEEDBACK: P1-A */}
-      <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Planning Phase signal strength</p>
+      {/* SCIENCE-FEEDBACK: P1-B — tooltip clarifies what the score means */}
+      <p
+        className="text-[10px] uppercase tracking-wider text-text-secondary mb-1 cursor-help"
+        title="Priority score reflects corpus evidence density for this biomarker — not clinical effect size or predicted response probability."
+      >
+        Planning Phase signal strength ⓘ
+      </p>
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
@@ -577,6 +582,17 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                 </div>
               );
             })}
+          </div>
+
+          {/* SCIENCE-FEEDBACK: P1-B — Confidence score explainer */}
+          <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl space-y-3">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary">How confidence scores are calculated</p>
+            <ul className="space-y-2 text-xs text-text-muted leading-relaxed">
+              <li className="flex gap-2"><span className="text-brand-core flex-shrink-0">•</span><span><span className="text-text-body font-medium">Overall confidence</span> reflects the Bayesian Beta-Binomial posterior computed from corpus animal-model keyword counts across all retrieved chunks. It is a measure of how consistently the evidence supports a response signal — not a probability of patient response.</span></li>
+              <li className="flex gap-2"><span className="text-brand-core flex-shrink-0">•</span><span><span className="text-text-body font-medium">Subgroup scores (Responder / Non-Responder)</span> are computed independently per phenotype. It is expected that subgroup scores can exceed the overall — they reflect evidence for each profile individually, not a partition of the overall.</span></li>
+              <li className="flex gap-2"><span className="text-brand-core flex-shrink-0">•</span><span><span className="text-text-body font-medium">Score thresholds:</span> ≥70% = strong mechanistic evidence with multiple converging signals; 45–69% = moderate support with meaningful translational uncertainty; &lt;45% = preliminary — treat as directional hypothesis only.</span></li>
+              <li className="flex gap-2"><span className="text-brand-core flex-shrink-0">•</span><span>These scores do <span className="text-text-body font-medium">not</span> predict probability of patient response. They reflect the strength and consistency of corpus evidence for each phenotype cluster.</span></li>
+            </ul>
           </div>
 
           {/* Methodology narrative — parsed into sections */}

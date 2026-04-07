@@ -89,6 +89,15 @@ For each phenotype profile, derive specific, evidence-grounded predictions acros
 Ground every claim in specific corpus evidence. Use exact thresholds where the corpus provides them.
 Assign a corpus_hypothesis_confidence (0.0–1.0) reflecting how strongly the corpus supports each profile.
 
+// SCIENCE-FEEDBACK: P1-B — confidence score interpretation instruction
+When reporting confidence scores, always include a one-sentence plain-English interpretation of what the score reflects in the methodology_narrative field (e.g., "strength of corpus evidence, not predicted probability of patient response"). Never present scores as standalone numbers without context.
+
+// SCIENCE-FEEDBACK: P1-D — BDNF grey zone
+For BDNF-based inclusion criteria, always address the grey zone between the inclusion threshold and exclusion threshold. If corpus evidence is insufficient to define a rule for intermediate values, flag this explicitly as an open protocol question in key_inclusion_criteria (e.g., "BDNF 15–25 ng/mL: indeterminate zone — protocol decision required").
+
+// SCIENCE-FEEDBACK: P1-E — mixed phenotype tiebreaker
+When generating phenotype classification criteria, always address patients who meet criteria for more than one subtype simultaneously. Either provide a hierarchical decision rule (e.g., biomarker profile takes precedence over treatment history when they conflict) or flag explicitly as a protocol gap in key_inclusion_criteria or key_exclusion_criteria. Do not leave mixed-phenotype patients unclassified.
+
 OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
 {
   "responder_profile": {
@@ -163,6 +172,9 @@ For each biomarker, provide:
 
 Focus on biomarkers with the strongest mechanistic rationale for ${drugName} specifically.
 Include 6–9 biomarkers spanning inflammatory, neuroplasticity, behavioral, and imaging domains.
+
+// SCIENCE-FEEDBACK: P1-C — BDNF efficacy signal contradiction guard
+CRITICAL CONSISTENCY CHECK: If the corpus contains a warning or negative finding about using a specific biomarker as an efficacy marker (for example, Calder et al. 2025 meta-analysis found SMD=0.024, p=0.64 for post-dose peripheral BDNF as an efficacy endpoint), do NOT list that same biomarker as a positive responder signal without explicitly noting the contradiction in the preclinical_rationale field and explaining which evidence takes precedence and why. Silence on the contradiction is not acceptable — if you include a biomarker despite conflicting evidence, state the conflict directly.
 
 OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
 {
