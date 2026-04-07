@@ -252,7 +252,8 @@ export default function Phase2FinalReport({
               PATIENT-LEVEL VALIDATED
             </span>
             <span className="text-xs text-text-secondary">
-              Pre-clinical hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
+              {/* SCIENCE-FEEDBACK: P1-A */}
+              Planning Phase hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
             </span>
           </div>
           <button

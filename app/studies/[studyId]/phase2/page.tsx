@@ -54,7 +54,8 @@ export default async function Phase2Page({
         <p className="text-status-purple text-xs uppercase tracking-widest mb-4">Clinical Analysis · Lumos v2.1</p>
         <h1 className="text-4xl font-bold text-text-heading mb-3">Trial Data Is In</h1>
         <p className="text-text-muted text-sm max-w-xl mx-auto leading-relaxed">
-          XYL-1001 Phase 1 patient outcomes are ready. Run Lumos Clinical Analysis to validate the pre-clinical
+          {/* SCIENCE-FEEDBACK: P1-A */}
+          XYL-1001 Phase 1 patient outcomes are ready. Run Lumos Clinical Analysis to validate the Planning Phase
           phenotype hypotheses against real patient data and generate CRO-ready screening criteria.
         </p>
       </div>

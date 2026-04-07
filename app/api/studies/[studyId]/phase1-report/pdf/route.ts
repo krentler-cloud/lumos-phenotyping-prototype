@@ -48,7 +48,8 @@ export async function GET(
 
   const buffer = await renderToBuffer(element);
 
-  const filename = `${study.name.replace(/[^a-z0-9]/gi, "-")}-Phase1-Preclinical-Report.pdf`;
+  // SCIENCE-FEEDBACK: P1-A
+  const filename = `${study.name.replace(/[^a-z0-9]/gi, "-")}-Phase1-Planning-Report.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

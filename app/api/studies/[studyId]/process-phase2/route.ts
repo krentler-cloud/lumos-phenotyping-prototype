@@ -81,6 +81,7 @@ export async function POST(
     })
 
     // ── Step 2: Load Phase 1 report ─────────────────────────────────────────
+    // SCIENCE-FEEDBACK: P1-A
     await step(supabase, run_id, log, 'Load pre-clinical report', async () => {
       const { data, error } = await supabase
         .from('phase1_reports')

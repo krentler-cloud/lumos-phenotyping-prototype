@@ -6,7 +6,8 @@ interface Props {
 }
 
 export default function Phase1ExportButton({ studyId, drugName }: Props) {
-  const filename = `${drugName.replace(/[^a-z0-9]/gi, "-")}-Phase1-Preclinical-Report.pdf`;
+  // SCIENCE-FEEDBACK: P1-A
+  const filename = `${drugName.replace(/[^a-z0-9]/gi, "-")}-Phase1-Planning-Report.pdf`;
 
   return (
     <a

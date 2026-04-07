@@ -51,7 +51,8 @@ export default function Sidebar({ study }: SidebarProps) {
       <div className="px-5 py-4 border-b border-border-emphasis">
         <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">Active Project</p>
         <p className="text-text-heading text-sm font-semibold">{study.sponsor} · {study.drug_name}</p>
-        <p className="text-text-muted text-xs mt-0.5">{study.indication} · Pre-Clinical Analysis</p>
+        {/* SCIENCE-FEEDBACK: P1-A */}
+        <p className="text-text-muted text-xs mt-0.5">{study.indication} · Planning Phase</p>
       </div>
 
       {/* Navigation */}
@@ -71,7 +72,7 @@ export default function Sidebar({ study }: SidebarProps) {
         <div>
           <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left group">
             <span className={`text-[10px] font-bold uppercase tracking-widest ${phase1Active ? 'text-brand-core' : 'text-text-muted'}`}>
-              ▶ Pre-Clinical Analysis
+              ▶ Planning Phase
             </span>
           </button>
           <div className="mt-1 space-y-0.5 ml-2">
@@ -84,14 +85,14 @@ export default function Sidebar({ study }: SidebarProps) {
             {hasPhase1 ? (
               <SidebarItem
                 href={`${base}/phase1/report`}
-                label="Pre-Clinical Report"
+                label="Planning Phase Report"
                 icon="☰"
                 active={isActive(`${base}/phase1/report`)}
               />
             ) : (
               <SidebarItem
                 href={`${base}/phase1`}
-                label="Pre-Clinical Report"
+                label="Planning Phase Report"
                 icon="○"
                 muted
                 active={false}

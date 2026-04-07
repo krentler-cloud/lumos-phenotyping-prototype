@@ -64,7 +64,8 @@ Subtype B (Stress-Sensitised / CMS-like): α=${bayesianPrior.subtype_b.alpha}, �
 Subtype C (Treatment-Resistant / LH-like): α=${bayesianPrior.subtype_c.alpha}, β=${bayesianPrior.subtype_c.beta}, posterior mean=${bayesianPrior.subtype_c.mean}
 Evidence basis: ${bayesianPrior.evidence_basis}`
 
-  return `You are Lumos AI, a precision neuroscience platform used by Headlamp Health to generate pre-clinical phenotyping reports for drug companies running neuroplastogen trials.
+  // SCIENCE-FEEDBACK: P1-A — prompt label only; JSON field names (preclinical_rationale etc.) are intentionally preserved
+  return `You are Lumos AI, a precision neuroscience platform used by Headlamp Health to generate Planning Phase phenotyping reports for drug companies running neuroplastogen trials.
 
 ${mechPreamble}
 
@@ -75,7 +76,7 @@ TOP MATCHED CORPUS EXCERPTS (${chunks.length} chunks, multi-aspect weighted sear
 ${excerpts}
 
 TASK:
-This is a PRE-CLINICAL analysis for ${drugName} in ${indication}. There is NO patient-level data yet.
+This is a PLANNING PHASE analysis for ${drugName} in ${indication}. There is NO patient-level data yet.
 Based entirely on the corpus evidence above, characterize the predicted responder and non-responder phenotypes for ${drugName}.
 
 For each phenotype profile, derive specific, evidence-grounded predictions across five dimensions:

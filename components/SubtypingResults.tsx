@@ -271,7 +271,8 @@ export default function SubtypingResults({
           </p>
           <h1 className="text-2xl font-bold text-text-heading mb-1">2.2 Subtyping Results</h1>
           <p className="text-text-muted text-sm">
-            {drugName} · N=16 patients · {ml.concordance_pct}% concordance with pre-clinical prediction
+            {/* SCIENCE-FEEDBACK: P1-A */}
+            {drugName} · N=16 patients · {ml.concordance_pct}% concordance with Planning Phase prediction
           </p>
         </div>
         <Link
@@ -361,7 +362,7 @@ export default function SubtypingResults({
                     <div className="h-full rounded-full" style={{ width: `${postPct}%`, background: card.color }} />
                   </div>
                 </div>
-                <p className="text-[10px] text-text-secondary mt-1">Pre-Clinical → Clinical</p>
+                <p className="text-[10px] text-text-secondary mt-1">Planning Phase → Clinical</p>
               </div>
             );
           })}

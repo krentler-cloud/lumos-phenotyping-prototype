@@ -387,7 +387,8 @@ export default function ReportViewer({ report, runId }: { report: ReportData; ru
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-text-muted text-xs mb-1">Run ID: {runId.slice(0, 8)}… · {new Date(report.created_at).toLocaleString()}</p>
-            <h1 className="text-2xl font-bold text-text-heading">Pre-Clinical Phenotyping Report</h1>
+            {/* SCIENCE-FEEDBACK: P1-A */}
+            <h1 className="text-2xl font-bold text-text-heading">Planning Phase Phenotyping Report</h1>
             <p className="text-text-muted text-sm mt-1 capitalize">{report.report_type} phase</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

@@ -175,7 +175,8 @@ export default function Phase1ProcessingPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-status-success text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis</p>
+            {/* SCIENCE-FEEDBACK: P1-A */}
+            <p className="text-status-success text-xs uppercase tracking-widest mb-1">Planning Phase Analysis</p>
             <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis Complete</h1>
             <p className="text-text-muted text-sm">
               8 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
@@ -264,15 +265,15 @@ export default function Phase1ProcessingPage() {
       {/* Header */}
       <div className="mb-10">
         <p className="text-brand-core text-xs uppercase tracking-widest mb-2">
-          Pre-Clinical Analysis
+          Planning Phase Analysis
         </p>
         <h1 className="text-2xl font-bold text-text-heading mb-2">
           {isError ? "Analysis Failed" : `Lumos AI™ is analyzing${dots}`}
         </h1>
         <p className="text-text-muted text-sm">
           {isError
-            ? "An error occurred during corpus analysis. You can re-run from the pre-clinical analysis page."
-            : "Running pre-clinical corpus analysis — no patient data required. This typically takes 60–90 seconds."}
+            ? "An error occurred during corpus analysis. You can re-run from the Planning Phase analysis page."
+            : "Running Planning Phase corpus analysis — no patient data required. This typically takes 60–90 seconds."}
         </p>
       </div>
 

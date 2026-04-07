@@ -10,7 +10,8 @@ const OBJECTIVES = [
     title: "Phenotype Stratification",
     description:
       "Predict which patients are likely responders vs. non-responders before any clinical data is collected, using pre-clinical corpus evidence and Bayesian subtype priors.",
-    phase: "Pre-Clinical",
+    // SCIENCE-FEEDBACK: P1-A
+    phase: "Planning Phase",
     phaseKey: "phase1",
     reportPath: "phase1/report",
     color: "blue",
@@ -20,7 +21,7 @@ const OBJECTIVES = [
     title: "Biomarker Protocol",
     description:
       "Identify the highest-priority biomarkers to collect in the trial and specify evidence-grounded thresholds that distinguish responder from non-responder subpopulations.",
-    phase: "Pre-Clinical",
+    phase: "Planning Phase",
     phaseKey: "phase1",
     reportPath: "phase1/report",
     color: "blue",
@@ -110,10 +111,10 @@ export default async function StudyOverviewPage({
   if (phase2Complete) {
     ctaPrimary = { label: "View Final Report", href: `/studies/${studyId}/phase2/report` };
   } else if (phase1Complete) {
-    ctaPrimary = { label: "View Pre-Clinical Report", href: `/studies/${studyId}/phase1/report` };
+    ctaPrimary = { label: "View Planning Phase Report", href: `/studies/${studyId}/phase1/report` };
     ctaSecondary = { label: "Run Clinical Analysis", href: `/studies/${studyId}/phase2` };
   } else {
-    ctaPrimary = { label: "Run Pre-Clinical Analysis", href: `/studies/${studyId}/phase1` };
+    ctaPrimary = { label: "Run Planning Phase Analysis", href: `/studies/${studyId}/phase1` };
   }
 
   function objectiveStatus(phaseKey: "phase1" | "phase2") {
@@ -221,8 +222,8 @@ export default async function StudyOverviewPage({
             <tbody>
               <tr className="border-b border-border-subtle">
                 <td className="px-5 py-4">
-                  <p className="text-text-heading text-sm font-medium">Pre-Clinical Report</p>
-                  <p className="text-text-secondary text-xs mt-0.5">Phase 1 complete</p>
+                  <p className="text-text-heading text-sm font-medium">Planning Phase Report</p>
+                  <p className="text-text-secondary text-xs mt-0.5">Planning Phase complete</p>
                 </td>
                 <td className="px-5 py-4 text-text-muted text-xs">
                   Responder phenotype · Efficacy signals · Cross-species evidence · Exploratory biomarkers

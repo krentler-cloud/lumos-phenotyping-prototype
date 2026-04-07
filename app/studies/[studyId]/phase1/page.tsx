@@ -41,9 +41,10 @@ export default async function Phase1Page({
     <div className="max-w-3xl mx-auto px-8 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-brand-core text-xs uppercase tracking-widest mb-2">Phase 1 — Preclinical</p>
+        {/* SCIENCE-FEEDBACK: P1-A */}
+        <p className="text-brand-core text-xs uppercase tracking-widest mb-2">Planning Phase</p>
         <h1 className="text-2xl font-bold text-text-heading mb-2">
-          Lumos AI™ Preclinical Analysis
+          Lumos AI™ Planning Phase Analysis
         </h1>
         <p className="text-text-muted text-sm leading-relaxed">
           Lumos will analyze the {study.drug_name} IND package and Headlamp&apos;s MDD corpus to generate

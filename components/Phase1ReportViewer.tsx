@@ -105,7 +105,8 @@ function PriorityBar({ pct }: { pct: number }) {
   const color = pct >= 75 ? "var(--status-success)" : pct >= 50 ? "var(--brand-core)" : "var(--status-warning)";
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Preclinical signal strength</p>
+      {/* SCIENCE-FEEDBACK: P1-A */}
+      <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-1">Planning Phase signal strength</p>
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
@@ -310,7 +311,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       <div className="mb-6">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-brand-core text-xs uppercase tracking-widest mb-1">Pre-Clinical Analysis Report</p>
+            <p className="text-brand-core text-xs uppercase tracking-widest mb-1">Planning Phase Analysis Report</p>
             <h1 className="text-2xl font-bold text-text-heading">{drugName} · {indication}</h1>
             <p className="text-text-secondary text-xs mt-1">Generated {genDate}</p>
           </div>

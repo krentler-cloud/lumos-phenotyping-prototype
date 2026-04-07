@@ -117,7 +117,8 @@ function FieldBlock({ label, value }: { label: string; value: string }) {
 function Footer({ drugName, date }: { drugName: string; date: string }) {
   return (
     <View style={s.footer} fixed>
-      <Text style={s.footerText}>Lumos AI™ · {drugName} Phase 1 Preclinical Report · Headlamp Health</Text>
+      {/* SCIENCE-FEEDBACK: P1-A */}
+      <Text style={s.footerText}>Lumos AI™ · {drugName} Phase 1 Planning Report · Headlamp Health</Text>
       <Text style={s.footerText}>{date} · Confidential</Text>
     </View>
   );
@@ -140,7 +141,7 @@ export function Phase1PDF({
   });
 
   return (
-    <Document title={`${drugName} Phase 1 Preclinical Report — Lumos AI`} author="Headlamp Health">
+    <Document title={`${drugName} Phase 1 Planning Report — Lumos AI`} author="Headlamp Health">
 
       {/* ══ PAGE 1: Cover + Methodology ══════════════════════════════ */}
       <Page size="A4" style={s.page}>
@@ -157,9 +158,9 @@ export function Phase1PDF({
           </View>
           <View style={s.headerRow}>
             <View>
-              <Text style={s.eyebrow}>PHASE 1 — PRECLINICAL REPORT</Text>
+              <Text style={s.eyebrow}>PHASE 1 — PLANNING PHASE REPORT</Text>
               <Text style={s.title}>{drugName} · {indication}</Text>
-              <Text style={s.subtitle}>Generated {genDate} · Pre-clinical corpus analysis · No patient data</Text>
+              <Text style={s.subtitle}>Generated {genDate} · Planning Phase corpus analysis · No patient data</Text>
             </View>
             <ConfPill value={report.overall_confidence} />
           </View>
@@ -381,7 +382,7 @@ export function Phase1PDF({
         <View style={[s.card, { marginTop: 8, borderColor: c.border }]}>
           <Text style={[s.label, { marginBottom: 4 }]}>IMPORTANT LIMITATIONS</Text>
           <Text style={s.small}>
-            This report is generated from pre-clinical corpus evidence only. All efficacy signals are from in vitro or animal model studies; no human clinical data has been collected. Predictions are hypotheses to be tested in the Phase 1 trial, not established findings. Confidence scores reflect corpus evidence strength, not clinical validation. This document is intended for internal research planning purposes only.
+            This report is generated from Planning Phase corpus evidence only. All efficacy signals are from in vitro or animal model studies; no human clinical data has been collected. Predictions are hypotheses to be tested in the Phase 1 trial, not established findings. Confidence scores reflect corpus evidence strength, not clinical validation. This document is intended for internal research planning purposes only.
           </Text>
         </View>
       </Page>

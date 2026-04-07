@@ -40,7 +40,8 @@ function getSuggestions(
       "The confidence score reflects how consistent the corpus evidence is, not clinical validation — so what meaningful decision does it support?",
       "How much of this responder profile is grounded in the XYL-1001 IND documents specifically, versus analogous drugs in the broader corpus?",
       "Which of these efficacy signals has the weakest supporting evidence, and why was it still included?",
-      "How would you expect these preclinical phenotype predictions to hold up in a human Phase 1 cohort?",
+      // SCIENCE-FEEDBACK: P1-A
+      "How would you expect these Planning Phase phenotype predictions to hold up in a human Phase 1 cohort?",
     ];
   }
 
@@ -48,9 +49,9 @@ function getSuggestions(
     return [
       "How stable are these subtype assignments — would enrolling 10 additional patients meaningfully shift them?",
       `What's the biological basis for distinguishing${predictedSubtype ? ` ${predictedSubtype}` : " the subtypes"} — are these clusters truly distinct or a continuous spectrum forced into categories?`,
-      "How do the SHAP attributions from the clinical model compare to what the pre-clinical analysis predicted would matter?",
+      "How do the SHAP attributions from the clinical model compare to what the Planning Phase analysis predicted would matter?",
       "What's the estimated misclassification rate given this cohort size?",
-      "Where did the clinical subtype assignments agree with and diverge from the pre-clinical predictions?",
+      "Where did the clinical subtype assignments agree with and diverge from the Planning Phase predictions?",
     ];
   }
 
@@ -60,7 +61,7 @@ function getSuggestions(
       "Which patients are most likely to be subtype boundary cases — and how does that affect confidence in the subtype model?",
       "Are there demographic confounders in this cohort that could bias the biomarker analysis?",
       "What's the MADRS trajectory variance within each subtype — are the subtypes actually clinically homogeneous?",
-      `How does the inflammatory profile distribution here compare to what the ${drugName} pre-clinical analysis predicted?`,
+      `How does the inflammatory profile distribution here compare to what the ${drugName} Planning Phase analysis predicted?`,
     ];
   }
 
@@ -68,9 +69,9 @@ function getSuggestions(
     return [
       "How should a CRO interpret these prompts — are they inclusion criteria, hypotheses to test, or exploratory add-ons?",
       `What's the projected responder rate if enrollment was restricted to the predicted responder subtype for ${drugName}?`,
-      "How do the final CRO recommendations compare to what the pre-clinical analysis predicted — where did the clinical data shift the conclusion?",
+      "How do the final CRO recommendations compare to what the Planning Phase analysis predicted — where did the clinical data shift the conclusion?",
       "Which recommendation has the weakest evidential support, and what would strengthen it?",
-      "If Phase 2 results differed significantly from pre-clinical predictions, what would that tell us about the corpus and model?",
+      "If Phase 2 results differed significantly from Planning Phase predictions, what would that tell us about the corpus and model?",
     ];
   }
 
@@ -79,7 +80,7 @@ function getSuggestions(
       "Is logistic regression on this cohort size statistically defensible for subtype prediction?",
       "How do the Phase 1 Bayesian priors propagate into the Phase 2 ML model — and could they introduce bias?",
       "What's the confidence interval on the predicted subtype assignment given N patients?",
-      `How does adding the clinical data change your confidence in ${drugName}'s responder profile relative to the pre-clinical prediction?`,
+      `How does adding the clinical data change your confidence in ${drugName}'s responder profile relative to the Planning Phase prediction?`,
       "At what sample size would you consider the subtype model sufficiently validated?",
     ];
   }
@@ -87,7 +88,7 @@ function getSuggestions(
   // Default (corpus, history, or unknown page)
   return [
     `What specific corpus evidence supports the ${topBiomarker} signal — can you cite the document?`,
-    `What are the key uncertainties in the ${drugName} pre-clinical analysis that clinical data will need to resolve?`,
+    `What are the key uncertainties in the ${drugName} Planning Phase analysis that clinical data will need to resolve?`,
     "Which pipeline step introduces the most potential for error, and why?",
     "How does adding the neuroplastigen and ketamine regulatory documents change the analysis versus the earlier corpus?",
     "What would make you more or less confident in the exploratory biomarker hypotheses?",
@@ -193,7 +194,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
 
   // Page label for header context
   const pageLabel = pathname.includes("/phase1/processing") ? "Processing"
-    : pathname.includes("/phase1/report") ? "Pre-Clinical Report"
+    : pathname.includes("/phase1/report") ? "Planning Phase Report"
     : pathname.includes("/phase2/subtyping") ? "Subtyping Results"
     : pathname.includes("/phase2/patients") ? "Patient Population"
     : pathname.includes("/phase2/report") ? "Final Report"

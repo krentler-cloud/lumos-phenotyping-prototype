@@ -39,8 +39,9 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Loaded the study configuration — drug name, indication, and the linked Phase 1 run record.",
     why: "Phase 2 re-analysis is always anchored to a specific drug and its Phase 1 hypothesis. This establishes that link before any data is touched.",
   },
+  // SCIENCE-FEEDBACK: P1-A
   "Load pre-clinical report": {
-    what: "Retrieved the complete Phase 1 corpus synthesis — responder and non-responder phenotype profiles, biomarker table, and the original Bayesian confidence scores. These are the pre-clinical hypotheses that Phase 2 will now test against real patient data.",
+    what: "Retrieved the complete Planning Phase corpus synthesis — responder and non-responder phenotype profiles, biomarker table, and the original Bayesian confidence scores. These are the Planning Phase hypotheses that Phase 2 will now test against real patient data.",
     why: "The Bayesian update in Step 4 requires the Phase 1 priors as a starting point. Without them, we would have no principled baseline to update — the clinical data would be interpreted in a vacuum rather than against a pre-specified hypothesis.",
   },
   "Load clinical patients": {

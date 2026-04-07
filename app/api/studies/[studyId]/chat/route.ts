@@ -26,10 +26,11 @@ function buildAnalysisContext(
   ]
 
   if (!phase1Report) {
-    lines.push('Pre-clinical analysis: not yet complete.')
+    // SCIENCE-FEEDBACK: P1-A
+    lines.push('Planning Phase analysis: not yet complete.')
     lines.push('')
   } else {
-    lines.push('--- PRE-CLINICAL ANALYSIS (Phase 1) ---')
+    lines.push('--- PLANNING PHASE ANALYSIS (Phase 1) ---')
     lines.push(`Overall confidence: ${Math.round(phase1Report.overall_confidence * 100)}%`)
     lines.push('')
 
@@ -66,7 +67,7 @@ function buildAnalysisContext(
 
     // Efficacy signals — full ranked detail
     if (phase1Report.biomarker_recommendations?.length) {
-      lines.push('EFFICACY SIGNALS (ranked by preclinical signal strength):')
+      lines.push('EFFICACY SIGNALS (ranked by Planning Phase signal strength):')
       phase1Report.biomarker_recommendations
         .sort((a, b) => a.rank - b.rank)
         .forEach(bm => {
@@ -239,7 +240,7 @@ export async function POST(
   const corpusBlock = buildCorpusBlock(corpusChunks)
 
   // ── System prompt ──────────────────────────────────────────────────────────────
-  const systemPrompt = `You are a clinical AI assistant embedded in the Lumos AI platform by Headlamp Health. You answer questions about the pre-clinical and clinical analysis for ${study.drug_name} in ${study.indication}.
+  const systemPrompt = `You are a clinical AI assistant embedded in the Lumos AI platform by Headlamp Health. You answer questions about the Planning Phase and clinical analysis for ${study.drug_name} in ${study.indication}.
 
 You have two sources of evidence for every response:
 1. ANALYSIS CONTEXT — structured outputs from the pipeline (phenotype profiles, efficacy signals, ML results, methodology narrative)
@@ -274,7 +275,7 @@ FORMAT: Plain prose, 2–4 short paragraphs or a tight bullet list when a list g
     },
     {
       role: 'assistant',
-      content: `Understood — I have the complete pre-clinical${phase2Report ? ' and clinical' : ''} analysis context for ${study.drug_name} in ${study.indication}, including the methodology narrative, efficacy signals, phenotype profiles, and confidence scores. I also have ${corpusChunks.length} corpus passages retrieved for your first question. Go ahead.`,
+      content: `Understood — I have the complete Planning Phase${phase2Report ? ' and clinical' : ''} analysis context for ${study.drug_name} in ${study.indication}, including the methodology narrative, efficacy signals, phenotype profiles, and confidence scores. I also have ${corpusChunks.length} corpus passages retrieved for your first question. Go ahead.`,
     },
     ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: currentUserContent },

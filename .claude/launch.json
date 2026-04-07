@@ -2,11 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "lumos",
-      "runtimeExecutable": "/opt/homebrew/bin/npm",
+      "name": "lumos-prototype",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000,
-      "cwd": "/Users/bob/Sites/lumos-prototype"
+      "port": 3000
     }
   ]
 }

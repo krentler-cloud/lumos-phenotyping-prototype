@@ -11,7 +11,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const PHASE_LABELS: Record<string, { label: string; color: string }> = {
-  preclinical: { label: "Pre-Clinical Analysis", color: "var(--brand-core)" },
+  // SCIENCE-FEEDBACK: P1-A — key stays 'preclinical' (DB enum value); only the display label changes
+  preclinical: { label: "Planning Phase Analysis", color: "var(--brand-core)" },
   clinical:    { label: "Clinical Analysis",      color: "var(--status-success)" },
 };
 
@@ -46,7 +47,7 @@ export default async function AnalysisHistoryPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis History</h1>
         <p className="text-text-muted text-sm">
-          All pre-clinical and clinical analysis runs for this project.
+          All Planning Phase and clinical analysis runs for this project.
         </p>
       </div>
 
