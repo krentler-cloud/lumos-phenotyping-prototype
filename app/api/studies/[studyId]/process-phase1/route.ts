@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { embedTexts } from '@/lib/pipeline/embed'
 import { searchCorpusMultiAspect } from '@/lib/pipeline/search'
 import { computeBayesianPrior } from '@/lib/pipeline/score'
-import { synthesizePhase1Report, synthesizeExploratoryBiomarkers } from '@/lib/pipeline/synthesize-phase1'
+import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
 // Internal route — protected by shared secret
@@ -122,14 +122,35 @@ export async function POST(
       `dominant corpus subtype: ${dominant.label} (mean=${dominant.mean.toFixed(2)})`
     )
 
-    // ── STEP 6: Claude synthesis (Opus → phenotypes, Sonnet → biomarkers) ──────
+    // ── STEP 6: Load SAD/MAD cohort data (non-blocking — enriches synthesis if present) ─
+    // SCIENCE-FEEDBACK: P1-F
+    let sadMadCohorts: SadMadCohort[] = []
+    try {
+      const { data: sadMadData } = await supabase
+        .from('sad_mad_cohorts')
+        .select('*')
+        .eq('study_id', studyId)
+        .order('phase')
+        .order('dose_mg')
+      if (sadMadData && sadMadData.length > 0) {
+        sadMadCohorts = sadMadData as SadMadCohort[]
+        await log('Load SAD/MAD data', 'complete', `${sadMadCohorts.length} cohort rows loaded (SAD + MAD)`)
+      } else {
+        await log('Load SAD/MAD data', 'complete', 'No SAD/MAD data for this study — proceeding without')
+      }
+    } catch {
+      await log('Load SAD/MAD data', 'complete', 'Table not yet migrated — skipping')
+    }
+
+    // ── STEP 7: Claude synthesis (Opus → phenotypes, Sonnet → biomarkers) ──────
     await log('Phenotype synthesis (Opus)', 'running')
     const report = await synthesizePhase1Report(
       drugName,
       indication,
       matchedChunks,
       mechanismContext,
-      bayesianPrior
+      bayesianPrior,
+      sadMadCohorts.length > 0 ? sadMadCohorts : undefined
     )
     await log(
       'Phenotype synthesis (Opus)',
@@ -137,7 +158,7 @@ export async function POST(
       `responder confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
     )
 
-    // ── STEP 7: Store report ───────────────────────────────────────────────────
+    // ── STEP 8: Store report ───────────────────────────────────────────────────
     await log('Store report', 'running')
 
     const { error: reportError } = await supabase.from('phase1_reports').insert({

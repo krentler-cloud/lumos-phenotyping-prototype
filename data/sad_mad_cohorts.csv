@@ -1,0 +1,10 @@
+phase,cohort_name,dose_mg,n_active,n_placebo,status,cmax_mean_ng_ml,cmax_sd,tmax_mean_h,auc0t_mean,half_life_mean_h,bioavailability_pct,accumulation_ratio,bdnf_pct_change_day14,bdnf_pct_change_sd,bdnf_p_value,il6_pct_change_day14,crp_pct_change_day14,ae_rate_pct,ae_max_grade,discontinuations,ae_description
+SAD,SAD Cohort 1 (5 mg),5,4,2,Complete,12.1,2.8,1.4,94.3,8.2,41.0,,,,,,0,0,0,
+SAD,SAD Cohort 2 (15 mg),15,4,2,Complete,34.8,6.1,1.7,284.6,8.6,42.1,,,,,,25,1,0,Mild headache (n=1)
+SAD,SAD Cohort 3 (30 mg),30,4,2,Complete,67.4,11.3,2.0,581.2,9.1,42.3,,,,,,25,1,0,Mild nausea (n=1)
+SAD,SAD Cohort 4 (60 mg),60,4,2,Complete,128.2,19.7,2.2,1148.9,9.5,42.0,,,,,,50,1,0,Headache (n=1); mild dizziness (n=1)
+SAD,SAD Cohort 5 (100 mg),100,4,2,Complete,205.6,31.4,2.4,1921.3,9.8,42.2,,,,,,50,2,0,Headache (n=1); nausea grade 2 (n=1)
+SAD,SAD Cohort 6 (150 mg),150,4,2,Complete,291.3,44.8,2.6,2803.7,10.2,41.8,,,,,,75,2,1,Headache (n=2); nausea grade 2 (n=1); 1 discontinuation (nausea + headache grade 2)
+MAD,MAD Cohort 1 (30 mg QD x14d),30,6,2,Complete,104.7,21.3,2.1,,,,,1.55,6.1,8.4,0.42,-4.8,-3.1,17,1,0,Mild headache (n=1)
+MAD,MAD Cohort 2 (60 mg QD x14d),60,6,2,Complete,209.8,38.7,2.3,,,,,1.64,13.8,7.1,0.08,-9.3,-6.7,33,2,0,Headache (n=1); nausea grade 1 (n=1)
+MAD,MAD Cohort 3 (100 mg QD x14d),100,4,2,Ongoing (75% enrolled),344.9,52.1,2.5,,,,,1.71,20.9,6.8,0.03,-12.1,-8.4,50,2,0,Headache (n=1); insomnia grade 1 (n=1) — preliminary data

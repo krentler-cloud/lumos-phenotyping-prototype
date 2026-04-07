@@ -3,6 +3,49 @@ import { MechanismContext, BayesianPrior, ExploratoryBiomarker } from '@/lib/typ
 import { MatchedChunk } from '@/lib/pipeline/search'
 import { computeMaxTokens } from '@/lib/pipeline/tokens'
 
+// SCIENCE-FEEDBACK: P1-F — SAD/MAD cohort type for synthesis injection
+export interface SadMadCohort {
+  phase: 'SAD' | 'MAD'
+  cohort_name: string
+  dose_mg: number
+  n_active: number
+  status: string
+  cmax_mean_ng_ml?: number | null
+  half_life_mean_h?: number | null
+  bioavailability_pct?: number | null
+  accumulation_ratio?: number | null
+  bdnf_pct_change_day14?: number | null
+  bdnf_p_value?: number | null
+  il6_pct_change_day14?: number | null
+  crp_pct_change_day14?: number | null
+  ae_rate_pct: number
+  ae_max_grade: number
+  discontinuations: number
+  ae_description?: string | null
+}
+
+// SCIENCE-FEEDBACK: P1-F — build a concise SAD/MAD summary block for the synthesis prompt
+function buildSadMadBlock(cohorts: SadMadCohort[]): string {
+  if (!cohorts || cohorts.length === 0) return ''
+
+  const sadRows = cohorts.filter(c => c.phase === 'SAD')
+  const madRows = cohorts.filter(c => c.phase === 'MAD')
+
+  const sadLines = sadRows.map(c =>
+    `  ${c.cohort_name}: Cmax=${c.cmax_mean_ng_ml ?? '—'} ng/mL, t½=${c.half_life_mean_h ?? '—'}h, F=${c.bioavailability_pct ?? '—'}%, AE rate=${c.ae_rate_pct}% (max grade ${c.ae_max_grade}), discontinuations=${c.discontinuations}${c.ae_description ? ` [${c.ae_description}]` : ''}`
+  ).join('\n')
+
+  const madLines = madRows.map(c =>
+    `  ${c.cohort_name}: Cmax=${c.cmax_mean_ng_ml ?? '—'} ng/mL, accum ratio=${c.accumulation_ratio ?? '—'}, BDNF Δ=${c.bdnf_pct_change_day14 != null ? `+${c.bdnf_pct_change_day14}%` : '—'} (p=${c.bdnf_p_value ?? '—'}), IL-6 Δ=${c.il6_pct_change_day14 != null ? `${c.il6_pct_change_day14}%` : '—'}, CRP Δ=${c.crp_pct_change_day14 != null ? `${c.crp_pct_change_day14}%` : '—'}, AE rate=${c.ae_rate_pct}% (max grade ${c.ae_max_grade}), status=${c.status}`
+  ).join('\n')
+
+  const sections = []
+  if (sadLines) sections.push(`SAD (Single Ascending Dose) — PK Summary:\n${sadLines}`)
+  if (madLines) sections.push(`MAD (Multiple Ascending Dose, 14-day) — PD + Safety:\n${madLines}`)
+
+  return `\nHUMAN PHASE 1 SAD/MAD DATA (actual XYL-1001 clinical data — integrate with corpus predictions):\n${sections.join('\n\n')}\n`
+}
+
 function getClient() {
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -50,7 +93,8 @@ function buildPhenotypePrompt(
   indication: string,
   chunks: MatchedChunk[],
   mechanismContext: MechanismContext | null,
-  bayesianPrior: BayesianPrior
+  bayesianPrior: BayesianPrior,
+  sadMadCohorts?: SadMadCohort[]
 ): string {
   const mechPreamble = buildMechanismPreamble(mechanismContext, drugName)
 
@@ -64,6 +108,9 @@ Subtype B (Stress-Sensitised / CMS-like): α=${bayesianPrior.subtype_b.alpha}, �
 Subtype C (Treatment-Resistant / LH-like): α=${bayesianPrior.subtype_c.alpha}, β=${bayesianPrior.subtype_c.beta}, posterior mean=${bayesianPrior.subtype_c.mean}
 Evidence basis: ${bayesianPrior.evidence_basis}`
 
+  // SCIENCE-FEEDBACK: P1-F — inject SAD/MAD human data when available
+  const sadMadBlock = buildSadMadBlock(sadMadCohorts ?? [])
+
   // SCIENCE-FEEDBACK: P1-A — prompt label only; JSON field names (preclinical_rationale etc.) are intentionally preserved
   return `You are Lumos AI, a precision neuroscience platform used by Headlamp Health to generate Planning Phase phenotyping reports for drug companies running neuroplastogen trials.
 
@@ -71,12 +118,12 @@ ${mechPreamble}
 
 BAYESIAN SUBTYPE PRIORS (computed from corpus animal-model evidence):
 ${priorSummary}
-
+${sadMadBlock}
 TOP MATCHED CORPUS EXCERPTS (${chunks.length} chunks, multi-aspect weighted search):
 ${excerpts}
 
 TASK:
-This is a PLANNING PHASE analysis for ${drugName} in ${indication}. There is NO patient-level data yet.
+This is a PLANNING PHASE analysis for ${drugName} in ${indication}.${sadMadCohorts && sadMadCohorts.length > 0 ? ' SAD/MAD human Phase 1 data is provided above — integrate actual PK, biomarker, and safety findings with corpus predictions. Where human data conflicts with corpus predictions, note the discordance explicitly.' : ' There is NO patient-level data yet.'}
 Based entirely on the corpus evidence above, characterize the predicted responder and non-responder phenotypes for ${drugName}.
 
 For each phenotype profile, derive specific, evidence-grounded predictions across five dimensions:
@@ -261,12 +308,13 @@ export async function synthesizePhase1Report(
   indication: string,
   chunks: MatchedChunk[],
   mechanismContext: MechanismContext | null,
-  bayesianPrior: BayesianPrior
+  bayesianPrior: BayesianPrior,
+  sadMadCohorts?: SadMadCohort[]
 ): Promise<Phase1ReportData> {
   const client = getClient()
 
   // ── Call 1: Phenotype profiles (Opus + full corpus) ───────────────────────
-  const phenotypePrompt = buildPhenotypePrompt(drugName, indication, chunks, mechanismContext, bayesianPrior)
+  const phenotypePrompt = buildPhenotypePrompt(drugName, indication, chunks, mechanismContext, bayesianPrior, sadMadCohorts)
 
   const phenotypeSystem = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
   const phenotypeMaxTokens = computeMaxTokens('claude-opus-4-6', phenotypePrompt, phenotypeSystem)
