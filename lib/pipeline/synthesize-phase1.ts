@@ -99,7 +99,6 @@ function buildPhenotypePrompt(
   const mechPreamble = buildMechanismPreamble(mechanismContext, drugName)
 
   const excerpts = chunks
-    .slice(0, 20)
     .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}${c.aspect ? `, aspect: ${c.aspect}` : ''}) — similarity: ${c.similarity.toFixed(3)}\n${c.content}`)
     .join('\n\n---\n\n')
 
@@ -329,16 +328,27 @@ export async function synthesizePhase1Report(
   const phenotypeSystem = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
   const phenotypeMaxTokens = computeMaxTokens('claude-opus-4-6', phenotypePrompt, phenotypeSystem)
   console.log(`[synthesize-phase1] Opus max_tokens = ${phenotypeMaxTokens}, prompt chars = ${phenotypePrompt.length}`)
-  const phenotypeStream = await client.messages.stream({
-    model: 'claude-opus-4-6',
-    max_tokens: phenotypeMaxTokens,
-    system: phenotypeSystem,
-    messages: [
-      { role: 'user', content: phenotypePrompt },
-    ],
-  })
 
-  const phenotypeMsg = await phenotypeStream.finalMessage()
+  // 8-minute hard timeout — prevents indefinite hangs if the API stalls or stream drops
+  const OPUS_TIMEOUT_MS = 8 * 60 * 1000
+  const phenotypeController = new AbortController()
+  const phenotypeTimeout = setTimeout(() => phenotypeController.abort(), OPUS_TIMEOUT_MS)
+
+  let phenotypeMsg: Awaited<ReturnType<typeof phenotypeStream.finalMessage>>
+  const phenotypeStream = await client.messages.stream(
+    {
+      model: 'claude-opus-4-6',
+      max_tokens: phenotypeMaxTokens,
+      system: phenotypeSystem,
+      messages: [{ role: 'user', content: phenotypePrompt }],
+    },
+    { signal: phenotypeController.signal }
+  )
+  try {
+    phenotypeMsg = await phenotypeStream.finalMessage()
+  } finally {
+    clearTimeout(phenotypeTimeout)
+  }
 
   if (phenotypeMsg.stop_reason === 'max_tokens') {
     throw new Error('Phase 1 Call 1 (phenotype) hit max_tokens — response truncated.')
