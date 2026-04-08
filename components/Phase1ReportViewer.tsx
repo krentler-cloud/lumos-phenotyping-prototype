@@ -150,27 +150,6 @@ function PriorityBar({ pct }: { pct: number }) {
 }
 
 // ── Confidence reasoning panel ────────────────────────────────────────────────
-function ConfidencePanel({ overall, narrative }: { overall: number; narrative: string }) {
-  const pct = Math.round(overall * 100);
-  const drivers =
-    pct >= 70
-      ? { label: "High confidence", color: "var(--status-success)", summary: "Strong mechanistic evidence with multiple converging preclinical signals." }
-      : pct >= 45
-      ? { label: "Moderate confidence", color: "var(--status-warning)", summary: "Moderate mechanistic support with meaningful translational uncertainty." }
-      : { label: "Low confidence", color: "var(--status-danger)", summary: "Limited or conflicting evidence. Treat predictions as directional hypotheses only." };
-
-  return (
-    <div className="mt-3 p-4 bg-bg-overlay border border-brand-core/30 rounded-xl">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold" style={{ color: drivers.color }}>{drivers.label} — {pct}%</span>
-      </div>
-      <p className="text-text-muted text-xs leading-relaxed mb-3">{drivers.summary}</p>
-      <p className="text-brand-core text-[10px] uppercase tracking-wider mb-1">Full reasoning</p>
-      <p className="text-text-body text-xs leading-relaxed">{narrative}</p>
-    </div>
-  );
-}
-
 // ── Methodology narrative parser ─────────────────────────────────────────────
 function MethodologyNarrative({ text }: { text: string }) {
   // Split on "Key limitations:" or "Limitations:"
@@ -525,8 +504,8 @@ function HumanDataTab({ studyId }: { studyId: string }) {
 }
 
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
-  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "methodology" | "exploratory" | "human-data">("methodology");
-  const [showConfidence, setShowConfidence] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "corpus-intelligence" | "exploratory" | "human-data">("overview");
+  const [showCoThinkPrompt, setShowCoThinkPrompt] = useState(false);
 
   const genDate = new Date(generatedAt).toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
@@ -556,11 +535,6 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                 Re-run with updated corpus
               </button>
             </form>
-            <ConfidenceBadge
-              value={report.overall_confidence}
-              onClick={() => setShowConfidence(v => !v)}
-              active={showConfidence}
-            />
             <Phase1ExportButton
               studyId={studyId}
               drugName={drugName}
@@ -568,15 +542,10 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           </div>
         </div>
 
-        {/* Confidence reasoning panel */}
-        {showConfidence && (
-          <ConfidencePanel overall={report.overall_confidence} narrative={report.methodology_narrative} />
-        )}
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <div className="flex border-b border-border-subtle mb-6 -mx-1 overflow-x-auto">
-        <Tab label="Methodology" active={activeTab === "methodology"} onClick={() => setActiveTab("methodology")} />
         <Tab label="Overview" active={activeTab === "overview"} onClick={() => setActiveTab("overview")} />
         <Tab label="Efficacy Signals" active={activeTab === "biomarkers"} onClick={() => setActiveTab("biomarkers")} count={report.biomarker_recommendations?.length} />
         <Tab label="Evidence & Safety" active={activeTab === "evidence"} onClick={() => setActiveTab("evidence")} count={(report.cross_species_evidence?.length ?? 0) + (report.safety_flags?.length ?? 0)} />
@@ -585,6 +554,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
         )}
         {/* SCIENCE-FEEDBACK: P1-F — Phase 1 Human Data tab (always shown when data may exist) */}
         <Tab label="Phase 1 Human Data" active={activeTab === "human-data"} onClick={() => setActiveTab("human-data")} />
+        <Tab label="Corpus Intelligence" active={activeTab === "corpus-intelligence"} onClick={() => setActiveTab("corpus-intelligence")} />
       </div>
 
       {/* ══ OVERVIEW TAB ══════════════════════════════════════════════ */}
@@ -783,32 +753,140 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
         <ExploratoryBiomarkersTab biomarkers={report.exploratory_biomarkers} />
       )}
 
-      {/* ══ METHODOLOGY TAB ═══════════════════════════════════════════ */}
-      {activeTab === "methodology" && (
-        <div className="space-y-4">
+      {/* ══ CORPUS INTELLIGENCE TAB ═══════════════════════════════════ */}
+      {activeTab === "corpus-intelligence" && (
+        <div className="space-y-5">
 
-          {/* Confidence scores row */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Overall Analysis", value: report.overall_confidence, color: "var(--brand-core)" },
-              { label: "Responder Hypothesis", value: report.responder_profile.corpus_hypothesis_confidence, color: "var(--status-success)" },
-              { label: "Non-Responder Hypothesis", value: report.nonresponder_profile.corpus_hypothesis_confidence, color: "var(--status-danger)" },
-            ].map(({ label, value, color }) => {
-              const pct = Math.round(value * 100);
-              const barColor = pct >= 70 ? "var(--status-success)" : pct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
-              return (
-                <div key={label} className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
-                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-1" style={{ color }}>{label}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Confidence Score</p>
-                  <p className="text-2xl font-bold mb-2" style={{ color: barColor }}>{pct}%</p>
-                  <div className="h-1 bg-nav-item-active-bg rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-                  </div>
+          {/* ── Corpus Coverage ─────────────────────────────────────── */}
+          {report.corpus_intelligence && (
+            <>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary mb-3">Corpus Coverage</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Clinical Trial", count: report.corpus_intelligence.source_breakdown.clinical_trial, color: "var(--status-success)" },
+                    { label: "Regulatory", count: report.corpus_intelligence.source_breakdown.regulatory, color: "var(--brand-core)" },
+                    { label: "Literature", count: report.corpus_intelligence.source_breakdown.literature, color: "var(--text-muted)" },
+                    { label: "Internal", count: report.corpus_intelligence.source_breakdown.internal, color: "var(--gold-icon)" },
+                  ].map(({ label, count, color }) => (
+                    <div key={label} className="p-4 bg-bg-surface border border-border-subtle rounded-xl text-center">
+                      <p className="text-2xl font-bold" style={{ color }}>{count}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-text-secondary mt-1">{label}</p>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+                <div className="mt-3 flex gap-6 text-xs text-text-muted px-1">
+                  <span>Similarity p50 <span className="text-text-body font-medium">{report.corpus_intelligence.similarity_stats.p50}</span></span>
+                  <span>p75 <span className="text-text-body font-medium">{report.corpus_intelligence.similarity_stats.p75}</span></span>
+                  <span>Min <span className="text-text-body font-medium">{report.corpus_intelligence.similarity_stats.min.toFixed(3)}</span></span>
+                  <span>Total chunks <span className="text-text-body font-medium">{report.corpus_intelligence.similarity_stats.total_chunks}</span></span>
+                </div>
+              </div>
 
+              {/* ── Overall verdict ─────────────────────────────────── */}
+              {report.corpus_intelligence.overall_verdict && (
+                <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
+                  <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary mb-1">Corpus Verdict</p>
+                  <p className="text-sm text-text-body leading-relaxed">{report.corpus_intelligence.overall_verdict}</p>
+                </div>
+              )}
+
+              {/* ── Strengths & Gaps ────────────────────────────────── */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {report.corpus_intelligence.corpus_strengths.length > 0 && (
+                  <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-status-success mb-3">Coverage Strengths</p>
+                    <ul className="space-y-2">
+                      {report.corpus_intelligence.corpus_strengths.map((s, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-text-body leading-relaxed">
+                          <span className="text-status-success flex-shrink-0 mt-0.5">✓</span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {report.corpus_intelligence.corpus_gaps.length > 0 && (
+                  <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-status-warning mb-3">Evidence Gaps</p>
+                    <ul className="space-y-2">
+                      {report.corpus_intelligence.corpus_gaps.map((g, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-text-body leading-relaxed">
+                          <span className="text-status-warning flex-shrink-0 mt-0.5">⚠</span>
+                          <span>{g}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Recommended searches ────────────────────────────── */}
+              {report.corpus_intelligence.recommended_searches.length > 0 && (
+                <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl">
+                  <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary mb-3">Recommended Literature Searches</p>
+                  <ol className="space-y-1.5">
+                    {report.corpus_intelligence.recommended_searches.map((q, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-text-body">
+                        <span className="text-text-muted flex-shrink-0 font-mono">{i + 1}.</span>
+                        <span className="italic">{q}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* ── CoThink Prompt Generator ────────────────────────── */}
+              <div className="p-4 bg-bg-overlay border border-border-subtle rounded-xl">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary mb-0.5">Lumos AI CoThink Agent</p>
+                    <p className="text-xs text-text-muted">Generate a research prompt that instructs the CoThink agent to find and ingest missing literature.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowCoThinkPrompt(v => !v)}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand-core text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {showCoThinkPrompt ? "Hide Prompt" : "Generate CoThink Prompt"}
+                  </button>
+                </div>
+                {showCoThinkPrompt && (
+                  <div className="mt-3">
+                    <textarea
+                      readOnly
+                      className="w-full h-56 text-xs font-mono bg-bg-surface border border-border-subtle rounded-lg p-3 text-text-body resize-none focus:outline-none focus:border-brand-core"
+                      value={`You are a biomedical research agent helping expand the Lumos AI corpus for ${drugName} (${indication}).
+
+CORPUS GAPS IDENTIFIED:
+${(report.corpus_intelligence?.corpus_gaps ?? []).map(g => `• ${g}`).join('\n')}
+
+RECOMMENDED LITERATURE SEARCHES:
+${(report.corpus_intelligence?.recommended_searches ?? []).map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
+YOUR TASK:
+1. Search PubMed, bioRxiv, and ClinicalTrials.gov for papers addressing these gaps
+2. Prioritize: clinical trials > regulatory submissions > peer-reviewed literature > preprints
+3. For each paper found, provide: title, authors, DOI/URL, abstract summary, and why it addresses the identified gap
+4. Output as structured JSON: { "title": "", "source_url": "", "source_type": "", "relevance_rationale": "" }
+
+Focus on evidence published 2018–2026. Exclude review articles unless they are systematic meta-analyses.`}
+                    />
+                    <p className="text-[10px] text-text-muted mt-1.5">Select all → Copy → Paste into Lumos AI CoThink agent to commission targeted literature retrieval.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Fallback if corpus_intelligence not yet generated */}
+          {!report.corpus_intelligence && (
+            <div className="p-4 bg-bg-overlay border border-border-subtle rounded-xl text-center">
+              <p className="text-text-muted text-sm">Corpus intelligence data not available for this run.</p>
+              <p className="text-text-muted text-xs mt-1">Re-run the Planning Phase analysis to generate coverage metrics and gap analysis.</p>
+            </div>
+          )}
+
+          {/* ── Confidence score explainer (P1-B) ────────────────────── */}
           {/* SCIENCE-FEEDBACK: P1-B — Confidence score explainer */}
           <div className="p-4 bg-bg-surface border border-border-subtle rounded-xl space-y-3">
             <p className="text-[10px] uppercase tracking-widest font-semibold text-text-secondary">How confidence scores are calculated</p>
@@ -820,7 +898,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             </ul>
           </div>
 
-          {/* Methodology narrative — parsed into sections */}
+          {/* ── Analysis methodology narrative ──────────────────────── */}
           <MethodologyNarrative text={report.methodology_narrative} />
 
           {/* Disclaimer */}
@@ -838,7 +916,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
         <div className="space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <p className="text-text-secondary text-[10px] uppercase tracking-widest font-semibold">Phase 1 Human Data — SAD/MAD Cohorts</p>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-warning/10 text-status-warning border border-status-warning/30">XYL-1001 Actual Data</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-warning/10 text-status-warning border border-status-warning/30">{drugName} Actual Data</span>
           </div>
           <HumanDataTab studyId={studyId} />
         </div>

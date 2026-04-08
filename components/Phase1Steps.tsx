@@ -6,10 +6,10 @@ const STEPS = [
   {
     icon: "📄",
     label: "Load IND package",
-    detail: "XYL-1001 clinical trial documentation",
+    detail: "IND clinical trial documentation",
     tooltip: {
       title: "IND package — the drug's complete pre-clinical dossier",
-      body: "An Investigational New Drug (IND) filing is the FDA-required submission before first-in-human dosing. It covers synthesis & manufacturing, preclinical pharmacology, toxicology, proposed trial protocol, and the investigator's brochure. Lumos ingests all 13 XYL-1001 documents as structured source material — treating them as highest-weight evidence throughout every downstream analysis step.",
+      body: "An Investigational New Drug (IND) filing is the FDA-required submission before first-in-human dosing. It covers synthesis & manufacturing, preclinical pharmacology, toxicology, proposed trial protocol, and the investigator's brochure. Lumos ingests all IND documents as structured source material — treating them as highest-weight evidence throughout every downstream analysis step.",
     },
   },
   {

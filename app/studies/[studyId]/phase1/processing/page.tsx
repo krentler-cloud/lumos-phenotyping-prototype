@@ -25,6 +25,7 @@ const STEP_ICONS: Record<string, string> = {
   "Phenotype synthesis (Opus)": "🤖",
   "Store report": "💾",
   "Exploratory biomarker synthesis": "🔭",
+  "Corpus intelligence synthesis": "🗺️",
   // SCIENCE-FEEDBACK: P1-F
   "Load SAD/MAD data": "📊",
   "Error": "❌",
@@ -63,9 +64,13 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Claude Sonnet scanned the same corpus excerpts for adjacent, speculative biomarker signals that didn't make it into the primary efficacy panel — signals that appear in the literature but aren't yet validated or routinely measured in MDD trials. This is a separate, non-blocking call: if it fails, the main report is unaffected. The output is 6–8 hypothesis-generating candidates drawn from neuroinflammation, synaptic remodeling, HPA axis biology, circadian markers, and other adjacent mechanisms with mechanistic plausibility for neuroplastogen response.",
     why: "The primary efficacy panel is deliberately conservative — only biomarkers with strong preclinical grounding. But early-stage drug development is also where exploratory hypotheses are cheapest to test. Surfacing these signals now gives the study team the option to add low-cost add-on assays or biological samples at baseline that cost almost nothing to collect but could yield important signal for the next trial.",
   },
+  "Corpus intelligence synthesis": {
+    what: "Claude Sonnet reviewed the retrieved corpus — its source type distribution, similarity scores, and document titles — and produced a structured gap analysis: what the corpus covers well, what evidence types are missing, and specific literature search queries that would fill the most important gaps. This output populates the Corpus Intelligence tab in the report.",
+    why: "A corpus gap analysis transforms the retrieval step from a black box into an actionable audit. Study teams can see exactly which evidence gaps exist, then commission targeted literature ingestion to improve future analyses for this drug.",
+  },
   // SCIENCE-FEEDBACK: P1-F
   "Load SAD/MAD data": {
-    what: "Checked the database for Phase 1 SAD (Single Ascending Dose) and MAD (Multiple Ascending Dose) cohort data previously seeded from the XYL-1001 trial. If cohort rows exist, they are injected directly into the Opus synthesis prompt so phenotype predictions are grounded in actual human PK/PD observations rather than corpus projections alone.",
+    what: "Checked the database for Phase 1 SAD (Single Ascending Dose) and MAD (Multiple Ascending Dose) cohort data for this study. If cohort rows exist, they are injected directly into the Opus synthesis prompt so phenotype predictions are grounded in actual human PK/PD observations rather than corpus projections alone.",
     why: "Corpus-derived priors are animal-model and in-vitro evidence. When real human Phase 1 data exists — actual Cmax values, half-life measurements, observed BDNF responses — those observations should anchor the synthesis. Any discordance between corpus predictions and human data is explicitly flagged, so the output reflects genuine scientific uncertainty rather than projecting animal findings uncritically onto humans.",
   },
 };

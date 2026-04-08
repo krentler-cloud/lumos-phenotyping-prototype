@@ -5,7 +5,7 @@ import { ChatMessage } from "@/lib/types";
 
 const SUGGESTED_QUESTIONS = [
   "Why is BDNF flagged as a key biomarker?",
-  "What is the mechanism of action of XYL-1001?",
+  "What is the mechanism of action of this drug?",
   "What CRO screening criteria should be prioritized?",
   "How does this patient compare to psilocybin trial responders?",
   "What does the Bayesian prior tell us about subtype probability?",

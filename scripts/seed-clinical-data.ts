@@ -132,8 +132,8 @@ async function seedSadMad() {
     il6_pct_change_day14:  num(r.il6_pct_change_day14),
     crp_pct_change_day14:  num(r.crp_pct_change_day14),
     ae_rate_pct:           num(r.ae_rate_pct) ?? 0,
-    ae_max_grade:          parseInt(r.ae_max_grade || '0', 10),
-    discontinuations:      parseInt(r.discontinuations || '0', 10),
+    ae_max_grade:          Math.round(num(r.ae_max_grade) ?? 0),
+    discontinuations:      Math.round(num(r.discontinuations) ?? 0),
     ae_description:        r.ae_description || null,
   }))
 

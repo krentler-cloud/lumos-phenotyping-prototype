@@ -38,7 +38,7 @@ function getSuggestions(
     return [
       `What specific corpus text actually supports the ${topBiomarker} threshold — can you cite the document and passage?`,
       "The confidence score reflects how consistent the corpus evidence is, not clinical validation — so what meaningful decision does it support?",
-      "How much of this responder profile is grounded in the XYL-1001 IND documents specifically, versus analogous drugs in the broader corpus?",
+      `How much of this responder profile is grounded in the ${drugName} IND documents specifically, versus analogous drugs in the broader corpus?`,
       "Which of these efficacy signals has the weakest supporting evidence, and why was it still included?",
       // SCIENCE-FEEDBACK: P1-A
       "How would you expect these Planning Phase phenotype predictions to hold up in a human Phase 1 cohort?",

@@ -62,7 +62,7 @@ export default async function Phase1Page({
       {/* Corpus stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
-          { label: "IND Documents", value: "13", sub: "XYL-1001 package" },
+          { label: "IND Documents", value: "13", sub: `${study.drug_name} package` },
           { label: "MDD Corpus", value: "107", sub: "indexed documents" },
           { label: "Corpus Chunks", value: "~2,400", sub: "vector embeddings" },
         ].map((stat) => (

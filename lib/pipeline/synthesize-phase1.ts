@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { MechanismContext, BayesianPrior, ExploratoryBiomarker } from '@/lib/types'
-import { MatchedChunk } from '@/lib/pipeline/search'
+import { MatchedChunk, MultiAspectSearchStats } from '@/lib/pipeline/search'
 import { computeMaxTokens } from '@/lib/pipeline/tokens'
 
 // SCIENCE-FEEDBACK: P1-F — SAD/MAD cohort type for synthesis injection
@@ -301,6 +301,16 @@ export interface Phase1ReportData {
   methodology_narrative: string
   overall_confidence: number
   exploratory_biomarkers?: ExploratoryBiomarker[]
+  corpus_intelligence?: CorpusIntelligence
+}
+
+export interface CorpusIntelligence {
+  source_breakdown: { clinical_trial: number; regulatory: number; literature: number; internal: number }
+  similarity_stats: { p50: number; p75: number; min: number; total_chunks: number }
+  corpus_strengths: string[]
+  corpus_gaps: string[]
+  recommended_searches: string[]
+  overall_verdict: string
 }
 
 export async function synthesizePhase1Report(
@@ -440,4 +450,96 @@ OUTPUT FORMAT — respond with valid JSON only, no markdown, no code fences:
 
   const parsed = parseJson(raw, 'exploratory-biomarkers') as { exploratory_biomarkers?: unknown[] }
   return (parsed.exploratory_biomarkers ?? []) as ExploratoryBiomarker[]
+}
+
+// ── CALL 4: Corpus Intelligence (Sonnet — non-blocking, gap analysis) ──────────
+export async function synthesizeCorpusIntelligence(
+  drugName: string,
+  indication: string,
+  chunks: MatchedChunk[],
+  searchStats: MultiAspectSearchStats
+): Promise<CorpusIntelligence> {
+  const client = getClient()
+
+  // Compute source breakdown from actual chunks
+  const source_breakdown = { clinical_trial: 0, regulatory: 0, literature: 0, internal: 0 }
+  for (const chunk of chunks) {
+    const t = chunk.source_type as keyof typeof source_breakdown
+    if (t in source_breakdown) source_breakdown[t]++
+    else source_breakdown.literature++ // fallback
+  }
+
+  const similarity_stats = {
+    p50: searchStats.similarityP50,
+    p75: searchStats.similarityP75,
+    min: searchStats.similarityMin,
+    total_chunks: searchStats.finalSent,
+  }
+
+  // Build chunk summary for Claude (titles + source types)
+  const chunkSummary = chunks
+    .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}, sim=${c.similarity.toFixed(3)})`)
+    .join('\n')
+
+  const prompt = `You are a scientific corpus analyst for Lumos AI reviewing the evidence retrieved to support a pre-clinical phenotyping analysis of ${drugName} in ${indication}.
+
+RETRIEVED CORPUS SUMMARY (${chunks.length} chunks sent to Claude Opus for synthesis):
+${chunkSummary}
+
+SOURCE TYPE BREAKDOWN:
+- Clinical trial documents: ${source_breakdown.clinical_trial} chunks
+- Regulatory documents: ${source_breakdown.regulatory} chunks
+- Literature: ${source_breakdown.literature} chunks
+- Internal: ${source_breakdown.internal} chunks
+
+SIMILARITY STATS (cosine similarity vs. 4 query aspects):
+- Median similarity: ${similarity_stats.p50}
+- P75 similarity: ${similarity_stats.p75}
+- Min similarity: ${similarity_stats.min.toFixed(3)}
+
+TASK:
+Analyze the retrieved corpus for ${drugName} (${indication}) and produce a structured gap analysis. Based on the document titles and source types above:
+
+1. CORPUS STRENGTHS: What types of evidence are well-represented? (2–4 items)
+2. CORPUS GAPS: What key evidence types are missing or underrepresented that would strengthen the analysis? Be specific — name the missing study types, mechanisms, or biomarkers. (3–5 items)
+3. RECOMMENDED SEARCHES: Specific literature search queries that would fill the most important gaps. (3–5 items, each ≤15 words)
+4. OVERALL VERDICT: One concise sentence summarising the corpus coverage quality for this analysis.
+
+Respond with raw JSON only:
+{
+  "corpus_strengths": ["..."],
+  "corpus_gaps": ["..."],
+  "recommended_searches": ["..."],
+  "overall_verdict": "..."
+}`
+
+  const system = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
+  const stream = await client.messages.stream({
+    model: 'claude-sonnet-4-5',
+    max_tokens: computeMaxTokens('claude-sonnet-4-5', prompt, system),
+    system,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const msg = await stream.finalMessage()
+  const raw = msg.content
+    .filter(b => b.type === 'text')
+    .map(b => (b as { type: 'text'; text: string }).text)
+    .join('')
+
+  const parsed = parseJson(raw, 'corpus-intelligence') as {
+    corpus_strengths?: string[]
+    corpus_gaps?: string[]
+    recommended_searches?: string[]
+    overall_verdict?: string
+  }
+
+  return {
+    source_breakdown,
+    similarity_stats,
+    corpus_strengths: parsed.corpus_strengths ?? [],
+    corpus_gaps: parsed.corpus_gaps ?? [],
+    recommended_searches: parsed.recommended_searches ?? [],
+    overall_verdict: parsed.overall_verdict ?? '',
+  }
 }

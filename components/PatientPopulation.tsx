@@ -71,7 +71,7 @@ function madrsReduction(p: ClinicalPatientFull): number | null {
 
 function subtypeRationale(p: ClinicalPatientFull): string {
   if (p.subtype_label === "A")
-    return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL < 15 ng/mL threshold → TrkB-deficit phenotype. Low BDNF indicates impaired neurotrophin signalling that XYL-1001's TrkB agonism is designed to restore.`;
+    return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL < 15 ng/mL threshold → TrkB-deficit phenotype. Low BDNF indicates impaired neurotrophin signalling that this drug's TrkB agonism is designed to restore.`;
   if (p.subtype_label === "B")
     return `IL-6 ${fmt1(p.baseline_il6_pg_ml)} pg/mL ≥ 4 pg/mL threshold → High-inflammatory phenotype. Elevated neuroinflammation attenuates TrkB-mediated plasticity, predicting non-response.`;
   return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL and IL-6 ${fmt1(p.baseline_il6_pg_ml)} pg/mL both within intermediate range — neither threshold criterion met. Mixed phenotype; response uncertain.`;
@@ -290,7 +290,7 @@ function CohortOverview({ patients }: { patients: ClinicalPatientFull[] }) {
       <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
         <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Cohort Size</p>
         <p className="text-2xl font-bold text-text-heading">N={n}</p>
-        <p className="text-text-secondary text-xs mt-0.5">XYL-1001 Phase 1</p>
+        <p className="text-text-secondary text-xs mt-0.5">Phase 1 Cohort</p>
       </div>
       <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
         <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Response Rate</p>
@@ -391,7 +391,7 @@ export default function PatientPopulation({
         </p>
         <h1 className="text-2xl font-bold text-text-heading mb-1">Patient Population</h1>
         <p className="text-text-muted text-sm">
-          {drugName} · XYL-1001 Phase 1 trial · N={patients.length} enrolled participants
+          {drugName} · Phase 1 Trial · N={patients.length} enrolled participants
         </p>
       </div>
 

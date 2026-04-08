@@ -57,9 +57,6 @@ export default function Nav() {
         {/* Right side */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <span className="text-xs text-text-muted bg-brand-tint px-3 py-1 rounded-full border border-border-subtle">
-            Patient Phenotyping
-          </span>
         </div>
       </div>
     </header>

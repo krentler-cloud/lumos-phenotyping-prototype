@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { embedTexts } from '@/lib/pipeline/embed'
 import { searchCorpusMultiAspect } from '@/lib/pipeline/search'
 import { computeBayesianPrior } from '@/lib/pipeline/score'
-import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
+import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
 // Internal route — protected by shared secret
@@ -192,6 +192,37 @@ export async function POST(
       const exploratoryMsg = exploratoryErr instanceof Error ? exploratoryErr.message : 'Unknown error'
       console.error('[process-phase1] exploratory biomarkers failed (non-blocking):', exploratoryMsg)
       await log('Exploratory biomarker synthesis', 'error', exploratoryMsg)
+      // Non-blocking: continue to mark run complete
+    }
+
+    // ── STEP 9: Corpus intelligence synthesis (non-blocking) ────────────────────
+    await log('Corpus intelligence synthesis', 'running')
+    try {
+      const corpusIntelligence = await synthesizeCorpusIntelligence(
+        drugName,
+        indication,
+        matchedChunks,
+        searchStats
+      )
+      // Fetch current report_data (may include exploratory_biomarkers from step 8)
+      const { data: currentReportRow } = await supabase
+        .from('phase1_reports')
+        .select('report_data')
+        .eq('run_id', run_id)
+        .single()
+      const currentReportData = (currentReportRow?.report_data ?? report) as Record<string, unknown>
+      await supabase.from('phase1_reports')
+        .update({ report_data: { ...currentReportData, corpus_intelligence: corpusIntelligence } })
+        .eq('run_id', run_id)
+      await log(
+        'Corpus intelligence synthesis',
+        'complete',
+        `${corpusIntelligence.corpus_gaps.length} gaps identified, ${corpusIntelligence.corpus_strengths.length} strengths`
+      )
+    } catch (corpusErr: unknown) {
+      const corpusMsg = corpusErr instanceof Error ? corpusErr.message : 'Unknown error'
+      console.error('[process-phase1] corpus intelligence failed (non-blocking):', corpusMsg)
+      await log('Corpus intelligence synthesis', 'error', corpusMsg)
       // Non-blocking: continue to mark run complete
     }
 

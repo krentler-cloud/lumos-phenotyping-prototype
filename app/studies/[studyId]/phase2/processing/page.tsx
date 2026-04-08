@@ -45,7 +45,7 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     why: "The Bayesian update in Step 4 requires the Phase 1 priors as a starting point. Without them, we would have no principled baseline to update — the clinical data would be interpreted in a vacuum rather than against a pre-specified hypothesis.",
   },
   "Load clinical patients": {
-    what: "Retrieved all 16 XYL-1001 Phase 1 trial participants from the database — baseline biomarker panels (BDNF, IL-6, CRP, TNF-α), HAMD-17 and MADRS scores at Wk 0/2/4/8, sleep regularity, anhedonia subscale, and adjudicated response status.",
+    what: "Retrieved all enrolled Phase 1 trial participants from the database — baseline biomarker panels (BDNF, IL-6, CRP, TNF-α), HAMD-17 and MADRS scores at Wk 0/2/4/8, sleep regularity, anhedonia subscale, and adjudicated response status.",
     why: "This is the first time real human outcome data enters the analysis. Every claim in the Phase 2 report is grounded in these 16 observations, which is why data quality and response adjudication matter enormously at this stage.",
   },
   "Clinical ML analysis": {

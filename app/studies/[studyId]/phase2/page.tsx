@@ -55,7 +55,7 @@ export default async function Phase2Page({
         <h1 className="text-4xl font-bold text-text-heading mb-3">Trial Data Is In</h1>
         <p className="text-text-muted text-sm max-w-xl mx-auto leading-relaxed">
           {/* SCIENCE-FEEDBACK: P1-A */}
-          XYL-1001 Phase 1 patient outcomes are ready. Run Lumos Clinical Analysis to validate the Planning Phase
+          {study.drug_name} Phase 1 patient outcomes are ready. Run Lumos Clinical Analysis to validate the Planning Phase
           phenotype hypotheses against real patient data and generate CRO-ready screening criteria.
         </p>
       </div>
@@ -66,7 +66,7 @@ export default async function Phase2Page({
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Patient Cohort</p>
-              <p className="text-text-heading font-semibold text-sm">XYL-1001 Phase 1 Trial · N={n} participants</p>
+              <p className="text-text-heading font-semibold text-sm">{study.drug_name} Phase 1 Trial · N={n} participants</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-core/15 text-brand-core border border-brand-core/30">
               EDC DATA LOADED

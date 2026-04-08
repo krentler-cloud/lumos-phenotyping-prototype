@@ -3,7 +3,7 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Lumos AI — Patient Phenotyping",
+  title: "Lumos AI",
   description: "AI-powered patient phenotyping and treatment response prediction",
 };
 
