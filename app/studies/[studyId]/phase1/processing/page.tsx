@@ -41,7 +41,7 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     why: "Drug names and indications are poor proxies for mechanism. Two antidepressants can share an indication but diverge completely in their receptor pharmacology, and that divergence is exactly what determines which patient subtypes respond. Grounding the search in molecular specifics prevents the model from retrieving superficially similar but mechanistically irrelevant evidence.",
   },
   "Aspect embedding": {
-    what: "Generated four independent semantic embeddings — mechanism, efficacy, biomarkers, and safety/PK — using OpenAI's text-embedding-3-large model at 3,072 dimensions. An embedding converts language into a high-dimensional numerical vector where semantic similarity becomes geometric proximity — papers about serotonin transporter occupancy cluster near each other regardless of whether they use identical terminology. Running four separate embeddings rather than one allows each dimension of the analysis to pull evidence from different parts of the scientific literature.",
+    what: "Generated four independent semantic embeddings — mechanism, efficacy, biomarkers, and safety/PK — using Lumos AI's proprietary embedding model. An embedding converts language into a high-dimensional numerical vector where semantic similarity becomes geometric proximity — papers about serotonin transporter occupancy cluster near each other regardless of whether they use identical terminology. Running four separate embeddings rather than one allows each dimension of the analysis to pull evidence from different parts of the scientific literature.",
     why: "A single query embedding optimized for, say, efficacy would systematically under-retrieve safety and biomarker literature. The four-aspect approach treats the analysis as four parallel information retrieval problems — each independently tuned — then merges the results. This is consistently more recall-complete than any single general-purpose embedding.",
   },
   "Weighted corpus search": {
@@ -53,12 +53,12 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     why: "Confidence scores need to reflect both the magnitude and the consistency of the evidence. A drug with five studies all showing 60% response rates should score differently than one with two studies at 90% and three at 30% — even if the averages match. The Bayesian framework captures that distinction by encoding variance explicitly, which is why the confidence percentages in the report are statistically grounded rather than heuristic.",
   },
   "Phenotype synthesis (Opus)": {
-    what: "Claude Opus read all 20 retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. Opus is the most capable reasoning model in the Claude family — chosen here specifically because the synthesis task requires holding a large body of heterogeneous evidence in context, identifying convergent patterns across studies with different designs, and generating structured clinical hypotheses rather than summaries. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all 20 chunks.",
-    why: "This is the step where retrieval becomes interpretation. The model is asked to do what a scientific reviewer does — weigh evidence quality, resolve conflicting signals, and commit to ranked hypotheses about which patient characteristics predict response. Opus-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
+    what: "The Lumos AI synthesis model read all retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. The synthesis model was selected specifically because the task requires holding a large body of heterogeneous evidence in context, identifying convergent patterns across studies with different designs, and generating structured clinical hypotheses rather than summaries. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all retrieved corpus chunks.",
+    why: "This is the step where retrieval becomes interpretation. The model is asked to do what a scientific reviewer does — weigh evidence quality, resolve conflicting signals, and commit to ranked hypotheses about which patient characteristics predict response. Frontier-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
   },
   "Store report": {
     what: "Saved the complete structured output — phenotype profiles, efficacy signals, confidence scores, methodology narrative, corpus chunk references, and the Bayesian priors used to generate them — to the database as a versioned record. Every claim in the report is traceable to the specific corpus evidence and model version that produced it. This also makes the output portable: the same record feeds the interactive viewer, the PDF export, and eventually the Phase 2 study design inputs.",
-    why: "Reproducibility and auditability are non-negotiable in a clinical context. Persisting the full evidential chain means a medical affairs team can reconstruct exactly why a particular biomarker was ranked first, which studies it rested on, and how confident the model was — months after the analysis ran.",
+    why: "Reproducibility and auditability are non-negotiable in a clinical context. Persisting the full evidential chain means a clinical development team can reconstruct exactly why a particular biomarker was ranked first, which studies it rested on, and how confident the model was — months after the analysis ran.",
   },
   "Exploratory biomarker synthesis": {
     what: "Claude Sonnet scanned the same corpus excerpts for adjacent, speculative biomarker signals that didn't make it into the primary efficacy panel — signals that appear in the literature but aren't yet validated or routinely measured in MDD trials. This is a separate, non-blocking call: if it fails, the main report is unaffected. The output is 6–8 hypothesis-generating candidates drawn from neuroinflammation, synaptic remodeling, HPA axis biology, circadian markers, and other adjacent mechanisms with mechanistic plausibility for neuroplastogen response.",
@@ -211,7 +211,7 @@ export default function Phase1ProcessingPage() {
             <p className="text-status-success text-xs uppercase tracking-widest mb-1">Planning Phase Analysis</p>
             <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis Complete</h1>
             <p className="text-text-muted text-sm">
-              8 pipeline steps completed · Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
+              8 pipeline steps completed · Powered by Lumos AI™
             </p>
           </div>
           <a
@@ -416,7 +416,7 @@ export default function Phase1ProcessingPage() {
 
       {/* Footer note */}
       <p className="text-center text-text-secondary text-xs mt-8">
-        Powered by Claude Opus · Headlamp Corpus · OpenAI Embeddings
+        Powered by Lumos AI™
       </p>
     </div>
   );

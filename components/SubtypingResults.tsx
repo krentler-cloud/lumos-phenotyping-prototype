@@ -272,7 +272,13 @@ export default function SubtypingResults({
           <h1 className="text-2xl font-bold text-text-heading mb-1">2.2 Subtyping Results</h1>
           <p className="text-text-muted text-sm">
             {/* SCIENCE-FEEDBACK: P1-A */}
-            {drugName} · N=16 patients · {ml.concordance_pct}% concordance with Planning Phase prediction
+            {drugName} · N=16 MDD efficacy patients · SAD/MAD healthy volunteer data integrated separately ·{" "}
+            <span
+              className="cursor-help border-b border-dashed border-text-muted"
+              title="Concordance = % of patients whose Phase 2 ML-assigned subtype matches the Planning Phase phenotype hypothesis. This reflects internal consistency between preclinical prediction and clinical data — it is not a clinical validation metric."
+            >
+              {ml.concordance_pct}% concordance with Planning Phase prediction ⓘ
+            </span>
           </p>
         </div>
         <Link
@@ -289,9 +295,13 @@ export default function SubtypingResults({
           { label: "Responders", value: ml.responder_count, color: "var(--status-success)" },
           { label: "Non-Responders", value: ml.nonresponder_count, color: "var(--status-danger)" },
           { label: "Uncertain", value: ml.uncertain_count, color: "var(--status-warning)" },
-          { label: "Concordance", value: `${ml.concordance_pct}%`, color: "var(--brand-core)" },
+          { label: "Concordance ⓘ", value: `${ml.concordance_pct}%`, color: "var(--brand-core)" },
         ].map(card => (
-          <div key={card.label} className="p-4 bg-bg-surface border border-border-subtle rounded-xl text-center">
+          <div
+            key={card.label}
+            className="p-4 bg-bg-surface border border-border-subtle rounded-xl text-center"
+            title={card.label.startsWith("Concordance") ? "Concordance = % of patients whose Phase 2 ML-assigned subtype matches the Planning Phase phenotype hypothesis. Reflects internal consistency between preclinical prediction and clinical data — not a clinical validation metric." : undefined}
+          >
             <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">{card.label}</p>
             <p className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</p>
           </div>

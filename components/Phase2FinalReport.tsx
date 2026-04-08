@@ -171,7 +171,7 @@ function CROTab({ prompts }: { prompts: CROPrompt[] }) {
       <div className="p-4 bg-bg-overlay border border-status-warning/20 rounded-xl">
         <p className="text-status-warning text-xs font-semibold mb-1">Clinical Research Organization Use</p>
         <p className="text-text-muted text-xs leading-relaxed">
-          These screening prompts are derived from the validated clinical analysis phenotype profiles. They translate
+          These screening prompts are derived from the data-supported phenotype profiles from the clinical analysis. They translate
           the Lumos AI biomarker findings into actionable enrollment criteria for future clinical trial design.
         </p>
       </div>
@@ -241,7 +241,7 @@ export default function Phase2FinalReport({
           Clinical Analysis — Final Report · Lumos v2.1
         </p>
         <h1 className="text-2xl font-bold text-text-heading mb-1">
-          {drugName} · {indication} · Clinical Validation
+          {drugName} · {indication} · Clinical Analysis
         </h1>
         <p className="text-text-muted text-sm mb-3">
           {sponsor} · Generated {generatedAt} · N=16 clinical patients
@@ -249,7 +249,7 @@ export default function Phase2FinalReport({
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-status-success/15 text-status-success border border-status-success/30">
-              PATIENT-LEVEL VALIDATED
+              PATIENT-LEVEL CONFIRMED
             </span>
             <span className="text-xs text-text-secondary">
               {/* SCIENCE-FEEDBACK: P1-A */}

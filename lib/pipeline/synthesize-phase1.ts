@@ -144,6 +144,25 @@ For BDNF-based inclusion criteria, always address the grey zone between the incl
 // SCIENCE-FEEDBACK: P1-E — mixed phenotype tiebreaker
 When generating phenotype classification criteria, always address patients who meet criteria for more than one subtype simultaneously. Either provide a hierarchical decision rule (e.g., biomarker profile takes precedence over treatment history when they conflict) or flag explicitly as a protocol gap in key_inclusion_criteria or key_exclusion_criteria. Do not leave mixed-phenotype patients unclassified.
 
+// SCIENCE-FEEDBACK: F2-A — FDA-standard safety requirements for serotonergic MDD trials
+SAFETY REQUIREMENTS (FDA standard for serotonergic MDD trials — include in safety_flags and key_exclusion_criteria as appropriate):
+1. SEROTONIN SYNDROME: For any 5-HT2A-active compound, explicitly address concomitant serotonergic medication risk in safety_flags. Specify required washout periods for SSRIs (≥2 weeks), SNRIs (≥2 weeks), and MAOIs (≥14 days minimum) as key_exclusion_criteria entries. Connect the non-responder 5-HT2A downregulation signal to the washout requirement — incomplete washout is both a safety hazard and a mechanistic confounder.
+2. SUICIDALITY MONITORING: FDA requires prospective C-SSRS (Columbia Suicide Severity Rating Scale) monitoring in all MDD trials regardless of mechanism. Include C-SSRS at baseline and post-dose timepoints as a protocol_note in the methodology_narrative. MADRS Item 10 ≥5 as an exclusion criterion is necessary but insufficient without a prospective monitoring protocol for enrolled patients.
+3. PLACEBO RESPONSE RULE: MDD trials have 30–50% placebo response rates. State explicitly in methodology_narrative what classification applies when a patient shows ≥50% MADRS reduction WITHOUT corresponding biomarker change (BDNF, IL-6, CRP). This decision rule must be present.
+4. FDA NOTES: Flag any class-level safety signals or black-box warnings relevant to the mechanism of action that a Phase 1 protocol should proactively address as safety_flags entries.
+
+// SCIENCE-FEEDBACK: F2-B — behavioral profile dimensions
+BEHAVIORAL PROFILE: For each phenotype's demographics field, include expected patterns for: sleep quality (ISI or PSQI score range), appetite and weight changes, alcohol intake, caffeine intake, and physical activity level. These behavioral features correlate with inflammatory and neuroplasticity biomarker states and are standard MDD clinical characterization.
+
+// SCIENCE-FEEDBACK: F2-C — EEG specificity
+For the imaging dimension, specifically address: quantitative EEG (qEEG) frontal alpha asymmetry as a responder predictor, sleep EEG architecture (REM latency, slow-wave sleep percentage), and any source localization findings if corpus evidence supports them. EEG biomarkers are increasingly relevant in MDD subtyping and neuroplastogen trials.
+
+// SCIENCE-FEEDBACK: F2-D — sex-specific biomarker reference ranges
+SEX-SPECIFIC REFERENCE RANGES: When reporting BDNF, CRP, and IL-6 thresholds in the neuroplasticity and inflammatory dimensions, note that established sex differences exist (BDNF is generally higher in premenopausal women; CRP and IL-6 vary with hormonal status and BMI). If applying uniform thresholds across sexes, flag this as a known limitation in methodology_narrative.
+
+// SCIENCE-FEEDBACK: F2-E — Val66Met ancestry caveat
+ANCESTRY CONSIDERATION: The BDNF Val66Met Met allele frequency varies by ancestry (~20–25% in European populations, ~40–50% in East Asian populations). Note in methodology_narrative that genotypic stratification will not behave uniformly across ancestry groups in diverse trial populations. Flag as a pharmacogenetic equity consideration.
+
 OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
 {
   "responder_profile": {
@@ -221,6 +240,9 @@ Include 6–9 biomarkers spanning inflammatory, neuroplasticity, behavioral, and
 
 // SCIENCE-FEEDBACK: P1-C — BDNF efficacy signal contradiction guard
 CRITICAL CONSISTENCY CHECK: If the corpus contains a warning or negative finding about using a specific biomarker as an efficacy marker (for example, Calder et al. 2025 meta-analysis found SMD=0.024, p=0.64 for post-dose peripheral BDNF as an efficacy endpoint), do NOT list that same biomarker as a positive responder signal without explicitly noting the contradiction in the preclinical_rationale field and explaining which evidence takes precedence and why. Silence on the contradiction is not acceptable — if you include a biomarker despite conflicting evidence, state the conflict directly.
+
+// SCIENCE-FEEDBACK: F2-F — rater reliability and site qualification
+RATER RELIABILITY: MADRS and HAMD-17 are sensitive to inter-rater variability and rater drift across sites. Include in protocol_notes a recommendation for rater certification requirements (structured interview training, inter-rater reliability checks at study initiation) and whether central rater review is recommended given the trial size and site count.
 
 OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
 {

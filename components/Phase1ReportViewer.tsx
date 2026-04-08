@@ -120,9 +120,9 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
 function ProfileField({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
-    <div className="mb-3">
-      <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-text-body text-sm leading-relaxed">{value}</p>
+    <div className="flex gap-3 py-1.5 border-b border-border-subtle last:border-0">
+      <span className="text-text-muted text-[10px] uppercase tracking-wider flex-shrink-0 w-28 pt-0.5">{label}</span>
+      <span className="text-text-body text-sm leading-relaxed flex-1">{value}</span>
     </div>
   );
 }
@@ -695,6 +695,17 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       {/* ══ EVIDENCE & SAFETY TAB ═════════════════════════════════════ */}
       {activeTab === "evidence" && (
         <div className="space-y-6">
+          {/* SCIENCE-FEEDBACK: F2 — PICOS cross-trial comparison callout */}
+          <div className="p-4 bg-bg-overlay border border-border-subtle rounded-xl flex gap-3">
+            <span className="text-base flex-shrink-0 mt-0.5">ⓘ</span>
+            <div>
+              <p className="text-text-heading text-xs font-semibold mb-1">Cross-trial evidence methodology</p>
+              <p className="text-text-muted text-xs leading-relaxed">
+                Evidence is drawn from mechanistically similar analog compounds — primarily drugs sharing the same receptor class or target pathway as {drugName}. Cross-trial comparisons require PICOS-framework alignment (Population, Intervention, Comparator, Outcome, Study Design). Studies with divergent designs receive lower source-type weighting in the retrieval pipeline. Evidence from dissimilar study populations or endpoints is flagged below.
+              </p>
+            </div>
+          </div>
+
           {report.cross_species_evidence?.length > 0 && (
             <div>
               <h3 className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-3">🐭 Cross-Species Evidence</h3>
