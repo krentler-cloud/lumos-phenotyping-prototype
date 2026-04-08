@@ -94,6 +94,10 @@ export default function Phase1ProcessingPage() {
   const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [dots, setDots] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  // Show the escape hatch after 90 s of processing — long enough to not confuse
+  // users, short enough to be useful if the run hangs.
+  const [showEscapeHatch, setShowEscapeHatch] = useState(false);
   const isFirstFetch = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -141,6 +145,22 @@ export default function Phase1ProcessingPage() {
     const t = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 400);
     return () => clearInterval(t);
   }, []);
+
+  // Show escape hatch after 90 s in case the run hangs
+  useEffect(() => {
+    const t = setTimeout(() => setShowEscapeHatch(true), 90_000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleCancel = useCallback(async () => {
+    setCancelling(true);
+    try {
+      await fetch(`/api/studies/${studyId}/cancel-phase1`, { method: "POST" });
+      router.push(`/studies/${studyId}/phase1`);
+    } catch {
+      setCancelling(false);
+    }
+  }, [studyId, router]);
 
   const stepLog = runStatus?.step_log ?? [];
 
@@ -374,6 +394,23 @@ export default function Phase1ProcessingPage() {
           >
             ← Return to re-run
           </a>
+        </div>
+      )}
+
+      {/* Escape hatch — shown after 90 s while still processing, or always if run is in a bad state */}
+      {!isError && showEscapeHatch && (
+        <div className="mt-6 p-4 bg-bg-overlay border border-border-subtle rounded-xl">
+          <p className="text-text-body text-sm font-medium mb-1">Analysis taking longer than expected?</p>
+          <p className="text-text-muted text-xs mb-3">
+            If the analysis appears stuck, you can cancel and restart. This preserves the current run in history as cancelled.
+          </p>
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-status-danger border border-status-danger/40 rounded-lg hover:bg-status-danger/5 transition-colors disabled:opacity-50"
+          >
+            {cancelling ? "Cancelling…" : "Cancel & restart"}
+          </button>
         </div>
       )}
 
