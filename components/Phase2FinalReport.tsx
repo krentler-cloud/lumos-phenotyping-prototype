@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Phase2ReportData, RefinedProfile, CROPrompt, EnhancedOutcomeMeasure } from "@/lib/pipeline/synthesize-phase2";
 import { Phase2MLResult } from "@/lib/pipeline/clinical-ml";
+import { DimensionBlock, PosteriorBadge, splitSummary } from "@/components/reportShared";
 
 interface FullReport extends Phase2ReportData {
   ml_result: Phase2MLResult;
@@ -10,26 +11,17 @@ interface FullReport extends Phase2ReportData {
 
 type Tab = "phenotypes" | "outcomes" | "cro";
 
-// ── Validation badge ──────────────────────────────────────────────────────────
-function ValidationBadge({ delta }: { delta: string }) {
-  return (
-    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-status-success/15 text-status-success border border-status-success/30 whitespace-nowrap">
-      {delta}
-    </span>
-  );
+// ── Derive executive summary fallback from methodology_narrative ──────────────
+function deriveExecutiveSummary(report: FullReport): string {
+  if (report.executive_summary) return report.executive_summary;
+  if (report.methodology_narrative) {
+    const firstPara = report.methodology_narrative.split(/\n\n+/)[0]?.trim();
+    if (firstPara) return firstPara;
+  }
+  return "Clinical analysis of the N=16 participant cohort refines the Planning Phase phenotype hypotheses and updates confidence in responder and non-responder profiles.";
 }
 
-// ── Section label + value ─────────────────────────────────────────────────────
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mb-3">
-      <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">{label}</p>
-      <p className="text-text-body text-sm leading-relaxed">{value}</p>
-    </div>
-  );
-}
-
-// ── Refined profile card ──────────────────────────────────────────────────────
+// ── Refined profile card — full-width stacked (mirrors Phase 1) ───────────────
 function ProfileCard({
   profile,
   type,
@@ -37,69 +29,92 @@ function ProfileCard({
   profile: RefinedProfile;
   type: "responder" | "nonresponder";
 }) {
-  const isResponder = type === "responder";
-  const borderColor = isResponder ? "var(--status-success)" : "var(--status-danger)";
-  const labelColor = isResponder ? "var(--status-success)" : "var(--status-danger)";
-  const title = isResponder ? "Predicted Responder Profile" : "Predicted Non-Responder Profile";
+  const [expanded, setExpanded] = useState(false);
+  const [changedOpen, setChangedOpen] = useState(false);
 
-  const priorPct = Math.round(profile.phase1_confidence * 100);
-  const postPct = Math.round(profile.phase2_confidence * 100);
-  const barColor = postPct >= 70 ? "var(--status-success)" : postPct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
+  const isResponder = type === "responder";
+  const cardBorder = isResponder ? "border-status-success/20" : "border-status-danger/20";
+  const headerBg = isResponder ? "bg-status-success/[0.04]" : "bg-status-danger/[0.04]";
+  const dotBg = isResponder ? "bg-status-success" : "bg-status-danger";
+  const textColor = isResponder ? "text-status-success" : "text-status-danger";
+  const label = isResponder ? "Refined Responder Profile" : "Refined Non-Responder Profile";
+  const criteriaLabel = isResponder ? "Key Inclusion Criteria" : "Key Exclusion Criteria";
+  const criteriaIcon = isResponder ? "✓" : "✕";
+
+  const summarySplit = splitSummary(profile.summary || "", 2);
 
   return (
-    <div
-      className="rounded-xl border p-5"
-      style={{ borderColor: `${borderColor}30`, background: `${borderColor}06` }}
-    >
-      <div className="flex items-start justify-between mb-4">
+    <div className={`bg-bg-surface border ${cardBorder} rounded-2xl overflow-hidden`}>
+      {/* Card header */}
+      <div className={`flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle ${headerBg}`}>
+        <div className="flex items-center gap-3">
+          <span className={`w-2 h-2 rounded-full ${dotBg} flex-shrink-0`} />
+          <p className={`${textColor} text-xs font-semibold uppercase tracking-widest`}>{label}</p>
+        </div>
+        <PosteriorBadge posterior={profile.phase2_confidence} prior={profile.phase1_confidence} />
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* Summary + expandable rationale */}
         <div>
-          <p className="text-[10px] uppercase tracking-widest font-semibold mb-1" style={{ color: labelColor }}>
-            {title}
-          </p>
-          <ValidationBadge delta={profile.validation_delta} />
+          <p className="text-text-body text-sm leading-relaxed">{summarySplit.lead}</p>
+          {summarySplit.rest && (
+            <>
+              {expanded && (
+                <p className="text-text-muted text-sm leading-relaxed mt-2">{summarySplit.rest}</p>
+              )}
+              <button
+                onClick={() => setExpanded(v => !v)}
+                className="text-xs text-brand-core hover:underline mt-2 block"
+              >
+                {expanded ? "Hide full rationale ↑" : "Full rationale ↓"}
+              </button>
+            </>
+          )}
+
+          {/* What changed — inline collapsible */}
+          {profile.what_changed && (
+            <div className="mt-3">
+              <button
+                onClick={() => setChangedOpen(v => !v)}
+                className="text-xs text-brand-core hover:underline"
+              >
+                {changedOpen ? "Hide what changed from Planning Phase ↑" : "What changed from Planning Phase ↓"}
+              </button>
+              {changedOpen && (
+                <div className="mt-2 p-3 rounded-lg bg-bg-page border border-border-subtle">
+                  <p className="text-text-muted text-xs leading-relaxed">{profile.what_changed}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-text-secondary mb-1">Confidence Score</p>
-          <div className="flex items-center gap-2">
-            <span className="text-text-secondary text-xs line-through">{priorPct}%</span>
-            <span className="text-lg font-bold" style={{ color: barColor }}>{postPct}%</span>
+
+        {/* Dimension blocks — 3-col grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <DimensionBlock label="Demographics"    value={profile.demographics} />
+          <DimensionBlock label="Core Clinical"   value={profile.core_clinical} />
+          <DimensionBlock label="Inflammatory"    value={profile.inflammatory} />
+          <DimensionBlock label="Neuroplasticity" value={profile.neuroplasticity} />
+          {profile.imaging && (
+            <DimensionBlock label="Imaging / EEG" value={profile.imaging} />
+          )}
+        </div>
+
+        {/* Key criteria */}
+        {profile.key_criteria && profile.key_criteria.length > 0 && (
+          <div className="pt-4 border-t border-border-subtle">
+            <p className={`${textColor} text-[10px] uppercase tracking-wider font-semibold mb-2.5`}>{criteriaLabel}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+              {profile.key_criteria.map((c, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs text-text-body">
+                  <span className={`${textColor} flex-shrink-0 mt-0.5 font-bold`}>{criteriaIcon}</span>{c}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="w-24 h-1 bg-nav-item-active-bg rounded-full overflow-hidden mt-1">
-            <div className="h-full rounded-full" style={{ width: `${postPct}%`, background: barColor }} />
-          </div>
-        </div>
+        )}
       </div>
-
-      <p className="text-text-heading text-sm leading-relaxed mb-4 italic">{profile.summary}</p>
-
-      <div className="space-y-0">
-        <Field label="Demographics" value={profile.demographics} />
-        <Field label="Core Clinical" value={profile.core_clinical} />
-        <Field label="Inflammatory Profile" value={profile.inflammatory} />
-        <Field label="Neuroplasticity" value={profile.neuroplasticity} />
-        <Field label="Imaging" value={profile.imaging} />
-      </div>
-
-      {profile.key_criteria && profile.key_criteria.length > 0 && (
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: `${borderColor}20` }}>
-          <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-2">Key Criteria</p>
-          <ul className="space-y-1">
-            {profile.key_criteria.map((c, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-text-muted">
-                <span style={{ color: labelColor }} className="mt-0.5 flex-shrink-0">›</span>
-                {c}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {profile.what_changed && (
-        <div className="mt-4 p-3 rounded-lg bg-bg-surface border border-border-subtle">
-          <p className="text-[10px] uppercase tracking-widest text-brand-core mb-1">What the clinical data changed</p>
-          <p className="text-text-muted text-xs leading-relaxed">{profile.what_changed}</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -226,6 +241,7 @@ export default function Phase2FinalReport({
   report: FullReport;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("phenotypes");
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "phenotypes", label: "Refined Phenotypes & Biomarkers" },
@@ -233,29 +249,27 @@ export default function Phase2FinalReport({
     { id: "cro", label: "CRO Screening Prompts" },
   ];
 
+  const execSummary = deriveExecutiveSummary(report);
+  const { responder_count, nonresponder_count, uncertain_count, concordance_pct } = report.ml_result;
+  const totalN = responder_count + nonresponder_count + uncertain_count;
+
+  const concordanceTooltip =
+    "Concordance = % of patients whose Phase 2 ML-assigned subtype matches the Planning Phase phenotype hypothesis. This reflects internal consistency between preclinical prediction and clinical data — it is not a clinical validation metric.";
+
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-1">
           Clinical Analysis — Final Report · Lumos v2.1
         </p>
         <h1 className="text-2xl font-bold text-text-heading mb-1">
           {drugName} · {indication} · Clinical Analysis
         </h1>
-        <p className="text-text-muted text-sm mb-3">
-          {sponsor} · Generated {generatedAt} · N=16 clinical patients
-        </p>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-status-success/15 text-status-success border border-status-success/30">
-              PATIENT-LEVEL CONFIRMED
-            </span>
-            <span className="text-xs text-text-secondary">
-              {/* SCIENCE-FEEDBACK: P1-A */}
-              Planning Phase hypotheses tested against {report.ml_result.responder_count + report.ml_result.nonresponder_count + report.ml_result.uncertain_count} participants
-            </span>
-          </div>
+          <p className="text-text-muted text-sm">
+            {sponsor} · Generated {generatedAt}
+          </p>
           <button
             onClick={() => window.print()}
             className="print-hide flex items-center gap-2 px-4 py-2 rounded-lg border border-border-subtle bg-bg-surface text-text-muted hover:text-text-heading hover:border-brand-core transition-colors text-xs font-medium"
@@ -289,29 +303,65 @@ export default function Phase2FinalReport({
       {/* Phenotypes tab */}
       <div className={activeTab !== "phenotypes" ? "hidden print-show" : ""}>
         <span className="print-section-heading hidden">Refined Phenotypes &amp; Biomarkers</span>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+        <div className="space-y-5">
+          {/* ── Clinical Analysis Summary banner (top) ── */}
+          <div className="p-5 bg-bg-surface border border-border-subtle rounded-2xl">
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <p className="text-status-purple text-[10px] uppercase tracking-widest font-semibold">Clinical Analysis Summary</p>
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary cursor-help whitespace-nowrap"
+                title={concordanceTooltip}
+              >
+                N={totalN} · {concordance_pct}% ML concordance ⓘ
+              </span>
+            </div>
+            <p className="text-text-body text-sm leading-relaxed">{execSummary}</p>
+            <div className="mt-4 pt-3 border-t border-border-subtle flex gap-6 flex-wrap">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Responders</p>
+                <p className="text-sm font-semibold text-status-success">{responder_count} / {totalN} patients</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Non-Responders</p>
+                <p className="text-sm font-semibold text-status-danger">{nonresponder_count} / {totalN} patients</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Uncertain</p>
+                <p className="text-sm font-semibold text-text-muted">{uncertain_count} / {totalN} patients</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Phenotype cards — full width, stacked ── */}
+          <div className="space-y-5">
             <ProfileCard profile={report.refined_responder_profile} type="responder" />
             <ProfileCard profile={report.refined_nonresponder_profile} type="nonresponder" />
           </div>
+
+          {/* ── Methodology accordion ── */}
           {report.methodology_narrative && (
-            <div className="p-5 bg-bg-overlay border border-border-subtle rounded-xl">
-              <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-3">Clinical Analysis Methodology</p>
-              <div className="text-text-muted text-sm leading-relaxed space-y-3">
-                {report.methodology_narrative.split(/\n\n+/).map((para, i) => (
-                  <p key={i}>{para.trim()}</p>
-                ))}
-              </div>
+            <div className="bg-bg-surface border border-border-subtle rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setMethodologyOpen(v => !v)}
+                className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-bg-overlay transition-colors"
+              >
+                <p className="text-[10px] uppercase tracking-widest text-text-secondary font-semibold">
+                  Clinical Analysis Methodology
+                </p>
+                <span className="text-text-muted text-xs">{methodologyOpen ? "Hide ↑" : "Show ↓"}</span>
+              </button>
+              {methodologyOpen && (
+                <div className="px-5 pb-5 border-t border-border-subtle">
+                  <div className="text-text-muted text-sm leading-relaxed space-y-3 max-w-prose pt-4">
+                    {report.methodology_narrative.split(/\n\n+/).map((para, i) => (
+                      <p key={i}>{para.trim()}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          <div className="p-4 bg-bg-overlay border border-border-subtle rounded-xl">
-            <p className="text-text-muted text-xs leading-relaxed">
-              <span className="text-status-warning font-semibold">Note: </span>
-              Clinical analysis is based on N=16 participants. Confidence scores reflect Bayesian-updated
-              estimates — larger trials will further refine these hypotheses. CRO screening prompts
-              should be reviewed by a qualified clinical team before protocol implementation.
-            </p>
-          </div>
         </div>
       </div>
 

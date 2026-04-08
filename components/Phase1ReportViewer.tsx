@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
 import { ExploratoryBiomarker } from "@/lib/types";
 import Phase1ExportButton from "@/components/Phase1ExportButton";
+import { ConfidenceBadge, DimensionBlock, splitSummary } from "@/components/reportShared";
 
 // SCIENCE-FEEDBACK: P1-F — SAD/MAD cohort type (mirrors DB row)
 interface SadMadCohort {
@@ -38,35 +39,6 @@ interface Props {
   indication: string;
   generatedAt: string;
   studyId: string;
-}
-
-// ── Confidence badge — clickable, shows why ──────────────────────────────────
-function ConfidenceBadge({
-  value,
-  onClick,
-  active,
-}: {
-  value: number;
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  const pct = Math.round(value * 100);
-  const color = pct >= 70 ? "var(--status-success)" : pct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
-  return (
-    <button
-      onClick={onClick}
-      className="text-xs font-semibold px-2.5 py-1 rounded-full border transition-all"
-      style={{
-        color,
-        borderColor: color,
-        background: active ? `${color}30` : `${color}18`,
-        cursor: onClick ? "pointer" : "default",
-      }}
-      title={onClick ? "Click to see confidence reasoning" : undefined}
-    >
-      {pct}% confidence {onClick && (active ? "▲" : "▼")}
-    </button>
-  );
 }
 
 // ── Signal badge ─────────────────────────────────────────────────────────────
@@ -113,47 +85,6 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
         </span>
       )}
     </button>
-  );
-}
-
-// ── Profile field ─────────────────────────────────────────────────────────────
-// ── Dimension block — parses semicolon-separated prose into bullets ───────────
-const DIMENSION_META: Record<string, { icon: string; color: string }> = {
-  Demographics:    { icon: "👤", color: "var(--text-muted)" },
-  "Core Clinical": { icon: "🧠", color: "var(--brand-core)" },
-  Inflammatory:    { icon: "🔥", color: "var(--status-danger)" },
-  Neuroplasticity: { icon: "⚡", color: "var(--status-purple)" },
-  "Imaging / EEG": { icon: "📡", color: "var(--brand-core)" },
-};
-
-function parseBullets(value: string): string[] {
-  // Try "; " split first (Opus uses semicolons between distinct facts)
-  const semis = value.split(/;\s+/).map(s => s.trim().replace(/[.;]+$/, "")).filter(Boolean);
-  if (semis.length >= 2) return semis;
-  // Fall back to sentence split
-  return (value.match(/[^.!?]+[.!?]+/g) ?? [value]).map(s => s.trim()).filter(Boolean);
-}
-
-function DimensionBlock({ label, value, accentColor }: { label: string; value: string; accentColor?: string }) {
-  if (!value) return null;
-  const meta = DIMENSION_META[label] ?? { icon: "·", color: "var(--text-muted)" };
-  const color = accentColor ?? meta.color;
-  const bullets = parseBullets(value);
-  return (
-    <div className="p-4 bg-bg-page border border-border-subtle rounded-xl flex flex-col gap-2.5">
-      <div className="flex items-center gap-1.5">
-        <span className="text-sm leading-none">{meta.icon}</span>
-        <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{label}</p>
-      </div>
-      <ul className="space-y-1.5">
-        {bullets.map((item, i) => (
-          <li key={i} className="flex items-start gap-2 text-xs text-text-body leading-relaxed">
-            <span className="mt-[5px] w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-70" style={{ background: color }} />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 
@@ -533,16 +464,6 @@ function HumanDataTab({ studyId }: { studyId: string }) {
   );
 }
 
-// ── Summary helpers ────────────────────────────────────────────────────────────
-function splitSummary(text: string, leadSentences = 2): { lead: string; rest: string } {
-  // Split on sentence-ending punctuation followed by a space or end of string
-  const matches = text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [];
-  if (matches.length <= leadSentences) return { lead: text, rest: "" };
-  const lead = matches.slice(0, leadSentences).join("").trim();
-  const rest = matches.slice(leadSentences).join("").trim();
-  return { lead, rest };
-}
-
 // Derive a plain-English executive summary from existing fields when
 // executive_summary is absent (pre-upgrade reports)
 function deriveExecutiveSummary(report: Phase1ReportData, drugName: string): string {
@@ -623,8 +544,11 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             <div className="p-5 bg-bg-surface border border-border-subtle rounded-2xl">
               <div className="flex items-center justify-between gap-4 mb-3">
                 <p className="text-brand-core text-[10px] uppercase tracking-widest font-semibold">Planning Phase Summary</p>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary">
-                  {overallPct}% overall corpus confidence
+                <span
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary cursor-help"
+                  title="Corpus confidence = Bayesian Beta-Binomial prior computed from the density and consistency of supporting evidence in the retrieved literature. It reflects strength of mechanistic support, not predicted probability of patient response. Per-profile confidences can exceed the overall because they are computed independently per phenotype."
+                >
+                  {overallPct}% overall corpus confidence ⓘ
                 </span>
               </div>
               <p className="text-text-body text-sm leading-relaxed">{execSummary}</p>

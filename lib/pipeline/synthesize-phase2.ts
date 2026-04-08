@@ -47,9 +47,11 @@ export interface RefinedProfile {
   imaging: string
   key_criteria: string[]
   phase1_confidence: number       // original corpus confidence (0-1)
-  phase2_confidence: number       // Bayesian-updated confidence (0-1)
-  validation_delta: string        // e.g. "74% → 87% VALIDATED"
-  what_changed: string            // narrative of what clinical data confirmed or revised
+  phase2_confidence: number       // Bayesian-updated posterior (0-1)
+  validation_delta: string        // legacy: kept for backward-compat with stored reports
+  // REPORT-CONSISTENCY: P2-Redesign — neutral label, no "VALIDATED" framing
+  posterior_label?: string        // e.g. "Prior 62% → Posterior 59%"
+  what_changed: string            // narrative of what clinical data refined or revised
 }
 
 export interface EnhancedOutcomeMeasure {
@@ -67,6 +69,8 @@ export interface CROPrompt {
 }
 
 export interface Phase2ReportData {
+  // REPORT-CONSISTENCY: P2-Redesign — 2-3 sentence lead for top summary banner
+  executive_summary?: string
   refined_responder_profile: RefinedProfile
   refined_nonresponder_profile: RefinedProfile
   enhanced_outcome_measures: EnhancedOutcomeMeasure[]
@@ -151,6 +155,7 @@ OUTPUT REQUIRED (JSON only, no markdown)
 Return exactly this JSON structure:
 
 {
+  "executive_summary": "2-3 plain-English sentences summarizing what the N=16 clinical data refined or revised about the Planning Phase hypotheses, and what remains uncertain. This sits at the top of the final report. Do NOT use 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
   "refined_responder_profile": {
     "summary": "Updated 1-2 sentence profile integrating clinical validation",
     "demographics": "Refined demographics based on observed responder characteristics",
@@ -161,8 +166,9 @@ Return exactly this JSON structure:
     "key_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"],
     "phase1_confidence": ${phase1.responder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.responder.posterior.toFixed(3)},
-    "validation_delta": "${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → ${Math.round(bayesUpdate.responder.posterior * 100)}% VALIDATED",
-    "what_changed": "2-3 sentences on what the clinical data confirmed, refined, or surprised"
+    "validation_delta": "Prior ${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.responder.posterior * 100)}%",
+    "posterior_label": "Prior ${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.responder.posterior * 100)}%",
+    "what_changed": "2-3 sentences describing what the clinical data refined, updated, or revised about this Planning Phase hypothesis. Do NOT use the words 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with', 'revised'."
   },
   "refined_nonresponder_profile": {
     "summary": "Updated non-responder profile",
@@ -174,8 +180,9 @@ Return exactly this JSON structure:
     "key_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"],
     "phase1_confidence": ${phase1.nonresponder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.nonresponder.posterior.toFixed(3)},
-    "validation_delta": "${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → ${Math.round(bayesUpdate.nonresponder.posterior * 100)}% VALIDATED",
-    "what_changed": "2-3 sentences on what the clinical data confirmed, refined, or surprised"
+    "validation_delta": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
+    "posterior_label": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
+    "what_changed": "2-3 sentences describing what the clinical data refined, updated, or revised about this Planning Phase hypothesis. Do NOT use the words 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with', 'revised'."
   },
   "enhanced_outcome_measures": [
     {
@@ -196,7 +203,7 @@ Return exactly this JSON structure:
   "methodology_narrative": "3-4 paragraph narrative explaining: (1) what Phase 2 added vs Phase 1, (2) how the Bayesian update worked, (3) what the clinical data confirmed/revised, (4) confidence in the Phase 2 findings and what remains to be validated in a larger trial."
 }
 
-Produce exactly one instance of each required key. Be specific, cite the clinical data patterns (MADRS trajectories, feature importances, concordance rate). Do not hedge excessively — these are validated hypotheses now.`
+Produce exactly one instance of each required key. Be specific, cite the clinical data patterns (MADRS trajectories, feature importances, concordance rate). Do not hedge excessively — but frame Phase 2 findings as a posterior update on the Planning Phase hypotheses, not as formal validation. Avoid the word "validated" throughout.`
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
