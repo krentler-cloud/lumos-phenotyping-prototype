@@ -55,7 +55,7 @@ const METHODOLOGY_STEPS = [
     icon: "⬡",
     title: "Phenotype Synthesis",
     description:
-      "Claude Opus synthesizes responder and non-responder phenotype profiles across five dimensions: demographics, clinical, inflammatory, neuroplasticity, and imaging.",
+      "Lumos AI synthesizes responder and non-responder phenotype profiles across five dimensions: demographics, clinical, inflammatory, neuroplasticity, and imaging.",
   },
   {
     icon: "◉",

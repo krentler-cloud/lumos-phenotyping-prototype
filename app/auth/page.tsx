@@ -102,7 +102,7 @@ export default function AuthPage() {
           )}
         </div>
 
-        <p className="text-center text-text-muted text-xs mt-6">Lumos AI · Patient Phenotyping</p>
+        <p className="text-center text-text-muted text-xs mt-6">Lumos AI · Precision Neuroscience</p>
       </div>
     </div>
   );

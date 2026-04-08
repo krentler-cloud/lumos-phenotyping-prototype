@@ -29,7 +29,7 @@ export default function CorpusPage() {
           <CorpusStats refreshTrigger={refreshTrigger} polling={uploading} />
           <div className="bg-bg-surface border border-border-subtle rounded-xl p-5 text-sm text-text-muted space-y-1">
             <p className="text-text-heading font-medium text-sm">Pipeline</p>
-            <p>PDF / DOCX / CSV → text extraction → 512-token chunks (64-token overlap) → OpenAI text-embedding-3-small → pgvector</p>
+            <p>PDF / DOCX / CSV → text extraction → 512-token chunks (64-token overlap) → Lumos AI proprietary embeddings → pgvector</p>
             <p className="text-xs">~$0.001 per 50-page document</p>
           </div>
         </div>
