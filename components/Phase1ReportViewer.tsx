@@ -117,12 +117,42 @@ function Tab({ label, active, onClick, count }: { label: string; active: boolean
 }
 
 // ── Profile field ─────────────────────────────────────────────────────────────
-function ProfileField({ label, value }: { label: string; value: string }) {
+// ── Dimension block — parses semicolon-separated prose into bullets ───────────
+const DIMENSION_META: Record<string, { icon: string; color: string }> = {
+  Demographics:    { icon: "👤", color: "var(--text-muted)" },
+  "Core Clinical": { icon: "🧠", color: "var(--brand-core)" },
+  Inflammatory:    { icon: "🔥", color: "var(--status-danger)" },
+  Neuroplasticity: { icon: "⚡", color: "var(--status-purple)" },
+  "Imaging / EEG": { icon: "📡", color: "var(--brand-core)" },
+};
+
+function parseBullets(value: string): string[] {
+  // Try "; " split first (Opus uses semicolons between distinct facts)
+  const semis = value.split(/;\s+/).map(s => s.trim().replace(/[.;]+$/, "")).filter(Boolean);
+  if (semis.length >= 2) return semis;
+  // Fall back to sentence split
+  return (value.match(/[^.!?]+[.!?]+/g) ?? [value]).map(s => s.trim()).filter(Boolean);
+}
+
+function DimensionBlock({ label, value, accentColor }: { label: string; value: string; accentColor?: string }) {
   if (!value) return null;
+  const meta = DIMENSION_META[label] ?? { icon: "·", color: "var(--text-muted)" };
+  const color = accentColor ?? meta.color;
+  const bullets = parseBullets(value);
   return (
-    <div className="flex gap-3 py-1.5 border-b border-border-subtle last:border-0">
-      <span className="text-text-muted text-[10px] uppercase tracking-wider flex-shrink-0 w-28 pt-0.5">{label}</span>
-      <span className="text-text-body text-sm leading-relaxed flex-1">{value}</span>
+    <div className="p-4 bg-bg-page border border-border-subtle rounded-xl flex flex-col gap-2.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm leading-none">{meta.icon}</span>
+        <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{label}</p>
+      </div>
+      <ul className="space-y-1.5">
+        {bullets.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs text-text-body leading-relaxed">
+            <span className="mt-[5px] w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-70" style={{ background: color }} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -616,109 +646,125 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
               </div>
             </div>
 
-            {/* ── Phenotype cards ── */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              {/* Responder */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
-                <div className="flex items-center justify-between gap-3 mb-1">
-                  <p className="text-status-success text-[10px] uppercase tracking-widest">Predicted Responder</p>
+            {/* ── Phenotype cards — full width, stacked ── */}
+            <div className="space-y-5">
+
+              {/* ── Responder (full width) ── */}
+              <div className="bg-bg-surface border border-status-success/20 rounded-2xl overflow-hidden">
+                {/* Card header */}
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle bg-status-success/[0.04]">
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 rounded-full bg-status-success flex-shrink-0" />
+                    <p className="text-status-success text-xs font-semibold uppercase tracking-widest">Predicted Responder</p>
+                    <span className="text-text-heading font-bold text-sm">· Subtype {report.responder_profile.primary_subtype}</span>
+                  </div>
                   <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
                 </div>
-                <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
-                  {report.responder_profile.primary_subtype}
-                </h2>
 
-                {/* Lead summary — always visible */}
-                <p className="text-text-body text-sm leading-relaxed mb-1">{rSplit.lead}</p>
-
-                {/* Expandable mechanistic detail */}
-                {rSplit.rest && (
-                  <>
-                    {responderExpanded && (
-                      <p className="text-text-muted text-sm leading-relaxed mb-1 mt-2">{rSplit.rest}</p>
+                <div className="p-6 space-y-5">
+                  {/* Summary */}
+                  <div>
+                    <p className="text-text-body text-sm leading-relaxed">{rSplit.lead}</p>
+                    {rSplit.rest && (
+                      <>
+                        {responderExpanded && (
+                          <p className="text-text-muted text-sm leading-relaxed mt-2">{rSplit.rest}</p>
+                        )}
+                        <button
+                          onClick={() => setResponderExpanded(v => !v)}
+                          className="text-xs text-brand-core hover:underline mt-2 block"
+                        >
+                          {responderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
+                        </button>
+                      </>
                     )}
-                    <button
-                      onClick={() => setResponderExpanded(v => !v)}
-                      className="text-xs text-brand-core hover:underline mb-3 mt-1 block"
-                    >
-                      {responderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
-                    </button>
-                  </>
-                )}
-                {!rSplit.rest && <div className="mb-4" />}
-
-                <div className="border-t border-border-subtle pt-3 mt-1">
-                  <ProfileField label="Demographics" value={report.responder_profile.demographics} />
-                  <ProfileField label="Core Clinical" value={report.responder_profile.core_clinical} />
-                  <ProfileField label="Inflammatory" value={report.responder_profile.inflammatory} />
-                  <ProfileField label="Neuroplasticity" value={report.responder_profile.neuroplasticity} />
-                  {report.responder_profile.imaging && <ProfileField label="Imaging" value={report.responder_profile.imaging} />}
-                </div>
-
-                {report.responder_profile.key_inclusion_criteria?.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border-subtle">
-                    <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Inclusion Criteria</p>
-                    <ul className="space-y-1.5">
-                      {report.responder_profile.key_inclusion_criteria.map((c, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-text-body">
-                          <span className="text-status-success flex-shrink-0 mt-0.5">✓</span>{c}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                )}
+
+                  {/* Dimension blocks — 3-col grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <DimensionBlock label="Demographics"    value={report.responder_profile.demographics} />
+                    <DimensionBlock label="Core Clinical"   value={report.responder_profile.core_clinical} />
+                    <DimensionBlock label="Inflammatory"    value={report.responder_profile.inflammatory} />
+                    <DimensionBlock label="Neuroplasticity" value={report.responder_profile.neuroplasticity} />
+                    {report.responder_profile.imaging && (
+                      <DimensionBlock label="Imaging / EEG" value={report.responder_profile.imaging} />
+                    )}
+                  </div>
+
+                  {/* Key inclusion criteria */}
+                  {report.responder_profile.key_inclusion_criteria?.length > 0 && (
+                    <div className="pt-4 border-t border-border-subtle">
+                      <p className="text-status-success text-[10px] uppercase tracking-wider font-semibold mb-2.5">Key Inclusion Criteria</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                        {report.responder_profile.key_inclusion_criteria.map((c, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-text-body">
+                            <span className="text-status-success flex-shrink-0 mt-0.5 font-bold">✓</span>{c}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Non-responder */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
-                <div className="flex items-center justify-between gap-3 mb-1">
-                  <p className="text-status-danger text-[10px] uppercase tracking-widest">Predicted Non-Responder</p>
+              {/* ── Non-responder (full width) ── */}
+              <div className="bg-bg-surface border border-status-danger/20 rounded-2xl overflow-hidden">
+                {/* Card header */}
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle bg-status-danger/[0.04]">
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 rounded-full bg-status-danger flex-shrink-0" />
+                    <p className="text-status-danger text-xs font-semibold uppercase tracking-widest">Predicted Non-Responder</p>
+                    <span className="text-text-heading font-bold text-sm">· Subtype {report.nonresponder_profile.primary_subtype}</span>
+                  </div>
                   <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
                 </div>
-                <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
-                  {report.nonresponder_profile.primary_subtype}
-                </h2>
 
-                {/* Lead summary — always visible */}
-                <p className="text-text-body text-sm leading-relaxed mb-1">{nrSplit.lead}</p>
-
-                {/* Expandable mechanistic detail */}
-                {nrSplit.rest && (
-                  <>
-                    {nonresponderExpanded && (
-                      <p className="text-text-muted text-sm leading-relaxed mb-1 mt-2">{nrSplit.rest}</p>
+                <div className="p-6 space-y-5">
+                  {/* Summary */}
+                  <div>
+                    <p className="text-text-body text-sm leading-relaxed">{nrSplit.lead}</p>
+                    {nrSplit.rest && (
+                      <>
+                        {nonresponderExpanded && (
+                          <p className="text-text-muted text-sm leading-relaxed mt-2">{nrSplit.rest}</p>
+                        )}
+                        <button
+                          onClick={() => setNonresponderExpanded(v => !v)}
+                          className="text-xs text-brand-core hover:underline mt-2 block"
+                        >
+                          {nonresponderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
+                        </button>
+                      </>
                     )}
-                    <button
-                      onClick={() => setNonresponderExpanded(v => !v)}
-                      className="text-xs text-brand-core hover:underline mb-3 mt-1 block"
-                    >
-                      {nonresponderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
-                    </button>
-                  </>
-                )}
-                {!nrSplit.rest && <div className="mb-4" />}
-
-                <div className="border-t border-border-subtle pt-3 mt-1">
-                  <ProfileField label="Demographics" value={report.nonresponder_profile.demographics} />
-                  <ProfileField label="Core Clinical" value={report.nonresponder_profile.core_clinical} />
-                  <ProfileField label="Inflammatory" value={report.nonresponder_profile.inflammatory} />
-                  <ProfileField label="Neuroplasticity" value={report.nonresponder_profile.neuroplasticity} />
-                  {report.nonresponder_profile.imaging && <ProfileField label="Imaging" value={report.nonresponder_profile.imaging} />}
-                </div>
-
-                {report.nonresponder_profile.key_exclusion_criteria?.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border-subtle">
-                    <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Exclusion Criteria</p>
-                    <ul className="space-y-1.5">
-                      {report.nonresponder_profile.key_exclusion_criteria.map((c, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-text-body">
-                          <span className="text-status-danger flex-shrink-0 mt-0.5">✕</span>{c}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                )}
+
+                  {/* Dimension blocks — 3-col grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <DimensionBlock label="Demographics"    value={report.nonresponder_profile.demographics} />
+                    <DimensionBlock label="Core Clinical"   value={report.nonresponder_profile.core_clinical} />
+                    <DimensionBlock label="Inflammatory"    value={report.nonresponder_profile.inflammatory} />
+                    <DimensionBlock label="Neuroplasticity" value={report.nonresponder_profile.neuroplasticity} />
+                    {report.nonresponder_profile.imaging && (
+                      <DimensionBlock label="Imaging / EEG" value={report.nonresponder_profile.imaging} />
+                    )}
+                  </div>
+
+                  {/* Key exclusion criteria */}
+                  {report.nonresponder_profile.key_exclusion_criteria?.length > 0 && (
+                    <div className="pt-4 border-t border-border-subtle">
+                      <p className="text-status-danger text-[10px] uppercase tracking-wider font-semibold mb-2.5">Key Exclusion Criteria</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                        {report.nonresponder_profile.key_exclusion_criteria.map((c, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-text-body">
+                            <span className="text-status-danger flex-shrink-0 mt-0.5 font-bold">✕</span>{c}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
             </div>
           </div>
         );
