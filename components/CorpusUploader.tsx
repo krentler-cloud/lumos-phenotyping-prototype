@@ -36,32 +36,11 @@ export default function CorpusUploader({
   const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Single-file title field + suggestion state
+  // Single-file title — optional override; blank = auto-generate from content after upload
   const [title, setTitle] = useState("");
-  const [titleLoading, setTitleLoading] = useState(false);
 
   const setStatus = (index: number, update: Partial<FileStatus>) => {
     setFileStatuses(prev => prev.map((s, i) => i === index ? { ...s, ...update } : s));
-  };
-
-  // ── Suggest title for a single file via Haiku ───────────────────────────
-  const suggestTitle = async (filename: string) => {
-    setTitleLoading(true);
-    try {
-      const res = await fetch("/api/corpus/suggest-title", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename }),
-      });
-      if (res.ok) {
-        const { title: suggested } = await res.json();
-        if (suggested) setTitle(suggested);
-      }
-    } catch {
-      // Non-blocking — fall back to filename without extension
-    } finally {
-      setTitleLoading(false);
-    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -70,21 +49,12 @@ export default function CorpusUploader({
     const items = Array.from(e.dataTransfer.files).filter(f => isValidFile(f.name));
     if (items.length === 0) return;
     setFileStatuses(items.map(f => ({ file: f, state: "pending" })));
-    if (mode === "file" && items.length === 1) {
-      setTitle("");
-      suggestTitle(items[0].name);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, []);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(f => isValidFile(f.name));
     if (files.length === 0) return;
     setFileStatuses(files.map(f => ({ file: f, state: "pending" })));
-    if (mode === "file" && files.length === 1) {
-      setTitle("");
-      suggestTitle(files[0].name);
-    }
   };
 
   // ── Ingest a single file ────────────────────────────────────────────────
@@ -131,10 +101,11 @@ export default function CorpusUploader({
     onUploadStart?.();
 
     if (mode === "file") {
-      // Single file — use the Haiku-suggested (or manually typed) title
-      await ingestFile(fileStatuses[0], 0, title || fileStatuses[0].file.name, false);
+      // If user typed a title, use it; otherwise auto-generate from extracted content
+      const useAutoTitle = !title.trim();
+      await ingestFile(fileStatuses[0], 0, title.trim(), useAutoTitle);
     } else {
-      // Folder — auto_title=true: Haiku generates title server-side from extracted text
+      // Folder — always auto-generate from extracted text
       for (let i = 0; i < fileStatuses.length; i++) {
         await ingestFile(fileStatuses[i], i, "", true);
       }
@@ -147,15 +118,12 @@ export default function CorpusUploader({
   const reset = () => {
     setFileStatuses([]);
     setTitle("");
-    setTitleLoading(false);
   };
 
-  const pending  = fileStatuses.filter(s => s.state === "pending").length;
   const done     = fileStatuses.filter(s => s.state === "done").length;
   const skipped  = fileStatuses.filter(s => s.state === "skipped").length;
   const errors   = fileStatuses.filter(s => s.state === "error").length;
   const allDone  = fileStatuses.length > 0 && done + skipped + errors === fileStatuses.length;
-  void pending;
 
   return (
     <div className="bg-bg-surface border border-border-subtle rounded-xl p-6">
@@ -238,29 +206,27 @@ export default function CorpusUploader({
           )}
         </div>
 
-        {/* Title (single file only) — pre-filled by Haiku, editable */}
+        {/* Title (single file only) — optional override; blank = AI-generated after upload */}
         {mode === "file" && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm text-text-muted">Document title</label>
-              {titleLoading && (
-                <span className="text-[11px] text-brand-core flex items-center gap-1">
-                  <span className="animate-spin inline-block text-xs">⟳</span>
-                  Generating title…
+              <label className="text-sm text-text-muted">Document title <span className="text-text-secondary">(optional)</span></label>
+              {fileStatuses.length > 0 && !title && (
+                <span className="text-[11px] text-brand-core flex items-center gap-1.5">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4m0 4h.01"/></svg>
+                  AI will generate from document content
                 </span>
               )}
-              {!titleLoading && title && fileStatuses.length > 0 && (
-                <span className="text-[11px] text-text-secondary">AI-suggested · edit if needed</span>
+              {title && (
+                <span className="text-[11px] text-text-secondary">Using your title</span>
               )}
             </div>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={titleLoading ? "Generating…" : "e.g. Phase II Clinical Trial Protocol"}
-              required
-              disabled={titleLoading}
-              className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors disabled:opacity-60"
+              placeholder="Leave blank to auto-generate · or type to override"
+              className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors"
             />
           </div>
         )}
@@ -333,7 +299,7 @@ export default function CorpusUploader({
         {!allDone && (
           <button
             type="submit"
-            disabled={fileStatuses.length === 0 || uploading || (mode === "file" && (!title || titleLoading))}
+            disabled={fileStatuses.length === 0 || uploading}
             className="w-full bg-brand-core hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
           >
             {uploading
