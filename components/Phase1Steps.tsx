@@ -27,7 +27,7 @@ const STEPS = [
     detail: "4 simultaneous vector queries across Headlamp MDD corpus",
     tooltip: {
       title: "Parallel semantic search across 4 independent query axes",
-      body: "Each document in Headlamp's 107-paper MDD corpus is pre-embedded as a 1,536-dimensional vector (OpenAI text-embedding-3-small). Lumos runs 4 simultaneous cosine-similarity queries — mechanism of action, PK/safety, biomarker thresholds, and patient profile — then merges results, deduplicates by chunk ID, and applies source-type boosts (IND docs: 1.20×, regulatory: 1.15×). A single query would miss cross-domain evidence; 4 queries in parallel covers the search space.",
+      body: "Each document in Headlamp's research corpus is pre-embedded as a 1,536-dimensional vector (OpenAI text-embedding-3-small). Lumos runs 4 simultaneous cosine-similarity queries — mechanism of action, PK/safety, biomarker thresholds, and efficacy signals — fetching up to 80 candidates per aspect (320 raw). Results are deduplicated by chunk ID (keeping the best similarity score), source-type boosts are applied (clinical trial docs: 1.20×, regulatory: 1.15×), a 3-chunk-per-document cap prevents any single paper from dominating, and the top 40 are sent to Claude Opus. A single query would miss cross-domain evidence; 4 parallel queries cover the mechanistic search space.",
     },
   },
   {
@@ -54,7 +54,7 @@ const STEPS = [
     detail: "Claude Opus: predicted responder + non-responder profiles",
     tooltip: {
       title: "LLM synthesis over retrieved evidence — two structured phenotype portraits",
-      body: "Claude Opus receives the drug's structured pharmacology, the Bayesian subtype priors, and the top 35 corpus chunks (weighted by relevance and source type). It synthesizes two structured phenotype profiles — predicted responder and non-responder — across five dimensions: demographics, core clinical presentation (MADRS/HAMD-17 thresholds), inflammatory markers, neuroplasticity signals (BDNF, TrkB), and imaging correlates. Every claim is grounded in specific corpus evidence with a confidence score. This is the core deliverable that informs trial inclusion/exclusion criteria.",
+      body: "Claude Opus receives the drug's structured pharmacology, the Bayesian subtype priors, and the top 40 corpus chunks (weighted by relevance and source type). It synthesizes two structured phenotype profiles — predicted responder and non-responder — across five dimensions: demographics, core clinical presentation (MADRS/HAMD-17 thresholds), inflammatory markers, neuroplasticity signals (BDNF, TrkB), and imaging correlates. Every claim is grounded in specific corpus evidence with a confidence score. Confidence percentages reflect how consistently and strongly the corpus mechanistic evidence (animal model data, in vitro studies) supports each phenotype — they do not predict clinical response probability.",
     },
   },
   {
