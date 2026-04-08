@@ -21,6 +21,17 @@ export default async function Phase1Page({
 
   if (!study) notFound();
 
+  // Fetch live corpus stats
+  const [
+    { count: clinicalDocCount },
+    { count: totalDocCount },
+    { count: chunkCount },
+  ] = await Promise.all([
+    supabase.from("corpus_docs").select("*", { count: "exact", head: true }).eq("source_type", "clinical_trial").eq("status", "ready"),
+    supabase.from("corpus_docs").select("*", { count: "exact", head: true }).eq("status", "ready"),
+    supabase.from("corpus_chunks").select("*", { count: "exact", head: true }),
+  ]);
+
   // If phase 1 is already complete, redirect to report
   if (study.phase1_run_id) {
     const { data: run } = await supabase
@@ -62,9 +73,9 @@ export default async function Phase1Page({
       {/* Corpus stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
-          { label: "IND Documents", value: "13", sub: `${study.drug_name} package` },
-          { label: "MDD Corpus", value: "107", sub: "indexed documents" },
-          { label: "Corpus Chunks", value: "~2,400", sub: "vector embeddings" },
+          { label: "Clinical Trial Docs", value: String(clinicalDocCount ?? "—"), sub: "IND package & trial data" },
+          { label: "Research Corpus", value: String(totalDocCount ?? "—"), sub: "indexed sources" },
+          { label: "Vector Embeddings", value: chunkCount != null ? chunkCount.toLocaleString() : "—", sub: "searchable excerpts" },
         ].map((stat) => (
           <div key={stat.label} className="bg-bg-surface border border-border-subtle rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-brand-core">{stat.value}</div>
