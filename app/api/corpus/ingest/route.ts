@@ -3,17 +3,22 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { extractText } from '@/lib/pipeline/extract'
 import { chunkText } from '@/lib/pipeline/chunk'
 import { embedTexts } from '@/lib/pipeline/embed'
+import { titleFromText } from '@/lib/pipeline/titler'
 
 export async function POST(req: NextRequest) {
   let docId: string | null = null
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
-    const title = formData.get('title') as string | null
+    const titleParam = formData.get('title') as string | null
     const sourceType = formData.get('source_type') as string | null
+    const autoTitle = formData.get('auto_title') === 'true'
 
-    if (!file || !title || !sourceType) {
-      return NextResponse.json({ error: 'file, title, and source_type are required' }, { status: 400 })
+    if (!file || !sourceType) {
+      return NextResponse.json({ error: 'file and source_type are required' }, { status: 400 })
+    }
+    if (!autoTitle && !titleParam) {
+      return NextResponse.json({ error: 'title is required (or set auto_title=true)' }, { status: 400 })
     }
 
     const validSourceTypes = ['literature', 'clinical_trial', 'internal', 'regulatory']
@@ -40,10 +45,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Insert corpus_docs record (status: processing)
+    // For auto_title mode, use filename as placeholder — updated to real title after extraction
+    const placeholderTitle = titleParam || file.name.replace(/\.(pdf|docx|csv)$/i, '')
     const { data: doc, error: docError } = await supabase
       .from('corpus_docs')
       .insert({
-        title,
+        title: placeholderTitle,
         source_type: sourceType,
         filename: file.name,
         status: 'processing',
@@ -70,6 +77,11 @@ export async function POST(req: NextRequest) {
     const rawText = await extractText(fileBuffer, file.name)
     // Strip null bytes and unpaired surrogates — PostgreSQL rejects these in UTF-8
     const text = rawText.replace(/\u0000/g, '').replace(/[\uD800-\uDFFF]/g, '')
+
+    // 3b. Auto-generate title from extracted text if requested (folder mode)
+    const title = autoTitle
+      ? await titleFromText(text, file.name).catch(() => file.name.replace(/\.(pdf|docx|csv)$/i, ''))
+      : titleParam!
 
     // 4. Chunk text
     const chunks = chunkText(text)
@@ -98,18 +110,19 @@ export async function POST(req: NextRequest) {
       if (chunkError) throw new Error(`Chunk insert failed: ${chunkError.message}`)
     }
 
-    // 7. Update corpus_docs to ready
+    // 7. Update corpus_docs to ready (include generated title if auto_title mode)
     await supabase
       .from('corpus_docs')
       .update({
         status: 'ready',
         char_count: text.length,
         chunk_count: chunks.length,
-        storage_path: storagePath, // uses sanitized filename
+        storage_path: storagePath,
+        ...(autoTitle ? { title } : {}),
       })
       .eq('id', doc.id)
 
-    return NextResponse.json({ doc_id: doc.id, chunk_count: chunks.length, status: 'ready' })
+    return NextResponse.json({ doc_id: doc.id, chunk_count: chunks.length, status: 'ready', title })
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'

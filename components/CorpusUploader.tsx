@@ -3,10 +3,10 @@
 import { useState, useCallback } from "react";
 
 const SOURCE_TYPES = [
-  { value: "literature", label: "Literature" },
+  { value: "literature",     label: "Literature" },
   { value: "clinical_trial", label: "Clinical Trial" },
-  { value: "internal", label: "Internal" },
-  { value: "regulatory", label: "Regulatory" },
+  { value: "internal",       label: "Internal" },
+  { value: "regulatory",     label: "Regulatory" },
 ];
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".csv"];
@@ -19,21 +19,49 @@ interface FileStatus {
   file: File;
   state: "pending" | "uploading" | "done" | "skipped" | "error";
   chunkCount?: number;
+  generatedTitle?: string;
   error?: string;
 }
 
-export default function CorpusUploader({ onUploadComplete, onUploadStart }: { onUploadComplete?: () => void; onUploadStart?: () => void }) {
+export default function CorpusUploader({
+  onUploadComplete,
+  onUploadStart,
+}: {
+  onUploadComplete?: () => void;
+  onUploadStart?: () => void;
+}) {
   const [mode, setMode] = useState<"file" | "folder">("file");
   const [dragging, setDragging] = useState(false);
   const [sourceType, setSourceType] = useState("literature");
   const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Single-file title (only used in file mode)
+  // Single-file title field + suggestion state
   const [title, setTitle] = useState("");
+  const [titleLoading, setTitleLoading] = useState(false);
 
   const setStatus = (index: number, update: Partial<FileStatus>) => {
     setFileStatuses(prev => prev.map((s, i) => i === index ? { ...s, ...update } : s));
+  };
+
+  // ── Suggest title for a single file via Haiku ───────────────────────────
+  const suggestTitle = async (filename: string) => {
+    setTitleLoading(true);
+    try {
+      const res = await fetch("/api/corpus/suggest-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      });
+      if (res.ok) {
+        const { title: suggested } = await res.json();
+        if (suggested) setTitle(suggested);
+      }
+    } catch {
+      // Non-blocking — fall back to filename without extension
+    } finally {
+      setTitleLoading(false);
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -42,22 +70,39 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
     const items = Array.from(e.dataTransfer.files).filter(f => isValidFile(f.name));
     if (items.length === 0) return;
     setFileStatuses(items.map(f => ({ file: f, state: "pending" })));
-    if (items.length === 1 && !title) setTitle(items[0].name.replace(/\.(pdf|docx|csv)$/i, ""));
-  }, [title]);
+    if (mode === "file" && items.length === 1) {
+      setTitle("");
+      suggestTitle(items[0].name);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(f => isValidFile(f.name));
     if (files.length === 0) return;
     setFileStatuses(files.map(f => ({ file: f, state: "pending" })));
-    if (files.length === 1 && !title) setTitle(files[0].name.replace(/\.(pdf|docx|csv)$/i, ""));
+    if (mode === "file" && files.length === 1) {
+      setTitle("");
+      suggestTitle(files[0].name);
+    }
   };
 
-  const ingestFile = async (fs: FileStatus, index: number, titleOverride: string): Promise<boolean> => {
+  // ── Ingest a single file ────────────────────────────────────────────────
+  const ingestFile = async (
+    fs: FileStatus,
+    index: number,
+    titleOverride: string,
+    autoTitle = false
+  ): Promise<boolean> => {
     setStatus(index, { state: "uploading" });
     const formData = new FormData();
     formData.append("file", fs.file);
-    formData.append("title", titleOverride);
     formData.append("source_type", sourceType);
+    if (autoTitle) {
+      formData.append("auto_title", "true");
+    } else {
+      formData.append("title", titleOverride);
+    }
 
     try {
       const res = await fetch("/api/corpus/ingest", { method: "POST", body: formData });
@@ -66,7 +111,11 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
       if (data.skipped) {
         setStatus(index, { state: "skipped" });
       } else {
-        setStatus(index, { state: "done", chunkCount: data.chunk_count });
+        setStatus(index, {
+          state: "done",
+          chunkCount: data.chunk_count,
+          generatedTitle: data.title,
+        });
       }
       return true;
     } catch (err: unknown) {
@@ -82,13 +131,12 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
     onUploadStart?.();
 
     if (mode === "file") {
-      // Single file — use the typed title
-      await ingestFile(fileStatuses[0], 0, title || fileStatuses[0].file.name);
+      // Single file — use the Haiku-suggested (or manually typed) title
+      await ingestFile(fileStatuses[0], 0, title || fileStatuses[0].file.name, false);
     } else {
-      // Folder — ingest sequentially, derive title from filename
+      // Folder — auto_title=true: Haiku generates title server-side from extracted text
       for (let i = 0; i < fileStatuses.length; i++) {
-        const t = fileStatuses[i].file.name.replace(/\.(pdf|docx|csv)$/i, "");
-        await ingestFile(fileStatuses[i], i, t);
+        await ingestFile(fileStatuses[i], i, "", true);
       }
     }
 
@@ -99,13 +147,15 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
   const reset = () => {
     setFileStatuses([]);
     setTitle("");
+    setTitleLoading(false);
   };
 
-  const pending = fileStatuses.filter(s => s.state === "pending").length;
-  const done = fileStatuses.filter(s => s.state === "done").length;
-  const skipped = fileStatuses.filter(s => s.state === "skipped").length;
-  const errors = fileStatuses.filter(s => s.state === "error").length;
-  const allDone = fileStatuses.length > 0 && done + skipped + errors === fileStatuses.length;
+  const pending  = fileStatuses.filter(s => s.state === "pending").length;
+  const done     = fileStatuses.filter(s => s.state === "done").length;
+  const skipped  = fileStatuses.filter(s => s.state === "skipped").length;
+  const errors   = fileStatuses.filter(s => s.state === "error").length;
+  const allDone  = fileStatuses.length > 0 && done + skipped + errors === fileStatuses.length;
+  void pending;
 
   return (
     <div className="bg-bg-surface border border-border-subtle rounded-xl p-6">
@@ -172,7 +222,7 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
               </p>
               {mode === "folder" && (
                 <p className="text-text-muted text-xs mt-1">
-                  {ACCEPTED_EXTENSIONS.join(", ")} files only
+                  Titles will be auto-generated from document content
                 </p>
               )}
             </div>
@@ -188,17 +238,29 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           )}
         </div>
 
-        {/* Title (single file only) */}
+        {/* Title (single file only) — pre-filled by Haiku, editable */}
         {mode === "file" && (
           <div>
-            <label className="block text-sm text-text-muted mb-1.5">Document title</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm text-text-muted">Document title</label>
+              {titleLoading && (
+                <span className="text-[11px] text-brand-core flex items-center gap-1">
+                  <span className="animate-spin inline-block text-xs">⟳</span>
+                  Generating title…
+                </span>
+              )}
+              {!titleLoading && title && fileStatuses.length > 0 && (
+                <span className="text-[11px] text-text-secondary">AI-suggested · edit if needed</span>
+              )}
+            </div>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Phase II Clinical Trial Protocol"
+              placeholder={titleLoading ? "Generating…" : "e.g. Phase II Clinical Trial Protocol"}
               required
-              className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors"
+              disabled={titleLoading}
+              className="w-full bg-bg-page border border-border-subtle rounded-lg px-4 py-2.5 text-text-heading text-sm placeholder-text-muted focus:outline-none focus:border-brand-core transition-colors disabled:opacity-60"
             />
           </div>
         )}
@@ -217,29 +279,36 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
           </select>
         </div>
 
-        {/* Per-file progress (folder mode or after submit) */}
+        {/* Per-file progress */}
         {fileStatuses.length > 0 && (mode === "folder" || uploading || allDone) && (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {fileStatuses.map((fs, i) => (
               <div key={i} className="flex items-center gap-3 text-xs px-3 py-2 bg-bg-page rounded-lg">
                 <span className={`flex-shrink-0 ${
-                  fs.state === "done" ? "text-status-success" :
-                  fs.state === "skipped" ? "text-text-muted" :
-                  fs.state === "error" ? "text-status-danger" :
-                  fs.state === "uploading" ? "text-brand-core" :
+                  fs.state === "done"      ? "text-status-success" :
+                  fs.state === "skipped"  ? "text-text-muted" :
+                  fs.state === "error"    ? "text-status-danger" :
+                  fs.state === "uploading"? "text-brand-core" :
                   "text-text-muted"
                 }`}>
-                  {fs.state === "done" ? "✓" :
-                   fs.state === "skipped" ? "–" :
-                   fs.state === "error" ? "✗" :
+                  {fs.state === "done"       ? "✓" :
+                   fs.state === "skipped"   ? "–" :
+                   fs.state === "error"     ? "✗" :
                    fs.state === "uploading" ? "⟳" : "○"}
                 </span>
-                <span className="flex-1 truncate text-text-muted">{fs.file.name}</span>
+                <span className="flex-1 min-w-0">
+                  {/* Show generated title if available, else filename */}
+                  {fs.state === "done" && fs.generatedTitle ? (
+                    <span className="text-text-heading truncate block">{fs.generatedTitle}</span>
+                  ) : (
+                    <span className="text-text-muted truncate block">{fs.file.name}</span>
+                  )}
+                </span>
                 {fs.state === "done" && (
-                  <span className="text-status-success">{fs.chunkCount} chunks</span>
+                  <span className="text-status-success flex-shrink-0">{fs.chunkCount} chunks</span>
                 )}
                 {fs.state === "skipped" && (
-                  <span className="text-text-muted">already ingested</span>
+                  <span className="text-text-muted flex-shrink-0">already ingested</span>
                 )}
                 {fs.state === "error" && (
                   <span className="text-status-danger break-all">{fs.error}</span>
@@ -264,7 +333,7 @@ export default function CorpusUploader({ onUploadComplete, onUploadStart }: { on
         {!allDone && (
           <button
             type="submit"
-            disabled={fileStatuses.length === 0 || uploading || (mode === "file" && !title)}
+            disabled={fileStatuses.length === 0 || uploading || (mode === "file" && (!title || titleLoading))}
             className="w-full bg-brand-core hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
           >
             {uploading

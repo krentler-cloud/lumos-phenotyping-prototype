@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface CorpusDoc {
   id: string;
@@ -20,13 +20,6 @@ const STATUS_STYLES: Record<string, string> = {
   error:      "text-status-danger bg-status-danger/12 border-status-danger",
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  literature:     "Literature",
-  clinical_trial: "Clinical Trial",
-  internal:       "Internal",
-  regulatory:     "Regulatory",
-};
-
 const SOURCE_OPTIONS = [
   { value: "literature",     label: "Literature" },
   { value: "clinical_trial", label: "Clinical Trial" },
@@ -34,6 +27,7 @@ const SOURCE_OPTIONS = [
   { value: "regulatory",     label: "Regulatory" },
 ];
 
+// ── Inline source-type reclassifier ──────────────────────────────────────────
 function SourceTypeSelect({ doc, onUpdated }: { doc: CorpusDoc; onUpdated: () => void }) {
   const [saving, setSaving] = useState(false);
 
@@ -67,6 +61,141 @@ function SourceTypeSelect({ doc, onUpdated }: { doc: CorpusDoc; onUpdated: () =>
   );
 }
 
+// ── Inline title editor ───────────────────────────────────────────────────────
+function InlineTitle({ doc, onUpdated }: { doc: CorpusDoc; onUpdated: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(doc.title);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === doc.title) { setEditing(false); setValue(doc.title); return; }
+    setSaving(true);
+    try {
+      await fetch(`/api/corpus/docs/${doc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      onUpdated();
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  const cancel = () => { setEditing(false); setValue(doc.title); };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0">
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          disabled={saving}
+          className="flex-1 min-w-0 bg-bg-page border border-brand-core rounded px-2 py-1 text-text-heading text-sm focus:outline-none"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          title="Save"
+          className="text-status-success hover:opacity-75 flex-shrink-0 text-base leading-none disabled:opacity-40"
+        >✓</button>
+        <button
+          onClick={cancel}
+          title="Cancel"
+          className="text-text-muted hover:text-text-heading flex-shrink-0 text-sm leading-none"
+        >✕</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group flex items-start gap-1.5 min-w-0">
+      <div className="min-w-0">
+        <span className="text-text-heading block truncate max-w-xs">{doc.title}</span>
+        {doc.filename && doc.filename !== doc.title && (
+          <span className="block text-text-muted text-xs truncate max-w-xs">{doc.filename}</span>
+        )}
+        {doc.status === "error" && doc.metadata?.error && (
+          <span className="block text-status-danger text-xs mt-0.5 max-w-xs">{doc.metadata.error}</span>
+        )}
+      </div>
+      <button
+        onClick={() => setEditing(true)}
+        title="Rename"
+        className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-brand-core mt-0.5"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// ── Delete button with inline confirmation ────────────────────────────────────
+function DeleteButton({ doc, onDeleted }: { doc: CorpusDoc; onDeleted: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await fetch(`/api/corpus/docs/${doc.id}`, { method: "DELETE" });
+      onDeleted();
+    } finally {
+      setDeleting(false);
+      setConfirming(false);
+    }
+  };
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <span className="text-[10px] text-status-danger whitespace-nowrap">Delete?</span>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="text-[10px] px-2 py-0.5 rounded bg-status-danger text-white disabled:opacity-50 whitespace-nowrap"
+        >
+          {deleting ? "…" : "Yes"}
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="text-[10px] text-text-muted hover:text-text-heading"
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      title="Delete document and all chunks"
+      className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-status-danger"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </svg>
+    </button>
+  );
+}
+
+// ── Main list component ───────────────────────────────────────────────────────
 export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: number }) {
   const [docs, setDocs] = useState<CorpusDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,9 +236,9 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
     );
   }
 
-  const ready = docs.filter(d => d.status === "ready");
+  const ready      = docs.filter(d => d.status === "ready");
   const processing = docs.filter(d => d.status === "processing" || d.status === "pending");
-  const errors = docs.filter(d => d.status === "error");
+  const errors     = docs.filter(d => d.status === "error");
 
   return (
     <div className="space-y-3">
@@ -139,19 +268,14 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
               <th className="text-left px-5 py-2.5">Status</th>
               <th className="text-left px-5 py-2.5 hidden md:table-cell">Chunks</th>
               <th className="text-left px-5 py-2.5 hidden lg:table-cell">Date</th>
+              <th className="px-5 py-2.5 w-10" />
             </tr>
           </thead>
           <tbody>
             {docs.map(doc => (
-              <tr key={doc.id} className="border-b border-border-subtle last:border-0 hover:bg-nav-item-active-bg/12">
+              <tr key={doc.id} className="group border-b border-border-subtle last:border-0 hover:bg-nav-item-active-bg/12">
                 <td className="px-5 py-3">
-                  <span className="text-text-heading">{doc.title}</span>
-                  {doc.filename && doc.filename !== doc.title && (
-                    <span className="block text-text-muted text-xs truncate max-w-xs">{doc.filename}</span>
-                  )}
-                  {doc.status === "error" && doc.metadata?.error && (
-                    <span className="block text-status-danger text-xs mt-0.5 max-w-xs">{doc.metadata.error}</span>
-                  )}
+                  <InlineTitle doc={doc} onUpdated={fetchDocs} />
                 </td>
                 <td className="px-5 py-3 hidden md:table-cell">
                   <SourceTypeSelect doc={doc} onUpdated={fetchDocs} />
@@ -170,6 +294,9 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
                 </td>
                 <td className="px-5 py-3 text-text-muted text-xs hidden lg:table-cell">
                   {new Date(doc.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-3 py-3">
+                  <DeleteButton doc={doc} onDeleted={fetchDocs} />
                 </td>
               </tr>
             ))}
