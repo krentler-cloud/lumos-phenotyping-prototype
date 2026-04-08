@@ -17,9 +17,19 @@ interface Study {
 
 interface SidebarProps {
   study: Study;
+  phase1RunStatus?: string | null;
+  phase2RunStatus?: string | null;
 }
 
-export default function Sidebar({ study }: SidebarProps) {
+function runStatusLabel(status: string | null | undefined, fallback: string): string {
+  if (!status) return fallback;
+  if (status === "complete") return "Processing Complete";
+  if (status === "processing" || status === "queued") return "Processing…";
+  if (status === "error") return "Analysis Failed";
+  return fallback;
+}
+
+export default function Sidebar({ study, phase1RunStatus, phase2RunStatus }: SidebarProps) {
   const pathname = usePathname();
   const base = `/studies/${study.id}`;
 
@@ -78,7 +88,7 @@ export default function Sidebar({ study }: SidebarProps) {
           <div className="mt-1 space-y-0.5 ml-2">
             <SidebarItem
               href={hasPhase1 ? `${base}/phase1/processing` : `${base}/phase1`}
-              label={hasPhase1 ? "Processing Complete" : "Lumos Processing"}
+              label={hasPhase1 ? runStatusLabel(phase1RunStatus, "Processing…") : "Run Analysis"}
               icon="⚡"
               active={pathname.includes('/phase1') && !pathname.includes('/report')}
             />
@@ -113,7 +123,7 @@ export default function Sidebar({ study }: SidebarProps) {
               <>
                 <SidebarItem
                   href={hasPhase2 ? `${base}/phase2/processing` : `${base}/phase2`}
-                  label={hasPhase2 ? "Analysis Complete" : "Run Clinical Analysis"}
+                  label={hasPhase2 ? runStatusLabel(phase2RunStatus, "Processing…") : "Run Clinical Analysis"}
                   icon="↻"
                   active={
                     (isActive(`${base}/phase2`) && !pathname.includes('/subtyping') && !pathname.includes('/report')) ||

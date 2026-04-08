@@ -24,9 +24,24 @@ export default async function StudyLayout({
 
   if (!study) notFound();
 
+  // Fetch run statuses for sidebar labels
+  let phase1RunStatus: string | null = null;
+  let phase2RunStatus: string | null = null;
+
+  const runFetches = await Promise.all([
+    study.phase1_run_id
+      ? supabase.from("runs").select("status").eq("id", study.phase1_run_id).single()
+      : Promise.resolve({ data: null }),
+    study.phase2_run_id
+      ? supabase.from("runs").select("status").eq("id", study.phase2_run_id).single()
+      : Promise.resolve({ data: null }),
+  ]);
+  phase1RunStatus = (runFetches[0].data as { status: string } | null)?.status ?? null;
+  phase2RunStatus = (runFetches[1].data as { status: string } | null)?.status ?? null;
+
   // Build suggestion chips for AI chat (optionally grounded in actual report values)
   let phase1Report: Phase1ReportData | null = null;
-  if (study.phase1_run_id) {
+  if (study.phase1_run_id && phase1RunStatus === "complete") {
     const { data: p1Row } = await supabase
       .from("phase1_reports")
       .select("report_data")
@@ -55,7 +70,7 @@ export default async function StudyLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-page">
-      <div className="print-hide"><Sidebar study={study} /></div>
+      <div className="print-hide"><Sidebar study={study} phase1RunStatus={phase1RunStatus} phase2RunStatus={phase2RunStatus} /></div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
