@@ -101,7 +101,7 @@ export async function POST(
 
     // ── STEP 4: Multi-aspect weighted corpus search ────────────────────────────
     await log('Weighted corpus search', 'running')
-    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 20, 80, 3)
+    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 40, 80, 3)
     await log(
       'Weighted corpus search',
       'complete',
