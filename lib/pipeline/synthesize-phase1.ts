@@ -163,6 +163,8 @@ SEX-SPECIFIC REFERENCE RANGES: When reporting BDNF, CRP, and IL-6 thresholds in 
 // SCIENCE-FEEDBACK: F2-E — Val66Met ancestry caveat
 ANCESTRY CONSIDERATION: The BDNF Val66Met Met allele frequency varies by ancestry (~20–25% in European populations, ~40–50% in East Asian populations). Note in methodology_narrative that genotypic stratification will not behave uniformly across ancestry groups in diverse trial populations. Flag as a pharmacogenetic equity consideration.
 
+// EXECUTIVE SUMMARY: Write a concise 3–4 sentence plain-English overview of the entire analysis for the executive_summary field. Cover: (1) which patient subtypes are predicted to respond and why in one sentence; (2) which patients should be excluded and the key risk in one sentence; (3) the single most important biomarker or screening criterion; (4) the overall level of corpus evidence support and its key limitation. Write for a clinical development lead — no jargon, no model names, no corpus references. This will appear at the top of the report as the first thing a reader sees.
+
 OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
 {
   "responder_profile": {
@@ -204,6 +206,7 @@ OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
       "clinical_implication": ""
     }
   ],
+  "executive_summary": "",
   "methodology_narrative": "",
   "overall_confidence": 0.00
 }`
@@ -319,6 +322,7 @@ export interface Phase1ReportData {
   protocol_notes: string
   primary_endpoint_recommendation: string
   early_response_indicator: string
+  executive_summary?: string
   methodology_narrative: string
   overall_confidence: number
   exploratory_biomarkers?: ExploratoryBiomarker[]

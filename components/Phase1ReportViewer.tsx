@@ -503,9 +503,31 @@ function HumanDataTab({ studyId }: { studyId: string }) {
   );
 }
 
+// ── Summary helpers ────────────────────────────────────────────────────────────
+function splitSummary(text: string, leadSentences = 2): { lead: string; rest: string } {
+  // Split on sentence-ending punctuation followed by a space or end of string
+  const matches = text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [];
+  if (matches.length <= leadSentences) return { lead: text, rest: "" };
+  const lead = matches.slice(0, leadSentences).join("").trim();
+  const rest = matches.slice(leadSentences).join("").trim();
+  return { lead, rest };
+}
+
+// Derive a plain-English executive summary from existing fields when
+// executive_summary is absent (pre-upgrade reports)
+function deriveExecutiveSummary(report: Phase1ReportData, drugName: string): string {
+  const rConf = Math.round((report.responder_profile.corpus_hypothesis_confidence ?? 0) * 100);
+  const nrConf = Math.round((report.nonresponder_profile.corpus_hypothesis_confidence ?? 0) * 100);
+  const { lead: rLead } = splitSummary(report.responder_profile.summary, 1);
+  const { lead: nrLead } = splitSummary(report.nonresponder_profile.summary, 1);
+  return `${rLead} Conversely, ${nrLead.charAt(0).toLowerCase()}${nrLead.slice(1)} Responder corpus support: ${rConf}%. Non-responder corpus support: ${nrConf}%. Evidence is preclinical — human validation required.`;
+}
+
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
   const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "corpus-intelligence" | "exploratory" | "human-data">("overview");
   const [showCoThinkPrompt, setShowCoThinkPrompt] = useState(false);
+  const [responderExpanded, setResponderExpanded] = useState(false);
+  const [nonresponderExpanded, setNonresponderExpanded] = useState(false);
 
   const genDate = new Date(generatedAt).toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
@@ -558,69 +580,149 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
       </div>
 
       {/* ══ OVERVIEW TAB ══════════════════════════════════════════════ */}
-      {activeTab === "overview" && (
-        <div>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {/* Responder */}
-            <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
-              <div className="flex items-center justify-between gap-3 mb-1">
-                <p className="text-status-success text-[10px] uppercase tracking-widest">Predicted Responder</p>
-                <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
+      {activeTab === "overview" && (() => {
+        const execSummary = report.executive_summary || deriveExecutiveSummary(report, drugName);
+        const rSplit = splitSummary(report.responder_profile.summary, 2);
+        const nrSplit = splitSummary(report.nonresponder_profile.summary, 2);
+        const overallPct = Math.round((report.overall_confidence ?? 0) * 100);
+
+        return (
+          <div className="space-y-5">
+
+            {/* ── Executive Summary banner ── */}
+            <div className="p-5 bg-bg-surface border border-border-subtle rounded-2xl">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <p className="text-brand-core text-[10px] uppercase tracking-widest font-semibold">Planning Phase Summary</p>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary">
+                  {overallPct}% overall corpus confidence
+                </span>
               </div>
-              <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
-                {report.responder_profile.primary_subtype}
-              </h2>
-              <p className="text-text-body text-sm leading-relaxed mb-4">{report.responder_profile.summary}</p>
-              <ProfileField label="Demographics" value={report.responder_profile.demographics} />
-              <ProfileField label="Core Clinical" value={report.responder_profile.core_clinical} />
-              <ProfileField label="Inflammatory" value={report.responder_profile.inflammatory} />
-              <ProfileField label="Neuroplasticity" value={report.responder_profile.neuroplasticity} />
-              {report.responder_profile.imaging && <ProfileField label="Imaging" value={report.responder_profile.imaging} />}
-              {report.responder_profile.key_inclusion_criteria?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border-subtle">
-                  <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Inclusion Criteria</p>
-                  <ul className="space-y-1.5">
-                    {report.responder_profile.key_inclusion_criteria.map((c, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-text-body">
-                        <span className="text-status-success flex-shrink-0 mt-0.5">✓</span>{c}
-                      </li>
-                    ))}
-                  </ul>
+              <p className="text-text-body text-sm leading-relaxed">{execSummary}</p>
+              <div className="mt-4 pt-3 border-t border-border-subtle flex gap-6">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Target Responder</p>
+                  <p className="text-sm font-semibold text-status-success">Subtype {report.responder_profile.primary_subtype}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Predicted Non-Responder</p>
+                  <p className="text-sm font-semibold text-status-danger">Subtype {report.nonresponder_profile.primary_subtype}</p>
+                </div>
+                {report.primary_endpoint_recommendation && (
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted mb-0.5">Primary Endpoint</p>
+                    <p className="text-sm text-text-body">{report.primary_endpoint_recommendation}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Non-responder */}
-            <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
-              <div className="flex items-center justify-between gap-3 mb-1">
-                <p className="text-status-danger text-[10px] uppercase tracking-widest">Predicted Non-Responder</p>
-                <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
-              </div>
-              <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
-                {report.nonresponder_profile.primary_subtype}
-              </h2>
-              <p className="text-text-body text-sm leading-relaxed mb-4">{report.nonresponder_profile.summary}</p>
-              <ProfileField label="Demographics" value={report.nonresponder_profile.demographics} />
-              <ProfileField label="Core Clinical" value={report.nonresponder_profile.core_clinical} />
-              <ProfileField label="Inflammatory" value={report.nonresponder_profile.inflammatory} />
-              <ProfileField label="Neuroplasticity" value={report.nonresponder_profile.neuroplasticity} />
-              {report.nonresponder_profile.imaging && <ProfileField label="Imaging" value={report.nonresponder_profile.imaging} />}
-              {report.nonresponder_profile.key_exclusion_criteria?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border-subtle">
-                  <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Exclusion Criteria</p>
-                  <ul className="space-y-1.5">
-                    {report.nonresponder_profile.key_exclusion_criteria.map((c, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-text-body">
-                        <span className="text-status-danger flex-shrink-0 mt-0.5">✕</span>{c}
-                      </li>
-                    ))}
-                  </ul>
+            {/* ── Phenotype cards ── */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              {/* Responder */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <p className="text-status-success text-[10px] uppercase tracking-widest">Predicted Responder</p>
+                  <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
                 </div>
-              )}
+                <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
+                  {report.responder_profile.primary_subtype}
+                </h2>
+
+                {/* Lead summary — always visible */}
+                <p className="text-text-body text-sm leading-relaxed mb-1">{rSplit.lead}</p>
+
+                {/* Expandable mechanistic detail */}
+                {rSplit.rest && (
+                  <>
+                    {responderExpanded && (
+                      <p className="text-text-muted text-sm leading-relaxed mb-1 mt-2">{rSplit.rest}</p>
+                    )}
+                    <button
+                      onClick={() => setResponderExpanded(v => !v)}
+                      className="text-xs text-brand-core hover:underline mb-3 mt-1 block"
+                    >
+                      {responderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
+                    </button>
+                  </>
+                )}
+                {!rSplit.rest && <div className="mb-4" />}
+
+                <div className="border-t border-border-subtle pt-3 mt-1">
+                  <ProfileField label="Demographics" value={report.responder_profile.demographics} />
+                  <ProfileField label="Core Clinical" value={report.responder_profile.core_clinical} />
+                  <ProfileField label="Inflammatory" value={report.responder_profile.inflammatory} />
+                  <ProfileField label="Neuroplasticity" value={report.responder_profile.neuroplasticity} />
+                  {report.responder_profile.imaging && <ProfileField label="Imaging" value={report.responder_profile.imaging} />}
+                </div>
+
+                {report.responder_profile.key_inclusion_criteria?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border-subtle">
+                    <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Inclusion Criteria</p>
+                    <ul className="space-y-1.5">
+                      {report.responder_profile.key_inclusion_criteria.map((c, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-text-body">
+                          <span className="text-status-success flex-shrink-0 mt-0.5">✓</span>{c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Non-responder */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 min-w-0">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <p className="text-status-danger text-[10px] uppercase tracking-widest">Predicted Non-Responder</p>
+                  <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
+                </div>
+                <h2 className="text-text-heading font-semibold text-sm leading-snug mb-3 break-words">
+                  {report.nonresponder_profile.primary_subtype}
+                </h2>
+
+                {/* Lead summary — always visible */}
+                <p className="text-text-body text-sm leading-relaxed mb-1">{nrSplit.lead}</p>
+
+                {/* Expandable mechanistic detail */}
+                {nrSplit.rest && (
+                  <>
+                    {nonresponderExpanded && (
+                      <p className="text-text-muted text-sm leading-relaxed mb-1 mt-2">{nrSplit.rest}</p>
+                    )}
+                    <button
+                      onClick={() => setNonresponderExpanded(v => !v)}
+                      className="text-xs text-brand-core hover:underline mb-3 mt-1 block"
+                    >
+                      {nonresponderExpanded ? "Hide full rationale ↑" : "Full rationale ↓"}
+                    </button>
+                  </>
+                )}
+                {!nrSplit.rest && <div className="mb-4" />}
+
+                <div className="border-t border-border-subtle pt-3 mt-1">
+                  <ProfileField label="Demographics" value={report.nonresponder_profile.demographics} />
+                  <ProfileField label="Core Clinical" value={report.nonresponder_profile.core_clinical} />
+                  <ProfileField label="Inflammatory" value={report.nonresponder_profile.inflammatory} />
+                  <ProfileField label="Neuroplasticity" value={report.nonresponder_profile.neuroplasticity} />
+                  {report.nonresponder_profile.imaging && <ProfileField label="Imaging" value={report.nonresponder_profile.imaging} />}
+                </div>
+
+                {report.nonresponder_profile.key_exclusion_criteria?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border-subtle">
+                    <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Exclusion Criteria</p>
+                    <ul className="space-y-1.5">
+                      {report.nonresponder_profile.key_exclusion_criteria.map((c, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-text-body">
+                          <span className="text-status-danger flex-shrink-0 mt-0.5">✕</span>{c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ══ BIOMARKERS TAB ════════════════════════════════════════════ */}
       {activeTab === "biomarkers" && (
