@@ -46,9 +46,9 @@ export async function titleFromFilename(filename: string): Promise<string> {
 }
 
 /**
- * Generate a clean academic title from extracted document text.
- * Used server-side during folder ingest (content is already parsed).
- * More accurate than filename-based generation.
+ * Extract the actual title from the opening text of a document.
+ * Used server-side during ingest (content is already parsed).
+ * The real title is almost always in the first 800 chars of a PDF.
  * Fast: ~0.8s, costs ~$0.0001.
  */
 export async function titleFromText(textExcerpt: string, fallbackFilename: string): Promise<string> {
@@ -59,10 +59,10 @@ export async function titleFromText(textExcerpt: string, fallbackFilename: strin
 
   const msg = await client.messages.create({
     model: 'claude-haiku-4-5',
-    max_tokens: 60,
+    max_tokens: 80,
     messages: [{
       role: 'user',
-      content: `You are a librarian cataloguing scientific documents. Read this opening excerpt and generate a clean, professional title (max 10 words, title case, no quotes, no punctuation at end). Return only the title — no explanation.\n\nExcerpt:\n${excerpt}\n\nTitle:`,
+      content: `Extract the exact title of this document from the text below. Return only the title exactly as it appears — do not paraphrase, summarize, or invent. If there is no clear title, return the first meaningful phrase. No explanation, no quotes.\n\nText:\n${excerpt}\n\nTitle:`,
     }],
   })
 
