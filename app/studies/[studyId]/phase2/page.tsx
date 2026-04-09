@@ -40,18 +40,18 @@ export default async function Phase2Page({
   const uncertain = cohort.filter((p) => p.response_status === "uncertain").length;
   const female = cohort.filter((p) => p.sex === "F").length;
 
-  const bdnfValues = cohort.map((p) => p.baseline_bdnf_ng_ml).filter(Boolean);
-  const il6Values = cohort.map((p) => p.baseline_il6_pg_ml).filter(Boolean);
-  const ageValues = cohort.map((p) => p.age).filter(Boolean);
-  const madrsValues = cohort.map((p) => p.baseline_madrs).filter(Boolean);
+  const bdnfValues = cohort.map((p) => p.baseline_bdnf_ng_ml).filter((v): v is number => v != null);
+  const il6Values = cohort.map((p) => p.baseline_il6_pg_ml).filter((v): v is number => v != null);
+  const ageValues = cohort.map((p) => p.age).filter((v): v is number => v != null);
+  const madrsValues = cohort.map((p) => p.baseline_madrs).filter((v): v is number => v != null);
 
-  const fmt1 = (v: number) => v.toFixed(1);
-  const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const fmt1 = (v: number | null) => v != null ? v.toFixed(1) : "—";
+  const avg = (arr: number[]): number | null => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
   return (
     <div className="max-w-4xl mx-auto px-8 py-12">
       <div className="text-center mb-10">
-        <p className="text-status-purple text-xs uppercase tracking-widest mb-4">Clinical Analysis · Lumos v2.1</p>
+        <p className="text-status-purple text-xs uppercase tracking-widest mb-4">Clinical Analysis · Lumos AI</p>
         <h1 className="text-4xl font-bold text-text-heading mb-3">Trial Data Is In</h1>
         <p className="text-text-muted text-sm max-w-xl mx-auto leading-relaxed">
           {/* SCIENCE-FEEDBACK: P1-A */}
@@ -126,8 +126,9 @@ export default async function Phase2Page({
                 <div className="flex justify-between items-center">
                   <span className="text-text-muted text-xs">Age</span>
                   <span className="text-text-body text-xs font-mono">
-                    {Math.round(avg(ageValues))} yrs avg
-                    <span className="text-text-secondary ml-1">({Math.min(...ageValues)}–{Math.max(...ageValues)})</span>
+                    {ageValues.length
+                      ? <>{Math.round(avg(ageValues)!)} yrs avg <span className="text-text-secondary ml-1">({Math.min(...ageValues)}–{Math.max(...ageValues)})</span></>
+                      : <span className="text-text-secondary">—</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -137,7 +138,7 @@ export default async function Phase2Page({
                 <div className="flex justify-between items-center">
                   <span className="text-text-muted text-xs">Prior AD trials</span>
                   <span className="text-text-body text-xs font-mono">
-                    {fmt1(avg(cohort.map((p) => p.prior_ad_trials)))} avg
+                    {fmt1(avg(cohort.map((p) => p.prior_ad_trials).filter((v): v is number => v != null)))} avg
                   </span>
                 </div>
               </div>
