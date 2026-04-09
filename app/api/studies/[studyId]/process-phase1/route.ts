@@ -6,20 +6,7 @@ import { computeBayesianPrior } from '@/lib/pipeline/score'
 import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
-// Internal route — protected by shared secret
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ studyId: string }> }
-) {
-  const secret = req.headers.get('x-internal-secret')
-  if (secret !== process.env.INTERNAL_API_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { studyId } = await params
-  const { run_id } = await req.json()
-  if (!run_id) return NextResponse.json({ error: 'run_id required' }, { status: 400 })
-
+export async function runPhase1Processing(studyId: string, runId: string): Promise<void> {
   const supabase = createServiceClient()
   const stepLog: StepLog[] = []
 
@@ -28,14 +15,14 @@ export async function POST(
     await supabase
       .from('runs')
       .update({ step_log: stepLog, updated_at: new Date().toISOString() })
-      .eq('id', run_id)
+      .eq('id', runId)
   }
 
   try {
     await supabase.from('runs').update({
       status: 'processing',
       started_at: new Date().toISOString(),
-    }).eq('id', run_id)
+    }).eq('id', runId)
 
     // ── STEP 1: Load study + drug context ──────────────────────────────────────
     await log('Load study data', 'running')
@@ -162,7 +149,7 @@ export async function POST(
     await log('Store report', 'running')
 
     const { error: reportError } = await supabase.from('phase1_reports').insert({
-      run_id,
+      run_id: runId,
       study_id: studyId,
       report_data: report,
     })
@@ -182,7 +169,7 @@ export async function POST(
       // Merge into the stored report_data
       await supabase.from('phase1_reports')
         .update({ report_data: { ...report, exploratory_biomarkers: exploratoryBiomarkers } })
-        .eq('run_id', run_id)
+        .eq('run_id', runId)
       await log(
         'Exploratory biomarker synthesis',
         'complete',
@@ -208,12 +195,12 @@ export async function POST(
       const { data: currentReportRow } = await supabase
         .from('phase1_reports')
         .select('report_data')
-        .eq('run_id', run_id)
+        .eq('run_id', runId)
         .single()
       const currentReportData = (currentReportRow?.report_data ?? report) as Record<string, unknown>
       await supabase.from('phase1_reports')
         .update({ report_data: { ...currentReportData, corpus_intelligence: corpusIntelligence } })
-        .eq('run_id', run_id)
+        .eq('run_id', runId)
       await log(
         'Corpus intelligence synthesis',
         'complete',
@@ -231,9 +218,7 @@ export async function POST(
       status: 'complete',
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', run_id)
-
-    return NextResponse.json({ ok: true })
+    }).eq('id', runId)
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
@@ -243,7 +228,24 @@ export async function POST(
       status: 'error',
       error_message: message,
       updated_at: new Date().toISOString(),
-    }).eq('id', run_id)
-    return NextResponse.json({ error: message }, { status: 500 })
+    }).eq('id', runId)
   }
+}
+
+// Internal route — protected by shared secret
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ studyId: string }> }
+) {
+  const secret = req.headers.get('x-internal-secret')
+  if (secret !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { studyId } = await params
+  const { run_id } = await req.json()
+  if (!run_id) return NextResponse.json({ error: 'run_id required' }, { status: 400 })
+
+  await runPhase1Processing(studyId, run_id)
+  return NextResponse.json({ ok: true })
 }

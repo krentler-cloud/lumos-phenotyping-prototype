@@ -6,33 +6,24 @@ import { synthesizeReport } from '@/lib/pipeline/synthesize'
 import { computeCompositeScore, computeBayesianPrior } from '@/lib/pipeline/score'
 import { PatientData, StepLog, MechanismContext } from '@/lib/types'
 
-// Internal route — protected by shared secret
-export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-internal-secret')
-  if (secret !== process.env.INTERNAL_API_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { run_id } = await req.json()
-  if (!run_id) return NextResponse.json({ error: 'run_id required' }, { status: 400 })
-
+export async function runProcessing(runId: string): Promise<void> {
   const supabase = createServiceClient()
   const stepLog: StepLog[] = []
 
   const log = async (step: string, status: StepLog['status'], detail?: string) => {
     stepLog.push({ step, status, ts: new Date().toISOString(), detail })
-    await supabase.from('runs').update({ step_log: stepLog, updated_at: new Date().toISOString() }).eq('id', run_id)
+    await supabase.from('runs').update({ step_log: stepLog, updated_at: new Date().toISOString() }).eq('id', runId)
   }
 
   try {
-    await supabase.from('runs').update({ status: 'processing', started_at: new Date().toISOString() }).eq('id', run_id)
+    await supabase.from('runs').update({ status: 'processing', started_at: new Date().toISOString() }).eq('id', runId)
 
     // ── STEP 1: Load patient ──────────────────────────────────────────────────
     await log('Load patient data', 'running')
     const { data: run, error: runError } = await supabase
       .from('runs')
       .select('*, patients(*)')
-      .eq('id', run_id)
+      .eq('id', runId)
       .single()
 
     if (runError || !run) throw new Error('Run not found')
@@ -117,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: reportError } = await supabase.from('reports').insert({
-      run_id,
+      run_id: runId,
       report_type: 'preclinical',
       responder_prob: report.responder_probability,
       confidence: report.confidence,
@@ -140,9 +131,7 @@ export async function POST(req: NextRequest) {
       status: 'complete',
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', run_id)
-
-    return NextResponse.json({ ok: true })
+    }).eq('id', runId)
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
@@ -152,9 +141,22 @@ export async function POST(req: NextRequest) {
       status: 'error',
       error_message: message,
       updated_at: new Date().toISOString(),
-    }).eq('id', run_id)
-    return NextResponse.json({ error: message }, { status: 500 })
+    }).eq('id', runId)
   }
+}
+
+// Internal route — protected by shared secret
+export async function POST(req: NextRequest) {
+  const secret = req.headers.get('x-internal-secret')
+  if (secret !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { run_id } = await req.json()
+  if (!run_id) return NextResponse.json({ error: 'run_id required' }, { status: 400 })
+
+  await runProcessing(run_id)
+  return NextResponse.json({ ok: true })
 }
 
 function getDominantSubtype(prior: import('@/lib/types').BayesianPrior): string {

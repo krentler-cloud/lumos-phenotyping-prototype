@@ -47,21 +47,11 @@ async function step(
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ studyId: string }> }
-) {
-  const secret = req.headers.get('x-internal-secret')
-  if (secret !== (process.env.INTERNAL_API_SECRET ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { studyId } = await params
-  const { run_id } = await req.json()
+export async function runPhase2Processing(studyId: string, runId: string): Promise<void> {
   const supabase = createServiceClient()
   const log: StepLog[] = []
 
-  await supabase.from('runs').update({ status: 'processing' }).eq('id', run_id)
+  await supabase.from('runs').update({ status: 'processing' }).eq('id', runId)
 
   let study: { drug_name: string; indication: string; phase1_run_id: string } | null = null
   let patients: ClinicalPatient[] = []
@@ -69,7 +59,7 @@ export async function POST(
 
   try {
     // ── Step 1: Load study ──────────────────────────────────────────────────
-    await step(supabase, run_id, log, 'Load study data', async () => {
+    await step(supabase, runId, log, 'Load study data', async () => {
       const { data, error } = await supabase
         .from('studies')
         .select('drug_name, indication, phase1_run_id')
@@ -82,7 +72,7 @@ export async function POST(
 
     // ── Step 2: Load Phase 1 report ─────────────────────────────────────────
     // SCIENCE-FEEDBACK: P1-A
-    await step(supabase, run_id, log, 'Load pre-clinical report', async () => {
+    await step(supabase, runId, log, 'Load pre-clinical report', async () => {
       const { data, error } = await supabase
         .from('phase1_reports')
         .select('report_data')
@@ -96,7 +86,7 @@ export async function POST(
     })
 
     // ── Step 3: Load clinical patients ──────────────────────────────────────
-    await step(supabase, run_id, log, 'Load clinical patients', async () => {
+    await step(supabase, runId, log, 'Load clinical patients', async () => {
       const { data, error } = await supabase
         .from('clinical_patients')
         .select('*')
@@ -110,7 +100,7 @@ export async function POST(
 
     // ── Step 4: Run clinical ML ─────────────────────────────────────────────
     let mlResult: ReturnType<typeof runClinicalML> | null = null
-    await step(supabase, run_id, log, 'Clinical ML analysis', async () => {
+    await step(supabase, runId, log, 'Clinical ML analysis', async () => {
       const priors = {
         overall:      phase1Report!.overall_confidence,
         responder:    phase1Report!.responder_profile.corpus_hypothesis_confidence,
@@ -132,7 +122,7 @@ export async function POST(
 
     // ── Step 5: Clinical synthesis ─────────────────────────────────────────
     let phase2Report: Awaited<ReturnType<typeof synthesizePhase2Report>> | null = null
-    await step(supabase, run_id, log, 'Clinical synthesis', async () => {
+    await step(supabase, runId, log, 'Clinical synthesis', async () => {
       phase2Report = await synthesizePhase2Report(
         study!.drug_name,
         study!.indication,
@@ -143,7 +133,7 @@ export async function POST(
     })
 
     // ── Step 6: Store report ────────────────────────────────────────────────
-    await step(supabase, run_id, log, 'Store clinical report', async () => {
+    await step(supabase, runId, log, 'Store clinical report', async () => {
       const fullReport = {
         ...phase2Report,
         ml_result: mlResult,
@@ -160,7 +150,7 @@ export async function POST(
       }
 
       const { error } = await supabase.from('phase2_reports').insert({
-        run_id,
+        run_id: runId,
         study_id: studyId,
         report_data: fullReport,
       })
@@ -168,12 +158,27 @@ export async function POST(
       return 'Report saved'
     })
 
-    await supabase.from('runs').update({ status: 'complete' }).eq('id', run_id)
-    return NextResponse.json({ ok: true })
+    await supabase.from('runs').update({ status: 'complete' }).eq('id', runId)
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[process-phase2]', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    // Error state already written to DB by the step() helper
   }
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ studyId: string }> }
+) {
+  const secret = req.headers.get('x-internal-secret')
+  if (secret !== (process.env.INTERNAL_API_SECRET ?? '')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { studyId } = await params
+  const { run_id } = await req.json()
+
+  await runPhase2Processing(studyId, run_id)
+  return NextResponse.json({ ok: true })
 }

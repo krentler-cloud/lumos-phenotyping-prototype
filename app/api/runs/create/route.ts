@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { PatientData } from '@/lib/types'
+import { runProcessing } from '../process/route'
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,17 +37,12 @@ export async function POST(req: NextRequest) {
 
     if (runError) throw new Error(`Failed to create run: ${runError.message}`)
 
-    // Kick off processing async — fire and forget
-    // Use localhost to bypass Railway's proxy timeout (~5 min) — Opus synthesis takes 5-10 min
-    const internalBase = (process.env.INTERNAL_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/$/, '')
-    fetch(`${internalBase}/api/runs/process`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
-      },
-      body: JSON.stringify({ run_id: run.id }),
-    }).catch(err => console.error('[runs/create] Failed to kick off processing:', err))
+    // Kick off async processing as a background promise (no HTTP hop)
+    // Railway runs a persistent Node.js server, so unhandled background promises
+    // continue running after the response is sent — no proxy timeout risk.
+    runProcessing(run.id).catch(err =>
+      console.error('[runs/create] processing error:', err)
+    )
 
     return NextResponse.json({ run_id: run.id, status: 'queued' })
 
