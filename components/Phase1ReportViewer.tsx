@@ -474,6 +474,11 @@ function deriveExecutiveSummary(report: Phase1ReportData, drugName: string): str
   return `${rLead} Conversely, ${nrLead.charAt(0).toLowerCase()}${nrLead.slice(1)} Responder corpus support: ${rConf}%. Non-responder corpus support: ${nrConf}%. Evidence is preclinical — human validation required.`;
 }
 
+// ── Fire a question into the LumosAI chat panel ───────────────────────────────
+function askLumosAI(question: string) {
+  window.dispatchEvent(new CustomEvent("lumos-ask", { detail: { question } }));
+}
+
 export default function Phase1ReportViewer({ report, drugName, indication, generatedAt, studyId }: Props) {
   const [activeTab, setActiveTab] = useState<"overview" | "biomarkers" | "evidence" | "corpus-intelligence" | "exploratory" | "human-data">("overview");
   const [showCoThinkPrompt, setShowCoThinkPrompt] = useState(false);
@@ -544,12 +549,12 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
             <div className="p-5 bg-bg-surface border border-border-subtle rounded-2xl">
               <div className="flex items-center justify-between gap-4 mb-3">
                 <p className="text-brand-core text-[10px] uppercase tracking-widest font-semibold">Planning Phase Summary</p>
-                <span
-                  className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary cursor-help"
-                  title="Corpus confidence = Bayesian Beta-Binomial prior computed from the density and consistency of supporting evidence in the retrieved literature. It reflects strength of mechanistic support, not predicted probability of patient response. Per-profile confidences can exceed the overall because they are computed independently per phenotype."
+                <button
+                  onClick={() => askLumosAI(`The overall corpus confidence is ${overallPct}%. What does this score mean for the ${drugName} analysis — how was it calculated, and what are its key limitations?`)}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary cursor-pointer hover:border-brand-core hover:text-brand-core transition-colors"
                 >
                   {overallPct}% overall corpus confidence ⓘ
-                </span>
+                </button>
               </div>
               <p className="text-text-body text-sm leading-relaxed">{execSummary}</p>
               <div className="mt-4 pt-3 border-t border-border-subtle flex gap-6">
@@ -582,7 +587,10 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                     <p className="text-status-success text-xs font-semibold uppercase tracking-widest">Predicted Responder</p>
                     <span className="text-text-heading font-bold text-sm">· Subtype {report.responder_profile.primary_subtype}</span>
                   </div>
-                  <ConfidenceBadge value={report.responder_profile.corpus_hypothesis_confidence} />
+                  <ConfidenceBadge
+                    value={report.responder_profile.corpus_hypothesis_confidence}
+                    onClick={() => askLumosAI(`The responder profile has ${Math.round(report.responder_profile.corpus_hypothesis_confidence * 100)}% corpus confidence. What does this score tell us about the strength of evidence supporting this predicted responder phenotype?`)}
+                  />
                 </div>
 
                 <div className="p-6 space-y-5">
@@ -640,7 +648,10 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                     <p className="text-status-danger text-xs font-semibold uppercase tracking-widest">Predicted Non-Responder</p>
                     <span className="text-text-heading font-bold text-sm">· Subtype {report.nonresponder_profile.primary_subtype}</span>
                   </div>
-                  <ConfidenceBadge value={report.nonresponder_profile.corpus_hypothesis_confidence} />
+                  <ConfidenceBadge
+                    value={report.nonresponder_profile.corpus_hypothesis_confidence}
+                    onClick={() => askLumosAI(`The non-responder profile has ${Math.round(report.nonresponder_profile.corpus_hypothesis_confidence * 100)}% corpus confidence. What does this score tell us about the evidence supporting this predicted non-responder phenotype, and what are its limitations?`)}
+                  />
                 </div>
 
                 <div className="p-6 space-y-5">

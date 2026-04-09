@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 // Shared primitives used by Phase1ReportViewer and Phase2FinalReport.
 // Forward rule: any visual primitive used in both reports lives here.
 
@@ -52,9 +54,19 @@ export function DimensionBlock({ label, value, accentColor }: { label: string; v
   );
 }
 
+// ── renderWithBold ────────────────────────────────────────────────────────────
+// Parses **text** patterns and renders them as <strong>. All other text is plain.
+// Used by DimensionProse to let Opus emphasize key threshold values inline.
+function renderWithBold(text: string): React.ReactNode[] {
+  return text.split(/\*\*([^*]+)\*\*/g).map((chunk, i) =>
+    i % 2 === 1 ? <strong key={i}>{chunk}</strong> : chunk
+  );
+}
+
 // ── DimensionProse (Phase 2) ──────────────────────────────────────────────────
 // Renders dimension content as prose paragraph (not bulleted) — for Phase 2
 // where Opus is instructed to write analytical prose, not semicolon lists.
+// Supports **bold** for key threshold values (e.g. "BDNF was **18.3 ng/mL**").
 export function DimensionProse({ label, value, accentColor }: { label: string; value: string; accentColor?: string }) {
   if (!value) return null;
   const meta = DIMENSION_META[label] ?? { icon: "·", color: "var(--text-muted)" };
@@ -65,7 +77,7 @@ export function DimensionProse({ label, value, accentColor }: { label: string; v
         <span className="text-sm leading-none">{meta.icon}</span>
         <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{label}</p>
       </div>
-      <p className="text-xs text-text-body leading-relaxed">{value}</p>
+      <p className="text-xs text-text-body leading-relaxed">{renderWithBold(value)}</p>
     </div>
   );
 }
@@ -92,31 +104,49 @@ export function ConfidenceBadge({
         background: active ? `${color}30` : `${color}18`,
         cursor: onClick ? "pointer" : "default",
       }}
-      title={onClick ? "Click to see confidence reasoning" : undefined}
+      title={onClick ? "Click to ask LumosAI about this score" : undefined}
     >
-      {pct}% confidence {onClick && (active ? "▲" : "▼")}
+      {pct}% confidence {onClick && "ⓘ"}
     </button>
   );
 }
 
 // ── PosteriorBadge (Phase 2) ──────────────────────────────────────────────────
-// Shows Bayesian posterior after observing clinical data. Prior only on hover.
+// Shows Bayesian posterior after observing clinical data. Prior only on hover (when no onClick).
+// When onClick is provided, renders as a button — clicking asks LumosAI.
 // No arrow, no "VALIDATED" text, no subtracted delta.
 export function PosteriorBadge({
   posterior,
   prior,
+  onClick,
 }: {
   posterior: number;
   prior: number;
+  onClick?: () => void;
 }) {
   const postPct = Math.round(posterior * 100);
   const priorPct = Math.round(prior * 100);
   const color = postPct >= 70 ? "var(--status-success)" : postPct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
+  const badgeClasses = "text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap";
+  const badgeStyle = { color, borderColor: color, background: `${color}18` };
+
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className={`${badgeClasses} cursor-pointer hover:opacity-80 transition-opacity`}
+        style={badgeStyle}
+      >
+        Posterior {postPct}% ⓘ
+      </button>
+    );
+  }
+
   const tooltip = `Bayesian posterior after observing N=16 clinical outcomes. Corpus prior: ${priorPct}%. The posterior and prior measure different things (observed-outcome likelihood vs. corpus evidence strength) and are not directly comparable as a delta.`;
   return (
     <span
-      className="text-xs font-semibold px-2.5 py-1 rounded-full border cursor-help whitespace-nowrap"
-      style={{ color, borderColor: color, background: `${color}18` }}
+      className={`${badgeClasses} cursor-help`}
+      style={badgeStyle}
       title={tooltip}
     >
       Posterior {postPct}% ⓘ

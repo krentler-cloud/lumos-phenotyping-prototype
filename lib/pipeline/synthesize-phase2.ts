@@ -160,6 +160,7 @@ WRITING STYLE (applies to every prose field below):
 - Lead each field with the single most important clinical insight, then support it.
 - Write for a senior clinical scientist who has already read the raw data tables.
 - A good report does not list observations; it interprets them.
+- Where it aids clarity, wrap key threshold values and specific biomarker readings in **double asterisks** — they render bold in the UI. Example: "BDNF was **18.3 ng/mL** at baseline." Use judgment — bold the numbers that matter most, not every figure.
 
 {
   "executive_summary": "3 sentences. (1) State what the N=16 clinical data revealed about overall drug response and concordance with Planning Phase predictions. (2) Name the 1-2 features that most strongly separated responders from non-responders (cite |r| values). (3) Characterize what remains uncertain and what a larger trial needs to resolve. No bullets. No 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
@@ -171,7 +172,7 @@ WRITING STYLE (applies to every prose field below):
     "inflammatory": "2-3 sentences. Cite the observed IL-6, CRP, or TNF-alpha values and their feature importance rank. State whether the inflammatory profile was lower, higher, or as predicted for this group. Avoid listing — weave the biomarkers into a single interpretive sentence.",
     "neuroplasticity": "2-3 sentences. Describe the BDNF profile observed in this group (cite |r| if BDNF appears in top features). Note the Val66Met distribution if available. Interpret what the BDNF trajectory implies about mechanism of response.",
     "imaging": "1-2 sentences. Be honest: no imaging data was collected in this Phase 1/2 trial. State that the planning-phase imaging hypothesis (cite it briefly) remains pre-clinical and is a testable hypothesis for a larger study.",
-    "key_criteria": ["Criterion 1 — specific, quantitative where possible", "Criterion 2", "Criterion 3", "Criterion 4"],
+    "key_criteria": ["Concise, quantitative inclusion criterion — e.g. 'BDNF ≥ 25 ng/mL at screening' or 'BDNF ≥ 25 ng/mL at screening (ELISA)'. Brief parenthetical context OK, no embedded rationale.", "Criterion 2", "Criterion 3", "Criterion 4"],
     "phase1_confidence": ${phase1.responder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.responder.posterior.toFixed(3)},
     "validation_delta": "Prior ${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.responder.posterior * 100)}%",
@@ -186,7 +187,7 @@ WRITING STYLE (applies to every prose field below):
     "inflammatory": "2-3 sentences. This is likely the key differentiating dimension — describe the observed inflammatory burden in prose, citing IL-6 or CRP levels. Interpret whether the elevated inflammatory profile represents a true contraindication or a subpopulation requiring add-on anti-inflammatory strategy.",
     "neuroplasticity": "2-3 sentences. Describe the BDNF or neuroplasticity marker profile for non-responders. If BDNF was lower at baseline, interpret what this implies about mechanism. Note the Val66Met distribution if relevant.",
     "imaging": "1-2 sentences. State that imaging markers remain Planning Phase hypotheses only. Note which imaging biomarker (e.g. ACC hyperactivity) is the highest-priority testable hypothesis for the next trial.",
-    "key_criteria": ["Exclusion criterion 1 — specific, quantitative", "Exclusion criterion 2", "Exclusion criterion 3", "Exclusion criterion 4"],
+    "key_criteria": ["Concise, quantitative exclusion criterion — e.g. 'IL-6 > 15 pg/mL at baseline' or 'IL-6 > 15 pg/mL at baseline (ELISA)'. Brief parenthetical context OK, no embedded rationale.", "Exclusion criterion 2", "Exclusion criterion 3", "Exclusion criterion 4"],
     "phase1_confidence": ${phase1.nonresponder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.nonresponder.posterior.toFixed(3)},
     "validation_delta": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",

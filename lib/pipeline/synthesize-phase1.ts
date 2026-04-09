@@ -132,6 +132,11 @@ For each phenotype profile, derive specific, evidence-grounded predictions acros
 - NEUROPLASTICITY: BDNF thresholds, TrkB signaling capacity, relevant genotype markers
 - IMAGING: fMRI DMN patterns, EEG markers if supported by corpus
 
+// FORMATTING: Dimension field format guidance
+DIMENSION FIELD FORMAT (demographics, core_clinical, inflammatory, neuroplasticity, imaging):
+Prefer 3–4 semicolon-separated data points per field — each citing a specific threshold, value, sex/age range, or measurable characteristic. Short prose fragments work when they read naturally as scan-able bullets. Avoid long flowing sentences — each point should stand alone as a data point.
+Example: "Female-predominant (F:M ~2:1); Age 25–45 (median ~32); First or second MDD episode; No prior treatment resistance"
+
 Ground every claim in specific corpus evidence. Use exact thresholds where the corpus provides them.
 Assign a corpus_hypothesis_confidence (0.0–1.0) reflecting how strongly the corpus supports each profile.
 
@@ -162,6 +167,10 @@ SEX-SPECIFIC REFERENCE RANGES: When reporting BDNF, CRP, and IL-6 thresholds in 
 
 // SCIENCE-FEEDBACK: F2-E — Val66Met ancestry caveat
 ANCESTRY CONSIDERATION: The BDNF Val66Met Met allele frequency varies by ancestry (~20–25% in European populations, ~40–50% in East Asian populations). Note in methodology_narrative that genotypic stratification will not behave uniformly across ancestry groups in diverse trial populations. Flag as a pharmacogenetic equity consideration.
+
+// FORMATTING: Key criteria format guidance
+KEY CRITERIA FORMAT (key_inclusion_criteria and key_exclusion_criteria arrays):
+Keep criteria concise and quantitative. Aim for "[Biomarker/Feature] [threshold/condition]" format. Brief parenthetical context is acceptable when needed for clarity (e.g. "BDNF ≥ 25 ng/mL at screening (ELISA)"). Avoid full sentences or embedded rationale — criteria should be scannable, not explanatory.
 
 // EXECUTIVE SUMMARY: Write a concise 3–4 sentence plain-English overview of the entire analysis for the executive_summary field. Cover: (1) which patient subtypes are predicted to respond and why in one sentence; (2) which patients should be excluded and the key risk in one sentence; (3) the single most important biomarker or screening criterion; (4) the overall level of corpus evidence support and its key limitation. Write for a clinical development lead — no jargon, no model names, no corpus references. This will appear at the top of the report as the first thing a reader sees.
 

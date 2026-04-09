@@ -48,7 +48,15 @@ function ProfileCard({ profile, type }: { profile: RefinedProfile; type: "respon
           <span className={`w-2 h-2 rounded-full ${dotBg} flex-shrink-0`} />
           <p className={`${textColor} text-xs font-semibold uppercase tracking-widest`}>{label}</p>
         </div>
-        <PosteriorBadge posterior={profile.phase2_confidence} prior={profile.phase1_confidence} />
+        <PosteriorBadge
+          posterior={profile.phase2_confidence}
+          prior={profile.phase1_confidence}
+          onClick={() => askLumosAI(
+            isResponder
+              ? `The responder profile shows a Bayesian posterior of ${Math.round(profile.phase2_confidence * 100)}% (corpus prior: ${Math.round(profile.phase1_confidence * 100)}%). What does this posterior update tell us — does the clinical data strengthen or revise the Planning Phase responder prediction, and what does the change from prior to posterior mean?`
+              : `The non-responder profile shows a Bayesian posterior of ${Math.round(profile.phase2_confidence * 100)}% (corpus prior: ${Math.round(profile.phase1_confidence * 100)}%). What does this posterior update tell us — does the clinical data strengthen or revise the Planning Phase non-responder prediction, and what does the change from prior to posterior mean?`
+          )}
+        />
       </div>
 
       <div className="p-6 space-y-5">
