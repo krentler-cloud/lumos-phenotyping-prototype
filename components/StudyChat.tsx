@@ -97,7 +97,7 @@ function getSuggestions(
 
 export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", predictedSubtype }: StudyChatProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -211,7 +211,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
             ? "bg-nav-item-active-bg text-text-muted hover:bg-nav-item-active-bg"
             : "bg-brand-core text-white hover:bg-brand-hover"
         }`}
-        title={isOpen ? "Close AI Chat" : `Ask AI about ${drugName}`}
+        title={isOpen ? "Close LumosAI" : `Ask LumosAI about ${drugName}`}
       >
         {isOpen ? (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -239,7 +239,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
                 </svg>
               </div>
               <div>
-                <p className="text-text-heading text-xs font-semibold">Ask AI · {pageLabel}</p>
+                <p className="text-text-heading text-xs font-semibold">Ask LumosAI · {pageLabel}</p>
                 <p className="text-text-secondary text-[10px]">Live corpus retrieval · Grounded answers</p>
               </div>
             </div>

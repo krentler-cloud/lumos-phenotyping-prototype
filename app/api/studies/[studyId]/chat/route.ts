@@ -259,7 +259,7 @@ HONEST LIMITATIONS TO ACKNOWLEDGE WHEN RELEVANT:
 - Confidence scores reflect corpus evidence consistency, not clinical validation; no human trial data has been collected yet
 - The weighted source boost (1.20x for clinical trial docs) is a manually tuned design parameter, not a data-derived weight
 
-FORMAT: Plain prose, 2–4 short paragraphs or a tight bullet list when a list genuinely helps. No markdown headers. Cite corpus documents by their title in quotes when referencing specific passages.`
+FORMAT: Be concise. 1–2 short paragraphs maximum, or a tight bullet list (3–5 items) when a list genuinely helps — never both. Lead with the direct answer; cut preamble, restatements of the question, and filler transitions. No markdown headers. Cite corpus documents by their title in quotes when referencing specific passages. If the answer can be given in two sentences, do so.`
 
   // ── Build message history ──────────────────────────────────────────────────────
   // Inject analysis context as a synthetic first exchange (done once, not per-turn)
