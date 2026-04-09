@@ -91,6 +91,7 @@ export default function Sidebar({ study, phase1RunStatus, phase2RunStatus }: Sid
               label={hasPhase1 ? runStatusLabel(phase1RunStatus, "Processing…") : "Run Analysis"}
               icon="⚡"
               active={pathname.includes('/phase1') && !pathname.includes('/report')}
+              processing={phase1RunStatus === "processing" || phase1RunStatus === "queued"}
             />
             {hasPhase1 ? (
               <SidebarItem
@@ -129,6 +130,7 @@ export default function Sidebar({ study, phase1RunStatus, phase2RunStatus }: Sid
                     (isActive(`${base}/phase2`) && !pathname.includes('/subtyping') && !pathname.includes('/report')) ||
                     isActive(`${base}/phase2/processing`)
                   }
+                  processing={phase2RunStatus === "processing" || phase2RunStatus === "queued"}
                 />
                 {hasPhase2 ? (
                   <>
@@ -207,7 +209,7 @@ export default function Sidebar({ study, phase1RunStatus, phase2RunStatus }: Sid
 }
 
 function SidebarItem({
-  href, label, icon, active, badge, muted,
+  href, label, icon, active, badge, muted, processing,
 }: {
   href: string;
   label: string;
@@ -215,6 +217,7 @@ function SidebarItem({
   active: boolean;
   badge?: string;
   muted?: boolean;
+  processing?: boolean;
 }) {
   return (
     <Link
@@ -229,7 +232,10 @@ function SidebarItem({
     >
       <span className="text-[10px] w-3 text-center flex-shrink-0">{icon}</span>
       <span className="flex-1 leading-tight">{label}</span>
-      {badge && (
+      {processing && (
+        <span className="w-1.5 h-1.5 rounded-full bg-brand-core animate-pulse flex-shrink-0" />
+      )}
+      {badge && !processing && (
         <span className="text-[9px] font-bold bg-brand-tint text-brand-core px-1.5 py-0.5 rounded">
           {badge}
         </span>

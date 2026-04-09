@@ -26,10 +26,10 @@ const ALL_STEPS = [
 ];
 
 const STEP_ICONS: Record<string, string> = {
-  "Load study data":           "📋",
-  "Load pre-clinical report":  "📊",
-  "Load clinical patients":    "👥",
-  "Clinical ML analysis":      "🧮",
+  "Load study data":            "📋",
+  "Load pre-clinical report":   "📊",
+  "Load clinical patients":     "👥",
+  "Clinical ML analysis":       "🧮",
   "Clinical synthesis (Sonnet)":"🤖",
   "Store clinical report":      "💾",
 };
@@ -39,7 +39,6 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Loaded the study configuration — drug name, indication, and the linked Phase 1 run record.",
     why: "Phase 2 re-analysis is always anchored to a specific drug and its Phase 1 hypothesis. This establishes that link before any data is touched.",
   },
-  // SCIENCE-FEEDBACK: P1-A
   "Load pre-clinical report": {
     what: "Retrieved the complete Planning Phase corpus synthesis — responder and non-responder phenotype profiles, biomarker table, and the original Bayesian confidence scores. These are the Planning Phase hypotheses that Phase 2 will now test against real patient data.",
     why: "The Bayesian update in Step 4 requires the Phase 1 priors as a starting point. Without them, we would have no principled baseline to update — the clinical data would be interpreted in a vacuum rather than against a pre-specified hypothesis.",
@@ -53,7 +52,7 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     why: "These three computations answer three distinct questions: Which subtype did each patient actually belong to? Which biomarkers were most predictive in practice? And how much should we revise our confidence in the Phase 1 hypotheses given the new data? Each feeds directly into the synthesis step.",
   },
   "Clinical synthesis (Sonnet)": {
-    what: "Claude Sonnet integrated the Phase 1 phenotype profiles, the Bayesian-updated confidence scores, MADRS trajectory data, and feature importance rankings to produce refined responder and non-responder profiles with validation badges, enhanced outcome measures for future trials, and structured CRO screening prompts.",
+    what: "Lumos AI integrated the Phase 1 phenotype profiles, the Bayesian-updated confidence scores, MADRS trajectory data, and feature importance rankings to produce refined responder and non-responder profiles, enhanced outcome measures for future trials, and structured CRO screening prompts.",
     why: "Sonnet — rather than Opus — is used here because the synthesis task is more constrained: the structure of the output is tighter, the corpus context is smaller, and the primary challenge is interpretation rather than open-ended scientific reasoning. Sonnet is faster and more cost-efficient for this type of structured generation.",
   },
   "Store clinical report": {
@@ -70,6 +69,8 @@ export default function Phase2ProcessingPage() {
   const [runStatus, setRunStatus] = useState<RunStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [dots, setDots] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [showEscapeHatch, setShowEscapeHatch] = useState(false);
   const isFirstFetch = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -84,14 +85,14 @@ export default function Phase2ProcessingPage() {
       if (data.status === "complete") {
         if (intervalRef.current) clearInterval(intervalRef.current);
         if (!isFirstFetch.current) {
-          setTimeout(() => router.push(`/studies/${studyId}/phase2/subtyping`), 1200);
+          setTimeout(() => router.push(`/studies/${studyId}/phase2/report`), 1200);
         }
       }
       if (data.status === "error") {
         if (intervalRef.current) clearInterval(intervalRef.current);
       }
       isFirstFetch.current = false;
-    } catch { }
+    } catch { /* silent — will retry */ }
   }, [studyId, router]);
 
   useEffect(() => {
@@ -100,10 +101,27 @@ export default function Phase2ProcessingPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchStatus]);
 
+  // Animated dots — only while processing
   useEffect(() => {
     const t = setInterval(() => setDots(d => d.length >= 3 ? "" : d + "."), 400);
     return () => clearInterval(t);
   }, []);
+
+  // Show escape hatch after 90 s in case the run hangs
+  useEffect(() => {
+    const t = setTimeout(() => setShowEscapeHatch(true), 90_000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleCancel = useCallback(async () => {
+    setCancelling(true);
+    try {
+      await fetch(`/api/studies/${studyId}/cancel-phase2`, { method: "POST" });
+      router.push(`/studies/${studyId}/phase2`);
+    } catch {
+      setCancelling(false);
+    }
+  }, [studyId, router]);
 
   const stepLog = runStatus?.step_log ?? [];
   const displaySteps = ALL_STEPS.map(name => {
@@ -140,136 +158,171 @@ export default function Phase2ProcessingPage() {
   // ── Complete state ──────────────────────────────────────────────────────────
   if (isComplete) {
     return (
-      <div className="max-w-2xl mx-auto px-8 py-12">
-        <div className="mb-8">
-          <p className="text-status-success text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
-          <h1 className="text-2xl font-bold text-text-heading mb-2">Analysis Complete</h1>
-          <p className="text-text-muted text-sm">
-            {ALL_STEPS.length} pipeline steps completed · Powered by Claude Sonnet · N=16 clinical patients
-          </p>
+      <div className="max-w-2xl mx-auto px-8 py-10">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <p className="text-status-success text-xs uppercase tracking-widest mb-1">Clinical Analysis</p>
+            <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis Complete</h1>
+            <p className="text-text-muted text-sm">
+              {ALL_STEPS.length} pipeline steps completed · Powered by Lumos AI™ · N=16 clinical patients
+            </p>
+          </div>
           <a
-            href={`/studies/${studyId}/phase2/subtyping`}
-            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
+            href={`/studies/${studyId}/phase2/report`}
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors ml-6"
           >
-            View Subtyping Results →
+            View Report
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </a>
         </div>
 
+        {/* Pipeline steps — full descriptions (matches Phase 1 complete layout) */}
         <div className="space-y-3">
-          {ALL_STEPS.map((name, idx) => {
-            const desc = STEP_DESCRIPTIONS[name];
-            const isLast = idx === ALL_STEPS.length - 1;
+          {displaySteps.map((step, i) => {
+            const icon = STEP_ICONS[step.step] ?? "⚙️";
+            const desc = STEP_DESCRIPTIONS[step.step];
+            const logged = stepLog.find(s => s.step === step.step);
             return (
-              <div key={name}>
-                <div className="p-4 rounded-xl border border-status-success/30 bg-status-success/5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-status-success text-base">✓</span>
-                    <span className="text-base">{STEP_ICONS[name]}</span>
-                    <span className="text-text-heading font-semibold text-sm">{name}</span>
+              <div key={step.step} className="bg-bg-page border border-border-subtle rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 flex flex-col items-center gap-1 pt-0.5">
+                    <div className="w-5 h-5 rounded-full bg-status-success/5 border border-status-success flex items-center justify-center">
+                      <svg className="w-3 h-3 text-status-success" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    {i < displaySteps.length - 1 && <div className="w-px h-3 bg-nav-item-active-bg" />}
                   </div>
-                  <p className="text-text-body text-xs leading-relaxed mb-2">{desc?.what}</p>
-                  <p className="text-brand-core text-xs leading-relaxed">
-                    <span className="font-semibold text-brand-core">Why it matters: </span>
-                    {desc?.why}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base">{icon}</span>
+                      <span className="text-sm font-semibold text-text-heading">{step.step}</span>
+                      {logged?.detail && (
+                        <span className="text-[10px] text-text-secondary font-mono ml-auto flex-shrink-0">{logged.detail}</span>
+                      )}
+                    </div>
+                    {desc && (
+                      <>
+                        <p className="text-xs text-text-body leading-relaxed mb-1.5">{desc.what}</p>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          <span className="text-brand-core font-medium">Why it matters: </span>
+                          {desc.why}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
-                {!isLast && (
-                  <div className="flex justify-center py-1">
-                    <div className="w-px h-4 bg-status-success opacity-40" />
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 flex justify-center">
           <a
-            href={`/studies/${studyId}/phase2/subtyping`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
+            href={`/studies/${studyId}/phase2/report`}
+            className="flex items-center gap-2 px-6 py-3 bg-brand-core text-white font-semibold text-sm rounded-xl hover:bg-brand-hover transition-colors"
           >
-            View Subtyping Results →
+            View Final Report
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </a>
-          <p className="text-text-secondary text-xs mt-3">
-            Questions about the methodology? See the Methodology tab in the report.
-          </p>
         </div>
+        <p className="text-center text-text-secondary text-xs mt-4">
+          Questions about the methodology? See the Methodology section in the report.
+        </p>
       </div>
     );
   }
 
-  // ── Error state ─────────────────────────────────────────────────────────────
-  if (isError) {
-    return (
-      <div className="max-w-2xl mx-auto px-8 py-12">
-        <div className="p-6 rounded-xl border border-status-danger/30 bg-status-danger/5">
-          <p className="text-status-danger font-semibold mb-2">Clinical Analysis Failed</p>
-          <p className="text-text-muted text-sm">{runStatus?.error_message ?? "Unknown error"}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── In-progress state ───────────────────────────────────────────────────────
+  // ── In-progress / error state ───────────────────────────────────────────────
   return (
     <div className="max-w-2xl mx-auto px-8 py-12">
-      <div className="mb-8">
-        <p className="text-status-purple text-xs uppercase tracking-widest font-semibold mb-2">Clinical Analysis</p>
+      {/* Header */}
+      <div className="mb-10">
+        <p className="text-status-purple text-xs uppercase tracking-widest mb-2">Clinical Analysis</p>
         <h1 className="text-2xl font-bold text-text-heading mb-2">
-          {runningStep ? `${runningStep.step}${dots}` : `Initializing${dots}`}
+          {isError ? "Analysis Failed" : `Lumos AI™ is analyzing${dots}`}
         </h1>
         <p className="text-text-muted text-sm">
-          Running Lumos v2.1 · N=16 patient outcomes · Powered by Claude Sonnet
+          {isError
+            ? "An error occurred during clinical analysis. You can re-run from the Clinical Analysis page."
+            : "Running clinical analysis — integrating Planning Phase hypotheses with N=16 patient outcomes. This typically takes 60–90 seconds."}
         </p>
-        <div className="mt-4 h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-status-purple to-brand-core rounded-full transition-all duration-500"
-            style={{ width: `${Math.max(progress, 3)}%` }}
-          />
-        </div>
-        <p className="text-text-secondary text-xs mt-1">{completeCount} of {ALL_STEPS.length} steps complete</p>
       </div>
 
+      {/* Progress bar */}
+      {!isError && (
+        <div className="mb-8">
+          <div className="flex justify-between text-xs text-text-muted mb-2">
+            <span>{runningStep ? runningStep.step : "Initialising"}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-1.5 bg-nav-item-active-bg rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-status-purple to-brand-core rounded-full transition-all duration-700"
+              style={{ width: `${Math.max(progress, 3)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Step list */}
       <div className="space-y-2">
         {displaySteps.map(s => {
-          const isComplete = s.status === "complete";
-          const isRunning = s.status === "running";
-          const isError = s.status === "error";
-          const isPending = s.status === "pending";
+          const isStepRunning = s.status === "running";
+          const isStepComplete = s.status === "complete";
+          const isStepError = s.status === "error";
           const desc = STEP_DESCRIPTIONS[s.step];
 
           return (
             <div
               key={s.step}
-              className="rounded-lg border transition-all"
-              style={{
-                borderColor: isRunning ? "var(--status-purple, #A855F7)" : isComplete ? "var(--status-success, #22C55E)" : "var(--border-subtle)",
-                background: isRunning ? "var(--bg-overlay)" : isComplete ? "var(--bg-overlay)" : "var(--bg-overlay)",
-              }}
+              className={`rounded-lg border transition-all ${
+                isStepRunning
+                  ? "bg-bg-surface border-status-purple"
+                  : isStepComplete
+                  ? "bg-bg-page border-border-subtle"
+                  : isStepError
+                  ? "bg-status-danger/5 border-status-danger"
+                  : "bg-bg-overlay border-border-subtle opacity-50"
+              }`}
             >
               {/* Step header row */}
               <div className="flex items-center gap-3 p-3">
-                <span
-                  className="text-sm font-bold flex-shrink-0 w-4 text-center"
-                  style={{ color: isComplete ? "var(--status-success)" : isRunning ? "var(--status-purple)" : isError ? "var(--status-danger)" : "var(--border-subtle)" }}
-                >
-                  {isComplete ? "✓" : isRunning ? "●" : isError ? "✕" : "○"}
-                </span>
-                <span className="text-sm">{STEP_ICONS[s.step]}</span>
-                <span className="text-sm font-medium" style={{ color: isPending ? "var(--text-secondary)" : isRunning ? "var(--status-purple)" : "var(--text-heading)" }}>
+                <div className="flex-shrink-0 w-5 h-5 mt-0.5 flex items-center justify-center">
+                  {isStepComplete ? (
+                    <svg className="w-4 h-4 text-status-success" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : isStepRunning ? (
+                    <div className="w-3 h-3 rounded-full bg-status-purple animate-pulse" />
+                  ) : isStepError ? (
+                    <span className="text-status-danger text-xs">✕</span>
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-nav-item-active-bg" />
+                  )}
+                </div>
+                <span className="text-sm">{STEP_ICONS[s.step] ?? "⚙️"}</span>
+                <span className={`text-sm font-medium ${
+                  isStepComplete ? "text-text-heading" : isStepRunning ? "text-status-purple" : isStepError ? "text-status-danger" : "text-text-secondary"
+                }`}>
                   {s.step}
                 </span>
-                {isRunning && (
+                {isStepRunning && (
                   <span className="ml-auto text-status-purple text-xs animate-pulse">Running{dots}</span>
                 )}
-                {s.detail && !isRunning && (
+                {s.detail && !isStepRunning && (
                   <span className="ml-auto text-text-secondary text-xs font-mono">{s.detail}</span>
                 )}
               </div>
 
-              {/* Expanded description for completed steps */}
-              {isComplete && desc && (
-                <div className="px-4 pb-3 ml-7 border-t border-status-success/12 pt-2.5 space-y-1.5">
+              {/* Completed step — expanded description */}
+              {isStepComplete && desc && (
+                <div className="px-4 pb-3 ml-7 border-t border-status-success/[0.12] pt-2.5 space-y-1.5">
                   <p className="text-xs text-text-body leading-relaxed">{desc.what}</p>
                   <p className="text-xs text-text-secondary leading-relaxed">
                     <span className="text-brand-core font-medium">Why it matters: </span>
@@ -279,8 +332,8 @@ export default function Phase2ProcessingPage() {
               )}
 
               {/* Running step — show description preview */}
-              {isRunning && desc && (
-                <div className="px-4 pb-3 ml-7 border-t border-status-purple/12 pt-2.5">
+              {isStepRunning && desc && (
+                <div className="px-4 pb-3 ml-7 border-t border-status-purple/[0.12] pt-2.5">
                   <p className="text-xs text-text-muted leading-relaxed italic">{desc.what}</p>
                 </div>
               )}
@@ -288,6 +341,42 @@ export default function Phase2ProcessingPage() {
           );
         })}
       </div>
+
+      {/* Error state */}
+      {isError && runStatus?.error_message && (
+        <div className="mt-6 p-4 bg-status-danger/5 border border-status-danger rounded-xl">
+          <p className="text-status-danger text-sm font-medium mb-1">Processing error</p>
+          <p className="text-status-danger text-xs font-mono">{runStatus.error_message}</p>
+          <a
+            href={`/studies/${studyId}/phase2`}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-heading transition-colors"
+          >
+            ← Return to re-run
+          </a>
+        </div>
+      )}
+
+      {/* Escape hatch — shown after 90 s */}
+      {!isError && showEscapeHatch && (
+        <div className="mt-6 p-4 bg-bg-overlay border border-border-subtle rounded-xl">
+          <p className="text-text-body text-sm font-medium mb-1">Analysis taking longer than expected?</p>
+          <p className="text-text-muted text-xs mb-3">
+            If the analysis appears stuck, you can cancel and restart. This preserves the current run in history as cancelled.
+          </p>
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-status-danger border border-status-danger/40 rounded-lg hover:bg-status-danger/5 transition-colors disabled:opacity-50"
+          >
+            {cancelling ? "Cancelling…" : "Cancel & restart"}
+          </button>
+        </div>
+      )}
+
+      {/* Footer note */}
+      <p className="text-center text-text-secondary text-xs mt-8">
+        Powered by Lumos AI™
+      </p>
     </div>
   );
 }
