@@ -37,8 +37,9 @@ export async function POST(req: NextRequest) {
     if (runError) throw new Error(`Failed to create run: ${runError.message}`)
 
     // Kick off processing async — fire and forget
-    const baseUrl = req.nextUrl.origin
-    fetch(`${baseUrl}/api/runs/process`, {
+    // Use localhost to bypass Railway's proxy timeout (~5 min) — Opus synthesis takes 5-10 min
+    const internalBase = (process.env.INTERNAL_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/$/, '')
+    fetch(`${internalBase}/api/runs/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
