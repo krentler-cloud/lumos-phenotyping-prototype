@@ -22,7 +22,7 @@ const STEP_ICONS: Record<string, string> = {
   "Aspect embedding": "🧮",
   "Weighted corpus search": "🔍",
   "Bayesian prior computation": "∑",
-  "Phenotype synthesis (Opus)": "🤖",
+  "Phenotype synthesis": "🤖",
   "Store report": "💾",
   "Exploratory biomarker synthesis": "🔭",
   "Corpus intelligence synthesis": "🗺️",
@@ -52,25 +52,25 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Computed Beta-Binomial priors from the response rate distributions observed across the retrieved corpus chunks — capturing mean response rate, variance, and effective sample size for each evidence dimension. The Beta distribution is the natural choice here because it models probabilities bounded between 0 and 1, and the Binomial captures the responder/non-responder structure of the underlying data. The result is a calibrated prior for each confidence dimension that reflects not just the average effect size but how much the evidence agrees with itself.",
     why: "Confidence scores need to reflect both the magnitude and the consistency of the evidence. A drug with five studies all showing 60% response rates should score differently than one with two studies at 90% and three at 30% — even if the averages match. The Bayesian framework captures that distinction by encoding variance explicitly, which is why the confidence percentages in the report are statistically grounded rather than heuristic.",
   },
-  "Phenotype synthesis (Opus)": {
-    what: "The Lumos AI synthesis model read all retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. The synthesis model was selected specifically because the task requires holding a large body of heterogeneous evidence in context, identifying convergent patterns across studies with different designs, and generating structured clinical hypotheses rather than summaries. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all retrieved corpus chunks.",
-    why: "This is the step where retrieval becomes interpretation. The model is asked to do what a scientific reviewer does — weigh evidence quality, resolve conflicting signals, and commit to ranked hypotheses about which patient characteristics predict response. Frontier-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
+  "Phenotype synthesis": {
+    what: "Lumos AI read all retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all retrieved corpus chunks.",
+    why: "This is the step where retrieval becomes interpretation. Lumos AI does what a scientific reviewer does — weighs evidence quality, resolves conflicting signals, and commits to ranked hypotheses about which patient characteristics predict response. Frontier-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
   },
   "Store report": {
     what: "Saved the complete structured output — phenotype profiles, efficacy signals, confidence scores, methodology narrative, corpus chunk references, and the Bayesian priors used to generate them — to the database as a versioned record. Every claim in the report is traceable to the specific corpus evidence and model version that produced it. This also makes the output portable: the same record feeds the interactive viewer, the PDF export, and eventually the Phase 2 study design inputs.",
     why: "Reproducibility and auditability are non-negotiable in a clinical context. Persisting the full evidential chain means a clinical development team can reconstruct exactly why a particular biomarker was ranked first, which studies it rested on, and how confident the model was — months after the analysis ran.",
   },
   "Exploratory biomarker synthesis": {
-    what: "Claude Sonnet scanned the same corpus excerpts for adjacent, speculative biomarker signals that didn't make it into the primary efficacy panel — signals that appear in the literature but aren't yet validated or routinely measured in MDD trials. This is a separate, non-blocking call: if it fails, the main report is unaffected. The output is 6–8 hypothesis-generating candidates drawn from neuroinflammation, synaptic remodeling, HPA axis biology, circadian markers, and other adjacent mechanisms with mechanistic plausibility for neuroplastogen response.",
+    what: "Lumos AI scanned the same corpus excerpts for adjacent, speculative biomarker signals that didn't make it into the primary efficacy panel — signals that appear in the literature but aren't yet validated or routinely measured in MDD trials. This is a separate, non-blocking call: if it fails, the main report is unaffected. The output is 6–8 hypothesis-generating candidates drawn from neuroinflammation, synaptic remodeling, HPA axis biology, circadian markers, and other adjacent mechanisms with mechanistic plausibility for neuroplastogen response.",
     why: "The primary efficacy panel is deliberately conservative — only biomarkers with strong preclinical grounding. But early-stage drug development is also where exploratory hypotheses are cheapest to test. Surfacing these signals now gives the study team the option to add low-cost add-on assays or biological samples at baseline that cost almost nothing to collect but could yield important signal for the next trial.",
   },
   "Corpus intelligence synthesis": {
-    what: "Claude Sonnet reviewed the retrieved corpus — its source type distribution, similarity scores, and document titles — and produced a structured gap analysis: what the corpus covers well, what evidence types are missing, and specific literature search queries that would fill the most important gaps. This output populates the Corpus Intelligence tab in the report.",
+    what: "Lumos AI reviewed the retrieved corpus — its source type distribution, similarity scores, and document titles — and produced a structured gap analysis: what the corpus covers well, what evidence types are missing, and specific literature search queries that would fill the most important gaps. This output populates the Corpus Intelligence tab in the report.",
     why: "A corpus gap analysis transforms the retrieval step from a black box into an actionable audit. Study teams can see exactly which evidence gaps exist, then commission targeted literature ingestion to improve future analyses for this drug.",
   },
   // SCIENCE-FEEDBACK: P1-F
   "Load SAD/MAD data": {
-    what: "Checked the database for Phase 1 SAD (Single Ascending Dose) and MAD (Multiple Ascending Dose) cohort data for this study. If cohort rows exist, they are injected directly into the Opus synthesis prompt so phenotype predictions are grounded in actual human PK/PD observations rather than corpus projections alone.",
+    what: "Checked the database for Phase 1 SAD (Single Ascending Dose) and MAD (Multiple Ascending Dose) cohort data for this study. If cohort rows exist, they are injected directly into the synthesis prompt so phenotype predictions are grounded in actual human PK/PD observations rather than corpus projections alone.",
     why: "Corpus-derived priors are animal-model and in-vitro evidence. When real human Phase 1 data exists — actual Cmax values, half-life measurements, observed BDNF responses — those observations should anchor the synthesis. Any discordance between corpus predictions and human data is explicitly flagged, so the output reflects genuine scientific uncertainty rather than projecting animal findings uncritically onto humans.",
   },
 };
@@ -81,7 +81,7 @@ const ALL_STEPS = [
   "Aspect embedding",
   "Weighted corpus search",
   "Bayesian prior computation",
-  "Phenotype synthesis (Opus)",
+  "Phenotype synthesis",
   "Store report",
   "Exploratory biomarker synthesis",
 ];

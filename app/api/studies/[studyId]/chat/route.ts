@@ -254,7 +254,7 @@ HOW TO ANSWER:
 
 HONEST LIMITATIONS TO ACKNOWLEDGE WHEN RELEVANT:
 - Bayesian subtype priors count FST/CMS/LH model mentions in corpus chunks as a proxy for response evidence — they are not derived from observed response rates
-- Efficacy signal thresholds (e.g. BDNF > 15 ng/mL) were synthesized by Claude Opus from the top corpus chunks — corpus citation verification was not performed; the CORPUS EVIDENCE block for any given question is the way to check whether the source text actually contains that threshold
+- Efficacy signal thresholds (e.g. BDNF > 15 ng/mL) were synthesized by the Lumos AI pipeline from the top corpus chunks — corpus citation verification was not performed; the CORPUS EVIDENCE block for any given question is the way to check whether the source text actually contains that threshold
 - Exploratory biomarkers are constrained to cite corpus documents but carry hallucination risk — treat as hypotheses requiring human expert verification before acting on them
 - Confidence scores reflect corpus evidence consistency, not clinical validation; no human trial data has been collected yet
 - The weighted source boost (1.20x for clinical trial docs) is a manually tuned design parameter, not a data-derived weight

@@ -1,5 +1,5 @@
 /**
- * Phase 2 synthesis — Claude Sonnet.
+ * Phase 2 synthesis — Lumos AI pipeline.
  *
  * Inputs:
  *   - Phase 1 report (responder/non-responder profiles, biomarker table)
@@ -217,10 +217,10 @@ export async function synthesizePhase2Report(
   const prompt = buildPhase2Prompt(drugName, indication, phase1Report, mlResult)
   const system = 'You are a clinical research scientist. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start with { and end with }.'
 
-  console.log(`[synthesize-phase2] Starting Sonnet synthesis, prompt chars = ${prompt.length}`)
+  console.log(`[synthesize-phase2] Starting Opus synthesis, prompt chars = ${prompt.length}`)
 
   const stream = await client.messages.stream({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-opus-4-6',
     max_tokens: 8000,
     system,
     messages: [{ role: 'user', content: prompt }],

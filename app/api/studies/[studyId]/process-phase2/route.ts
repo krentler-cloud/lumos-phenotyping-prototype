@@ -130,9 +130,9 @@ export async function POST(
       return `Concordance ${mlResult.concordance_pct}% · ${mlResult.responder_count}R / ${mlResult.nonresponder_count}NR / ${mlResult.uncertain_count}U`
     })
 
-    // ── Step 5: Synthesize with Claude Sonnet ──────────────────────────────
+    // ── Step 5: Clinical synthesis ─────────────────────────────────────────
     let phase2Report: Awaited<ReturnType<typeof synthesizePhase2Report>> | null = null
-    await step(supabase, run_id, log, 'Clinical synthesis (Sonnet)', async () => {
+    await step(supabase, run_id, log, 'Clinical synthesis', async () => {
       phase2Report = await synthesizePhase2Report(
         study!.drug_name,
         study!.indication,

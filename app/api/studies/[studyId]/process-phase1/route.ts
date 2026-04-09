@@ -142,8 +142,8 @@ export async function POST(
       await log('Load SAD/MAD data', 'complete', 'Table not yet migrated — skipping')
     }
 
-    // ── STEP 7: Claude synthesis (Opus → phenotypes, Sonnet → biomarkers) ──────
-    await log('Phenotype synthesis (Opus)', 'running')
+    // ── STEP 7: Phenotype synthesis ────────────────────────────────────────
+    await log('Phenotype synthesis', 'running')
     const report = await synthesizePhase1Report(
       drugName,
       indication,
@@ -153,7 +153,7 @@ export async function POST(
       sadMadCohorts.length > 0 ? sadMadCohorts : undefined
     )
     await log(
-      'Phenotype synthesis (Opus)',
+      'Phenotype synthesis',
       'complete',
       `responder confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
     )

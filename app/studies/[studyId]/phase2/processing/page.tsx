@@ -21,7 +21,7 @@ const ALL_STEPS = [
   "Load pre-clinical report",
   "Load clinical patients",
   "Clinical ML analysis",
-  "Clinical synthesis (Sonnet)",
+  "Clinical synthesis",
   "Store clinical report",
 ];
 
@@ -30,7 +30,7 @@ const STEP_ICONS: Record<string, string> = {
   "Load pre-clinical report":   "📊",
   "Load clinical patients":     "👥",
   "Clinical ML analysis":       "🧮",
-  "Clinical synthesis (Sonnet)":"🤖",
+  "Clinical synthesis":         "🤖",
   "Store clinical report":      "💾",
 };
 
@@ -51,9 +51,9 @@ const STEP_DESCRIPTIONS: Record<string, { what: string; why: string }> = {
     what: "Ran three analyses in parallel: (1) threshold-based subtype clustering — assigned each patient to Subtype A (BDNF < 15 ng/mL), B (IL-6 ≥ 4 pg/mL), or C (mixed) using the Phase 1-derived thresholds; (2) Pearson correlation feature importance — ranked each biomarker by its linear association with response status; (3) Bayesian update — applied the observed responder/non-responder counts to update the Phase 1 Beta-Binomial priors.",
     why: "These three computations answer three distinct questions: Which subtype did each patient actually belong to? Which biomarkers were most predictive in practice? And how much should we revise our confidence in the Phase 1 hypotheses given the new data? Each feeds directly into the synthesis step.",
   },
-  "Clinical synthesis (Sonnet)": {
+  "Clinical synthesis": {
     what: "Lumos AI integrated the Phase 1 phenotype profiles, the Bayesian-updated confidence scores, MADRS trajectory data, and feature importance rankings to produce refined responder and non-responder profiles, enhanced outcome measures for future trials, and structured CRO screening prompts.",
-    why: "Sonnet — rather than Opus — is used here because the synthesis task is more constrained: the structure of the output is tighter, the corpus context is smaller, and the primary challenge is interpretation rather than open-ended scientific reasoning. Sonnet is faster and more cost-efficient for this type of structured generation.",
+    why: "This synthesis step requires the same level of scientific reasoning as the Planning Phase — the model must weigh evidence from both corpus priors and real patient outcomes, resolve conflicts between pre-specified hypotheses and observed data, and commit to ranked clinical recommendations. Frontier-class reasoning is used consistently across both phases for this reason.",
   },
   "Store clinical report": {
     what: "Persisted the complete Phase 2 output — refined profiles, ML results, patient-level data, MADRS trajectories, feature importances, and the Bayesian update record — as a versioned report linked to this study.",

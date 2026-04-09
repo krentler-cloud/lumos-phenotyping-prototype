@@ -63,7 +63,7 @@ const STEPS = [
     detail: "Priority-ranked collection plan for Phase 1 trial",
     tooltip: {
       title: "Evidence-grounded biomarker collection plan with quantitative thresholds",
-      body: "A second model pass (Claude Sonnet) generates a ranked protocol of 6–9 biomarkers spanning inflammatory (CRP, IL-6, TNF-α), neuroplasticity (BDNF, TrkB), behavioral, imaging, and genetic domains. For each biomarker: a mechanistic rationale tied to the drug's receptor profile, a quantitative threshold that distinguishes responder from non-responder signal, collection timing mapped to trial visits (Baseline → Wk 2 → Wk 4 → Wk 8), and collection method. The output is a protocol your CRO can implement directly — not a literature review.",
+      body: "A second Lumos AI analysis pass generates a ranked protocol of 6–9 biomarkers spanning inflammatory (CRP, IL-6, TNF-α), neuroplasticity (BDNF, TrkB), behavioral, imaging, and genetic domains. For each biomarker: a mechanistic rationale tied to the drug's receptor profile, a quantitative threshold that distinguishes responder from non-responder signal, collection timing mapped to trial visits (Baseline → Wk 2 → Wk 4 → Wk 8), and collection method. The output is a protocol your CRO can implement directly — not a literature review.",
     },
   },
 ];
