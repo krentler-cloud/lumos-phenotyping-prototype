@@ -152,58 +152,70 @@ ${featureImportance}
 OUTPUT REQUIRED (JSON only, no markdown)
 ═══════════════════════════════════════════════════════
 
-Return exactly this JSON structure:
+Return exactly this JSON structure. Follow all field-level instructions precisely — they determine report quality.
+
+WRITING STYLE (applies to every prose field below):
+- Write in flowing analytical prose. No bullet points. No semicolons as list separators.
+- Cite numbers inline (e.g. "BDNF showed the strongest association (|r|=0.71)").
+- Lead each field with the single most important clinical insight, then support it.
+- Write for a senior clinical scientist who has already read the raw data tables.
+- A good report does not list observations; it interprets them.
 
 {
-  "executive_summary": "2-3 plain-English sentences summarizing what the N=16 clinical data refined or revised about the Planning Phase hypotheses, and what remains uncertain. This sits at the top of the final report. Do NOT use 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
+  "executive_summary": "3 sentences. (1) State what the N=16 clinical data revealed about overall drug response and concordance with Planning Phase predictions. (2) Name the 1-2 features that most strongly separated responders from non-responders (cite |r| values). (3) Characterize what remains uncertain and what a larger trial needs to resolve. No bullets. No 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
+
   "refined_responder_profile": {
-    "summary": "Updated 1-2 sentence profile integrating clinical validation",
-    "demographics": "Refined demographics based on observed responder characteristics",
-    "core_clinical": "Refined clinical features confirmed by data",
-    "inflammatory": "Inflammatory profile validated or revised",
-    "neuroplasticity": "Neuroplasticity markers confirmed or revised",
-    "imaging": "Imaging markers (may remain pre-clinical hypothesis)",
-    "key_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"],
+    "summary": "3-4 sentence narrative. Lead with the MADRS outcome (cite Wk8 score and % improvement). Then name the baseline biomarker profile that characterized this group. Close with the strength of the Planning Phase prediction relative to what was actually observed — was the hypothesis borne out, refined, or surprised? Do not list; synthesize.",
+    "demographics": "2-3 sentences. State the observed age range and central tendency, sex distribution, and prior antidepressant trial count. Compare directly to the Planning Phase demographic prediction — where did it match, where did the real cohort differ? Cite the specific Planning Phase hypothesis text.",
+    "core_clinical": "2-3 sentences. Lead with the strongest clinical predictor (cite its |r| value and rank in feature importance). Describe the MADRS baseline and trajectory shape in prose. Note whether severity-stratified response matched the Planning Phase severity threshold hypothesis.",
+    "inflammatory": "2-3 sentences. Cite the observed IL-6, CRP, or TNF-alpha values and their feature importance rank. State whether the inflammatory profile was lower, higher, or as predicted for this group. Avoid listing — weave the biomarkers into a single interpretive sentence.",
+    "neuroplasticity": "2-3 sentences. Describe the BDNF profile observed in this group (cite |r| if BDNF appears in top features). Note the Val66Met distribution if available. Interpret what the BDNF trajectory implies about mechanism of response.",
+    "imaging": "1-2 sentences. Be honest: no imaging data was collected in this Phase 1/2 trial. State that the planning-phase imaging hypothesis (cite it briefly) remains pre-clinical and is a testable hypothesis for a larger study.",
+    "key_criteria": ["Criterion 1 — specific, quantitative where possible", "Criterion 2", "Criterion 3", "Criterion 4"],
     "phase1_confidence": ${phase1.responder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.responder.posterior.toFixed(3)},
     "validation_delta": "Prior ${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.responder.posterior * 100)}%",
     "posterior_label": "Prior ${Math.round(phase1.responder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.responder.posterior * 100)}%",
-    "what_changed": "2-3 sentences describing what the clinical data refined, updated, or revised about this Planning Phase hypothesis. Do NOT use the words 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with', 'revised'."
+    "what_changed": "3-4 sentence analytical narrative. What specifically did the clinical data refine relative to the Planning Phase hypothesis? Name the dimension (demographics, inflammatory, neuroplasticity) where the observed data most diverged from prediction, and interpret why. If the hypothesis held, explain what the data added beyond the prior — do not just say it was consistent. Do NOT use 'validated' or 'confirmed'."
   },
+
   "refined_nonresponder_profile": {
-    "summary": "Updated non-responder profile",
-    "demographics": "...",
-    "core_clinical": "...",
-    "inflammatory": "...",
-    "neuroplasticity": "...",
-    "imaging": "...",
-    "key_criteria": ["Criterion 1", "Criterion 2", "Criterion 3"],
+    "summary": "3-4 sentence narrative. Lead with the MADRS outcome for this group (cite Wk8 score). Characterize the biomarker signature that most strongly distinguished them from responders. Interpret what this profile implies about the mechanism of non-response to this drug.",
+    "demographics": "2-3 sentences. State the observed age range, sex distribution, and prior trial count for non-responders. Compare to Planning Phase prediction. Note whether older, treatment-resistant, or male-predominant patterns emerged as predicted.",
+    "core_clinical": "2-3 sentences. Name the clinical feature with the strongest inverse association with response (cite |r|). Describe the MADRS severity profile and trajectory — how quickly did non-response become apparent? Was Wk2 trajectory already diverging?",
+    "inflammatory": "2-3 sentences. This is likely the key differentiating dimension — describe the observed inflammatory burden in prose, citing IL-6 or CRP levels. Interpret whether the elevated inflammatory profile represents a true contraindication or a subpopulation requiring add-on anti-inflammatory strategy.",
+    "neuroplasticity": "2-3 sentences. Describe the BDNF or neuroplasticity marker profile for non-responders. If BDNF was lower at baseline, interpret what this implies about mechanism. Note the Val66Met distribution if relevant.",
+    "imaging": "1-2 sentences. State that imaging markers remain Planning Phase hypotheses only. Note which imaging biomarker (e.g. ACC hyperactivity) is the highest-priority testable hypothesis for the next trial.",
+    "key_criteria": ["Exclusion criterion 1 — specific, quantitative", "Exclusion criterion 2", "Exclusion criterion 3", "Exclusion criterion 4"],
     "phase1_confidence": ${phase1.nonresponder_profile.corpus_hypothesis_confidence},
     "phase2_confidence": ${bayesUpdate.nonresponder.posterior.toFixed(3)},
     "validation_delta": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
     "posterior_label": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
-    "what_changed": "2-3 sentences describing what the clinical data refined, updated, or revised about this Planning Phase hypothesis. Do NOT use the words 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with', 'revised'."
+    "what_changed": "3-4 sentence analytical narrative. What did the N=16 data reveal about the non-responder phenotype that the Planning Phase corpus analysis could not? Name the specific feature or dimension that most refined the hypothesis. If the inflammatory burden was higher than predicted, interpret what this means for trial design. Do NOT use 'validated' or 'confirmed'."
   },
+
   "enhanced_outcome_measures": [
     {
-      "name": "Measure name",
+      "name": "Measure name — specific, not generic",
       "type": "early_response|leading_indicator|primary_endpoint",
-      "description": "What this measure captures",
-      "timing": "When to assess",
-      "clinical_rationale": "Why this measure now, post-clinical data"
+      "description": "One sentence: what this measure captures and why it is sensitive to this drug's mechanism",
+      "timing": "Specific visit schedule (e.g. Baseline, Wk2, Wk4, Wk8)",
+      "clinical_rationale": "2-3 sentences grounded in the Phase 2 feature importance data. Why does this measure earn its place in the protocol? What would a positive or negative signal at Wk2 imply for Wk8 outcome?"
     }
   ],
+
   "cro_prompts": [
     {
       "category": "Inclusion|Exclusion|Stratification|Biomarker Monitoring",
-      "criteria": ["Specific criterion 1", "Specific criterion 2"],
-      "rationale": "Why this criterion, grounded in Phase 2 data"
+      "criteria": ["Specific, quantitative criterion — cite the threshold (e.g. BDNF > 15 ng/mL at screening)", "Criterion 2 with rationale embedded"],
+      "rationale": "2-3 sentences explaining why this criterion is grounded in the Phase 2 feature importance ranking and MADRS trajectory data. Be specific — cite the feature and its |r| value."
     }
   ],
-  "methodology_narrative": "3-4 paragraph narrative explaining: (1) what Phase 2 added vs Phase 1, (2) how the Bayesian update worked, (3) what the clinical data confirmed/revised, (4) confidence in the Phase 2 findings and what remains to be validated in a larger trial."
+
+  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=16 clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the ML ensemble (logistic regression + random forest) was structured, what features it used, and what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=16 is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
 }
 
-Produce exactly one instance of each required key. Be specific, cite the clinical data patterns (MADRS trajectories, feature importances, concordance rate). Do not hedge excessively — but frame Phase 2 findings as a posterior update on the Planning Phase hypotheses, not as formal validation. Avoid the word "validated" throughout.`
+Produce exactly one instance of each required key. The JSON must be valid and parseable. Do not include any text before the opening brace or after the closing brace.`
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────

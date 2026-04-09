@@ -52,6 +52,24 @@ export function DimensionBlock({ label, value, accentColor }: { label: string; v
   );
 }
 
+// ── DimensionProse (Phase 2) ──────────────────────────────────────────────────
+// Renders dimension content as prose paragraph (not bulleted) — for Phase 2
+// where Opus is instructed to write analytical prose, not semicolon lists.
+export function DimensionProse({ label, value, accentColor }: { label: string; value: string; accentColor?: string }) {
+  if (!value) return null;
+  const meta = DIMENSION_META[label] ?? { icon: "·", color: "var(--text-muted)" };
+  const color = accentColor ?? meta.color;
+  return (
+    <div className="p-4 bg-bg-page border border-border-subtle rounded-xl flex flex-col gap-2.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm leading-none">{meta.icon}</span>
+        <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>{label}</p>
+      </div>
+      <p className="text-xs text-text-body leading-relaxed">{value}</p>
+    </div>
+  );
+}
+
 // ── ConfidenceBadge (Phase 1) ─────────────────────────────────────────────────
 export function ConfidenceBadge({
   value,

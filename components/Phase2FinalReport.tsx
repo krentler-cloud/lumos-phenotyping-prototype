@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Phase2ReportData, RefinedProfile, CROPrompt, EnhancedOutcomeMeasure } from "@/lib/pipeline/synthesize-phase2";
 import { Phase2MLResult } from "@/lib/pipeline/clinical-ml";
-import { DimensionBlock, PosteriorBadge, splitSummary } from "@/components/reportShared";
+import { DimensionProse, PosteriorBadge, splitSummary } from "@/components/reportShared";
 
 interface FullReport extends Phase2ReportData {
   ml_result: Phase2MLResult;
@@ -77,11 +77,11 @@ function ProfileCard({ profile, type }: { profile: RefinedProfile; type: "respon
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <DimensionBlock label="Demographics"    value={profile.demographics} />
-          <DimensionBlock label="Core Clinical"   value={profile.core_clinical} />
-          <DimensionBlock label="Inflammatory"    value={profile.inflammatory} />
-          <DimensionBlock label="Neuroplasticity" value={profile.neuroplasticity} />
-          {profile.imaging && <DimensionBlock label="Imaging / EEG" value={profile.imaging} />}
+          <DimensionProse label="Demographics"    value={profile.demographics} />
+          <DimensionProse label="Core Clinical"   value={profile.core_clinical} />
+          <DimensionProse label="Inflammatory"    value={profile.inflammatory} />
+          <DimensionProse label="Neuroplasticity" value={profile.neuroplasticity} />
+          {profile.imaging && <DimensionProse label="Imaging / EEG" value={profile.imaging} />}
         </div>
 
         {profile.key_criteria && profile.key_criteria.length > 0 && (
