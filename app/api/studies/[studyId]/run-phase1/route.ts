@@ -14,11 +14,15 @@ export async function POST(
   const { studyId } = await params
   const supabase = createServiceClient()
 
-  // Build public-facing base URL (Railway sets x-forwarded-host)
+  // Build public-facing base URL (for redirects) and internal base URL (for fire-and-forget calls)
+  // IMPORTANT: internal calls must use localhost to bypass Railway's proxy, which has a ~5 min
+  // HTTP timeout that kills long-running Opus synthesis before it completes.
   const forwarded = req.headers.get('x-forwarded-host')
   const proto = req.headers.get('x-forwarded-proto') ?? 'https'
   const explicitBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
   const publicBase = explicitBase ?? (forwarded ? `${proto}://${forwarded}` : req.nextUrl.origin)
+  // Internal base: INTERNAL_API_URL env var (set on Railway) → localhost fallback for dev
+  const internalBase = (process.env.INTERNAL_API_URL ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/$/, '')
 
   try {
     // 1. Verify study exists
@@ -77,7 +81,9 @@ export async function POST(
       .eq('id', studyId)
 
     // 5. Kick off async processing — fire and forget
-    fetch(`${publicBase}/api/studies/${studyId}/process-phase1`, {
+    // Use internalBase (localhost) so the call never passes through Railway's proxy,
+    // which would time out after ~5 minutes and kill the handler mid-synthesis.
+    fetch(`${internalBase}/api/studies/${studyId}/process-phase1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
