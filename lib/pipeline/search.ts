@@ -1,5 +1,35 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
+// ── Retry helper ──────────────────────────────────────────────────────────────
+// Supabase RPC calls return { data, error } — they don't throw. This helper
+// retries when the error looks transient (502, 503, 504, or raw HTML from
+// Cloudflare/Supabase gateway errors). Truncates error messages so a full
+// 502 HTML page doesn't get surfaced to users.
+
+const TRANSIENT_PATTERN = /502|503|504|bad\s*gateway|<!DOCTYPE/i
+
+async function retryRpc<T>(
+  label: string,
+  fn: () => Promise<{ data: T | null; error: { message: string } | null }>,
+  maxAttempts = 4
+): Promise<T> {
+  let lastMessage = 'unknown error'
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data, error } = await fn()
+    if (!error) return data as T
+    lastMessage = error.message ?? ''
+    const isTransient = TRANSIENT_PATTERN.test(lastMessage)
+    if (!isTransient || attempt >= maxAttempts) break
+    const delay = 1000 * Math.pow(2, attempt - 1) // 1s → 2s → 4s
+    await new Promise(r => setTimeout(r, delay))
+  }
+  // Truncate raw HTML / very long messages
+  const summary = lastMessage.startsWith('<')
+    ? `Supabase gateway error (502/503) — try again in a few seconds`
+    : lastMessage.slice(0, 300)
+  throw new Error(`${label} failed: ${summary}`)
+}
+
 export interface MatchedChunk {
   chunk_id: string
   doc_id: string
@@ -18,15 +48,12 @@ export async function searchCorpus(
   topK: number = 20
 ): Promise<MatchedChunk[]> {
   const supabase = createServiceClient()
-
-  const { data, error } = await supabase.rpc('match_corpus_chunks', {
-    query_embedding: queryVector,
-    match_count: topK,
-  })
-
-  if (error) throw new Error(`Vector search failed: ${error.message}`)
-
-  return data as MatchedChunk[]
+  return retryRpc('Vector search', () =>
+    supabase.rpc('match_corpus_chunks', {
+      query_embedding: queryVector,
+      match_count: topK,
+    })
+  )
 }
 
 /**
@@ -39,16 +66,13 @@ export async function searchCorpusWeighted(
   sourceBoost: Record<string, number> = { clinical_trial: 1.20, regulatory: 1.15 }
 ): Promise<MatchedChunk[]> {
   const supabase = createServiceClient()
-
-  const { data, error } = await supabase.rpc('match_corpus_chunks_weighted', {
-    query_embedding: queryVector,
-    match_count: topK,
-    source_boost: sourceBoost,
-  })
-
-  if (error) throw new Error(`Weighted vector search failed: ${error.message}`)
-
-  return data as MatchedChunk[]
+  return retryRpc('Weighted vector search', () =>
+    supabase.rpc('match_corpus_chunks_weighted', {
+      query_embedding: queryVector,
+      match_count: topK,
+      source_boost: sourceBoost,
+    })
+  )
 }
 
 export interface MultiAspectSearchStats {
