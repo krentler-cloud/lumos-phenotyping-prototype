@@ -208,8 +208,8 @@ export async function POST(
 
   if (!study) return new Response('Study not found', { status: 404 })
 
-  // ── Parallel: fetch reports + search corpus ────────────────────────────────────
-  const [phase1Row, phase2Row, corpusChunks] = await Promise.all([
+  // ── Parallel: fetch reports + search corpus + corpus count ───────────────────
+  const [phase1Row, phase2Row, corpusChunks, corpusCountRow] = await Promise.all([
     study.phase1_run_id
       ? supabase.from('phase1_reports').select('report_data').eq('run_id', study.phase1_run_id).single()
       : Promise.resolve({ data: null }),
@@ -223,7 +223,10 @@ export async function POST(
           .single()
       : Promise.resolve({ data: null }),
     searchCorpusWeighted(queryVector, 8),
+    supabase.from('corpus_docs').select('*', { count: 'exact', head: true }),
   ])
+
+  const corpusDocCount = corpusCountRow.count ?? 'unknown'
 
   const phase1Report = (phase1Row.data?.report_data ?? null) as Phase1ReportData | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -241,6 +244,14 @@ export async function POST(
 
   // ── System prompt ──────────────────────────────────────────────────────────────
   const systemPrompt = `You are a clinical AI assistant embedded in the Lumos AI platform by Headlamp Health. You answer questions about the Planning Phase and clinical analysis for ${study.drug_name} in ${study.indication}.
+
+LUMOS AI PLATFORM FACTS (use these when describing the system — do not invent alternatives):
+- Corpus: ${corpusDocCount} pre-clinical scientific documents (literature, regulatory filings, clinical trial reports) — NOT a patient database or profile database
+- Search method: Supabase pgvector cosine similarity search — NOT FAISS, NOT Pinecone, NOT any other vector database
+- Per-query retrieval: 8 corpus chunks are retrieved and provided in the CORPUS EVIDENCE block below; synthesis runs use 20 chunks
+- Source boost: clinical trial documents receive a 1.20x score boost; regulatory documents 1.15x — manually tuned, not data-derived
+- Patient data: the N=16 Phase 2 cohort is the only human patient data in the system; all other evidence is pre-clinical
+- NEVER invent statistics, document counts, profile numbers, or technical implementation details about the Lumos AI platform. If you don't know a platform fact, say so rather than estimating.
 
 You have two sources of evidence for every response:
 1. ANALYSIS CONTEXT — structured outputs from the pipeline (phenotype profiles, efficacy signals, ML results, methodology narrative)
