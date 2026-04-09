@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import type { LumosPageContext } from "@/lib/context/pageContext";
 
 interface Message {
   role: "user" | "assistant";
@@ -101,6 +102,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [pageContext, setPageContext] = useState<LumosPageContext | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -136,7 +138,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
       const res = await fetch(`/api/studies/${studyId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text, history, pageContext }),
         signal: abort.signal,
       });
 
@@ -189,6 +191,15 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
     window.addEventListener("lumos-ask", handler);
     return () => window.removeEventListener("lumos-ask", handler);
   }, [sendMessage]);
+
+  // Listen for page context updates from PageContextDispatcher
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setPageContext((e as CustomEvent<LumosPageContext>).detail);
+    };
+    window.addEventListener("lumos-page-context", handler);
+    return () => window.removeEventListener("lumos-page-context", handler);
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { embedText } from '@/lib/pipeline/embed'
 import { searchCorpusWeighted, MatchedChunk } from '@/lib/pipeline/search'
 import { Phase1ReportData } from '@/lib/pipeline/synthesize-phase1'
+import { formatPageContextForPrompt, LumosPageContext } from '@/lib/context/pageContext'
 
 interface ChatHistoryMessage {
   role: 'user' | 'assistant'
@@ -184,14 +185,14 @@ export async function POST(
 ) {
   const { studyId } = await params
 
-  let body: { message: string; history?: ChatHistoryMessage[] }
+  let body: { message: string; history?: ChatHistoryMessage[]; pageContext?: LumosPageContext }
   try {
     body = await req.json()
   } catch {
     return new Response('Invalid JSON', { status: 400 })
   }
 
-  const { message, history = [] } = body
+  const { message, history = [], pageContext } = body
   if (!message?.trim()) return new Response('message required', { status: 400 })
 
   const supabase = createServiceClient()
@@ -270,7 +271,7 @@ HONEST LIMITATIONS TO ACKNOWLEDGE WHEN RELEVANT:
 - Confidence scores reflect corpus evidence consistency, not clinical validation; no human trial data has been collected yet
 - The weighted source boost (1.20x for clinical trial docs) is a manually tuned design parameter, not a data-derived weight
 
-FORMAT: Answer in 3–4 sentences. Expand to a short paragraph (5–6 sentences) only for genuinely complex mechanistic questions. Never restate or summarize the question. No preamble ("It's worth noting that...", "This is a complex topic..."). When corpus evidence has a specific value or threshold, cite it inline with the document title in quotes — do not paraphrase into vagueness. A tight 3–4 item bullet list is acceptable when it communicates better than prose (e.g. ranked predictors) — not in addition to prose. No markdown headers.`
+FORMAT: Answer in 3–4 sentences. Expand to a short paragraph (5–6 sentences) only for genuinely complex mechanistic questions. Never restate or summarize the question. No preamble ("It's worth noting that...", "This is a complex topic..."). When corpus evidence has a specific value or threshold, cite it inline with the document title in quotes — do not paraphrase into vagueness. A tight 3–4 item bullet list is acceptable when it communicates better than prose (e.g. ranked predictors) — not in addition to prose. No markdown headers.${pageContext ? `\n\n${formatPageContextForPrompt(pageContext)}` : ''}`
 
   // ── Build message history ──────────────────────────────────────────────────────
   // Inject analysis context as a synthetic first exchange (done once, not per-turn)

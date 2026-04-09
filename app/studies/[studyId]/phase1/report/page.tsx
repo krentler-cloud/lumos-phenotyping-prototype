@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Phase1ReportViewer from "@/components/Phase1ReportViewer";
 import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
+import { PageContextDispatcher } from "@/components/PageContextDispatcher";
+import { pct } from "@/lib/context/pageContext";
 
 export default async function Phase1ReportPage({
   params,
@@ -48,13 +50,36 @@ export default async function Phase1ReportPage({
 
   const report = reportRow.report_data as Phase1ReportData;
 
+  const topBiomarkers = (report.biomarker_recommendations ?? [])
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 4)
+    .map(b => `${b.name} (#${b.rank})`)
+    .join(", ");
+
   return (
-    <Phase1ReportViewer
-      report={report}
-      drugName={study.drug_name}
-      indication={study.indication}
-      generatedAt={reportRow.created_at}
-      studyId={studyId}
-    />
+    <>
+      <PageContextDispatcher context={{
+        pageId: "phase1/report",
+        pageLabel: "Planning Phase Report",
+        visibleData: {
+          "Overall corpus confidence": pct(report.overall_confidence),
+          "Responder subtype": report.responder_profile?.primary_subtype ?? null,
+          "Responder corpus confidence": pct(report.responder_profile?.corpus_hypothesis_confidence),
+          "Responder key inclusion criteria": report.responder_profile?.key_inclusion_criteria?.slice(0, 4).join("; ") ?? null,
+          "Non-responder subtype": report.nonresponder_profile?.primary_subtype ?? null,
+          "Non-responder corpus confidence": pct(report.nonresponder_profile?.corpus_hypothesis_confidence),
+          "Non-responder key exclusion criteria": report.nonresponder_profile?.key_exclusion_criteria?.slice(0, 4).join("; ") ?? null,
+          "Top biomarkers by priority": topBiomarkers || null,
+          "Primary endpoint recommendation": report.primary_endpoint_recommendation ?? null,
+        },
+      }} />
+      <Phase1ReportViewer
+        report={report}
+        drugName={study.drug_name}
+        indication={study.indication}
+        generatedAt={reportRow.created_at}
+        studyId={studyId}
+      />
+    </>
   );
 }

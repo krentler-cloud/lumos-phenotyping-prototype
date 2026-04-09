@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { PageContextDispatcher } from "@/components/PageContextDispatcher";
 
 export default async function Phase2Page({
   params,
@@ -48,7 +49,29 @@ export default async function Phase2Page({
   const fmt1 = (v: number | null) => v != null ? v.toFixed(1) : "—";
   const avg = (arr: number[]): number | null => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
+  const avgBdnf = avg(bdnfValues);
+  const avgIl6 = avg(il6Values);
+  const avgAge = avg(ageValues);
+  const avgMadrs = avg(madrsValues);
+
   return (
+    <>
+    <PageContextDispatcher context={{
+      pageId: "phase2/overview",
+      pageLabel: "Clinical Analysis Overview — Pre-Run",
+      visibleData: {
+        "Total patients enrolled": n > 0 ? `${n}` : null,
+        "Responders": n > 0 ? `${responders} (${Math.round((responders / n) * 100)}%)` : null,
+        "Non-responders": n > 0 ? `${nonresponders} (${Math.round((nonresponders / n) * 100)}%)` : null,
+        "Uncertain": n > 0 ? `${uncertain} (${Math.round((uncertain / n) * 100)}%)` : null,
+        "Mean BDNF at baseline": avgBdnf != null ? `${fmt1(avgBdnf)} ng/mL (range ${fmt1(Math.min(...bdnfValues))}–${fmt1(Math.max(...bdnfValues))})` : null,
+        "Mean IL-6 at baseline": avgIl6 != null ? `${fmt1(avgIl6)} pg/mL (range ${fmt1(Math.min(...il6Values))}–${fmt1(Math.max(...il6Values))})` : null,
+        "Mean MADRS at baseline": avgMadrs != null ? `${fmt1(avgMadrs)} pts (range ${Math.min(...madrsValues)}–${Math.max(...madrsValues)})` : null,
+        "Mean age": avgAge != null ? `${Math.round(avgAge)} yrs (range ${Math.min(...ageValues)}–${Math.max(...ageValues)})` : null,
+        "Sex distribution": n > 0 ? `${female}F / ${n - female}M` : null,
+        "Status": "Clinical Analysis not yet run — this page shows raw patient cohort data only",
+      },
+    }} />
     <div className="max-w-4xl mx-auto px-8 py-12">
       <div className="text-center mb-10">
         <p className="text-status-purple text-xs uppercase tracking-widest mb-4">Clinical Analysis · Lumos AI</p>
@@ -230,5 +253,6 @@ export default async function Phase2Page({
         </button>
       </form>
     </div>
+    </>
   );
 }
