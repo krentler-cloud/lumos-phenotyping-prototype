@@ -47,9 +47,6 @@ export default async function Phase2ReportPage({
   if (!reportRow) notFound();
 
   const report = reportRow.report_data as FullPhase2Report;
-  const generatedAt = new Date(reportRow.created_at).toLocaleDateString("en-US", {
-    year: "numeric", month: "long", day: "numeric",
-  });
 
   return (
     <Phase2FinalReport
@@ -57,7 +54,7 @@ export default async function Phase2ReportPage({
       drugName={study.drug_name}
       indication={study.indication}
       sponsor={study.sponsor}
-      generatedAt={generatedAt}
+      generatedAt={reportRow.created_at}
       report={report}
     />
   );

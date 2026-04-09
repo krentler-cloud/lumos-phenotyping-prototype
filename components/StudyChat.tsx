@@ -114,6 +114,7 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
     }
   }, [isOpen, messages.length]);
 
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -177,6 +178,17 @@ export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", pr
       abortRef.current = null;
     }
   }, [studyId, messages, isStreaming]);
+
+  // Listen for lumos-ask events fired by report ⓘ buttons
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { question } = (e as CustomEvent<{ question: string }>).detail;
+      setIsOpen(true);
+      sendMessage(question);
+    };
+    window.addEventListener("lumos-ask", handler);
+    return () => window.removeEventListener("lumos-ask", handler);
+  }, [sendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
