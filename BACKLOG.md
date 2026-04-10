@@ -18,6 +18,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   1. **Processing page** (`Phase1ProcessingClient.tsx` — `buildStepDescriptions()`):
      - "Aspect embedding" still says "mechanism, efficacy, biomarkers, and safety/PK" and "1,536 dimensions" — should say the 4 phenotype-oriented aspects (responder profile, non-responder profile, biomarker stratification, analog outcomes) and "1,024 dimensions"
      - "Weighted corpus search" says "sent to Claude" — should say "sent to Lumos AI" per branding rule
+     - Header says "This typically takes 60–90 seconds" — inaccurate, synthesis alone takes 5–10 minutes. Either show a dynamic elapsed timer, or change to a realistic estimate ("3–10 minutes depending on corpus size")
      - Review all other descriptions for accuracy after the changes
   2. **Landing page** (`app/studies/[studyId]/phase1/page.tsx` — the "What Lumos AI will do" card):
      - "Multi-aspect corpus search" subtitle says "4 simultaneous vector queries across Headlamp MDD corpus" — should name the 4 phenotype-oriented aspects
