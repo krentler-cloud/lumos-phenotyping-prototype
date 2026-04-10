@@ -123,8 +123,8 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 - [x] **P2-F: Retrieval aspect rewrite + Voyage AI migration** — Merged to main April 10, 2026
   - Part 1: 4 drug-descriptive aspects → 4 phenotype-oriented aspects (responder_profile, nonresponder_profile, biomarker_stratification, analog_outcomes) in process-phase1 and runs/process
-  - Part 2: OpenAI text-embedding-3-small (1536 dims) → Voyage AI voyage-3 (1024 dims). Migration 010_voyage_embeddings.sql applied. 8,100 chunks re-embedded. OpenAI package removed.
-  - Note: Phase A uses `voyage-3` (text-only, standard `/embeddings` endpoint). Phase B will upgrade to `voyage-multimodal-3` (multimodal endpoint) after image rendering is added.
+  - Part 2: OpenAI text-embedding-3-small (1536 dims) → Voyage AI voyage-3 (1024 dims). Migration 010_voyage_embeddings.sql applied. 8,100 chunks re-embedded. OpenAI package removed. `voyageai` npm SDK also removed (broken ESM exports) — `lib/pipeline/embed.ts` calls the REST API directly via `fetch()`.
+  - Note: Phase A uses `voyage-3` (text-only, `/v1/embeddings` endpoint). Phase B will use `voyage-multimodal-3` via the separate `/v1/multimodalembeddings` endpoint after image rendering is added.
 
 - [x] **F-5: Fix synthesis prompt — describe actual methodology, not phantom ensemble** — April 10, 2026
   Updated `synthesize-phase2.ts` methodology prompt: replaced "ML ensemble (logistic regression + random forest)" with actual methodology (threshold-based subtype assignment + Pearson correlation + Beta-Binomial Bayesian update).
