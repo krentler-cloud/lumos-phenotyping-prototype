@@ -20,6 +20,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
      - "Weighted corpus search" says "sent to Claude" — should say "sent to Lumos AI" per branding rule
      - Header says "This typically takes 60–90 seconds" — inaccurate, synthesis alone takes 5–10 minutes. Either show a dynamic elapsed timer, or change to a realistic estimate ("3–10 minutes depending on corpus size")
      - Review all other descriptions for accuracy after the changes
+     - Suggested questions in Ask LumosAI sidebar are hardcoded and reference "Claude" ("What stops Claude from drawing on its training data...") — must say "Lumos AI" per branding rule. Consider making suggested questions dynamic based on page context or at minimum update the static list to reflect the current pipeline (phenotype-oriented aspects, Voyage AI embeddings, etc.)
   2. **Landing page** (`app/studies/[studyId]/phase1/page.tsx` — the "What Lumos AI will do" card):
      - "Multi-aspect corpus search" subtitle says "4 simultaneous vector queries across Headlamp MDD corpus" — should name the 4 phenotype-oriented aspects
      - "Cross-species mapping" subtitle says "FST / CMS / LH animal models → human MDD subtypes" — check if this is still accurate or should reflect the new analog_outcomes framing
