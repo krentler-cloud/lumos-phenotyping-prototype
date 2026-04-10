@@ -9,14 +9,14 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { VoyageAIClient } from 'voyageai'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY! })
+const VOYAGE_API_URL = 'https://api.voyageai.com/v1/embeddings'
+const VOYAGE_API_KEY = process.env.VOYAGE_API_KEY!
 
 const EMBED_BATCH = 128
 const UPDATE_BATCH = 50
@@ -25,12 +25,14 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += EMBED_BATCH) {
     const batch = texts.slice(i, i + EMBED_BATCH)
-    const res = await voyage.embed({ input: batch, model: 'voyage-3' })
-    embeddings.push(
-      ...(res.data ?? [])
-        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-        .map(d => d.embedding!)
-    )
+    const res = await fetch(VOYAGE_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${VOYAGE_API_KEY}` },
+      body: JSON.stringify({ input: batch, model: 'voyage-3' }),
+    })
+    if (!res.ok) throw new Error(`Voyage embed failed: ${res.status} ${await res.text()}`)
+    const json = await res.json() as { data: { embedding: number[]; index: number }[] }
+    embeddings.push(...json.data.sort((a, b) => a.index - b.index).map(d => d.embedding))
   }
   return embeddings
 }

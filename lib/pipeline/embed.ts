@@ -1,11 +1,11 @@
-import { VoyageAIClient } from 'voyageai'
-
-function getClient() {
-  return new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY })
-}
-
+const VOYAGE_API_URL = 'https://api.voyageai.com/v1/embeddings'
 const BATCH_SIZE = 128
 const MODEL = 'voyage-3'
+
+interface VoyageEmbedResponse {
+  data: { embedding: number[]; index: number }[]
+  usage: { total_tokens: number }
+}
 
 /**
  * Embed an array of strings using Voyage AI voyage-3.
@@ -13,20 +13,33 @@ const MODEL = 'voyage-3'
  * Returns an array of 1024-dimensional embedding vectors.
  */
 export async function embedTexts(texts: string[]): Promise<number[][]> {
+  const apiKey = process.env.VOYAGE_API_KEY
+  if (!apiKey) throw new Error('VOYAGE_API_KEY is not set')
+
   const embeddings: number[][] = []
 
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE)
-    const response = await getClient().embed({
-      input: batch,
-      model: MODEL,
+    const res = await fetch(VOYAGE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ input: batch, model: MODEL }),
     })
-    // Results come back in order; sort by index as a safety measure
-    const items = (response.data ?? [])
-      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-      .map(item => item.embedding!)
 
-    embeddings.push(...items)
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Voyage AI embed failed (${res.status}): ${body.slice(0, 300)}`)
+    }
+
+    const json: VoyageEmbedResponse = await res.json()
+    const sorted = json.data
+      .sort((a, b) => a.index - b.index)
+      .map(item => item.embedding)
+
+    embeddings.push(...sorted)
   }
 
   return embeddings
