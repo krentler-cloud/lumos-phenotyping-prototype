@@ -138,10 +138,13 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       bayesianPrior,
       sadMadCohorts.length > 0 ? sadMadCohorts : undefined
     )
+    const diag = report._opus_diagnostics
     await log(
       'Phenotype synthesis',
       'complete',
-      `responder confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
+      diag
+        ? `${diag.duration_sec}s | in=${diag.input_tokens} out=${diag.output_tokens} stop=${diag.stop_reason} | prompt=${diag.prompt_chars} chars, budget=${diag.max_tokens_budget} | confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
+        : `responder confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
     )
 
     // ── STEP 8: Store report ───────────────────────────────────────────────────

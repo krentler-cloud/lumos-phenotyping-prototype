@@ -336,6 +336,14 @@ export interface Phase1ReportData {
   overall_confidence: number
   exploratory_biomarkers?: ExploratoryBiomarker[]
   corpus_intelligence?: CorpusIntelligence
+  _opus_diagnostics?: {
+    duration_sec: number
+    input_tokens?: number
+    output_tokens?: number
+    stop_reason?: string | null
+    prompt_chars: number
+    max_tokens_budget: number
+  }
 }
 
 export interface CorpusIntelligence {
@@ -362,13 +370,15 @@ export async function synthesizePhase1Report(
 
   const phenotypeSystem = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
   const phenotypeMaxTokens = computeMaxTokens('claude-opus-4-6', phenotypePrompt, phenotypeSystem)
-  console.log(`[synthesize-phase1] Opus max_tokens = ${phenotypeMaxTokens}, prompt chars = ${phenotypePrompt.length}`)
+  const estimatedInputTokens = Math.ceil(phenotypePrompt.length / 3.5)
+  console.log(`[synthesize-phase1] Opus max_tokens = ${phenotypeMaxTokens}, prompt chars = ${phenotypePrompt.length}, est input tokens = ${estimatedInputTokens}`)
 
-  // 8-minute hard timeout — prevents indefinite hangs if the API stalls or stream drops
-  const OPUS_TIMEOUT_MS = 8 * 60 * 1000
+  // 10-minute hard timeout — prevents indefinite hangs if the API stalls or stream drops
+  const OPUS_TIMEOUT_MS = 10 * 60 * 1000
   const phenotypeController = new AbortController()
   const phenotypeTimeout = setTimeout(() => phenotypeController.abort(), OPUS_TIMEOUT_MS)
 
+  const opusStartTime = Date.now()
   let phenotypeMsg: Awaited<ReturnType<typeof phenotypeStream.finalMessage>>
   const phenotypeStream = await client.messages.stream(
     {
@@ -385,8 +395,22 @@ export async function synthesizePhase1Report(
     clearTimeout(phenotypeTimeout)
   }
 
+  const opusDurationSec = Math.round((Date.now() - opusStartTime) / 1000)
+  const usage = phenotypeMsg.usage
+  console.log(`[synthesize-phase1] Opus done in ${opusDurationSec}s | input=${usage?.input_tokens} output=${usage?.output_tokens} stop=${phenotypeMsg.stop_reason}`)
+
+  // Attach diagnostics to the report so they surface in step_log
+  const _opusDiagnostics = {
+    duration_sec: opusDurationSec,
+    input_tokens: usage?.input_tokens,
+    output_tokens: usage?.output_tokens,
+    stop_reason: phenotypeMsg.stop_reason,
+    prompt_chars: phenotypePrompt.length,
+    max_tokens_budget: phenotypeMaxTokens,
+  }
+
   if (phenotypeMsg.stop_reason === 'max_tokens') {
-    throw new Error('Phase 1 Call 1 (phenotype) hit max_tokens — response truncated.')
+    throw new Error(`Phase 1 Call 1 (phenotype) hit max_tokens — response truncated. Diagnostics: input=${usage?.input_tokens} output=${usage?.output_tokens} duration=${opusDurationSec}s`)
   }
 
   const rawPhenotype = phenotypeMsg.content
@@ -425,6 +449,7 @@ export async function synthesizePhase1Report(
   return {
     ...(coreReport as Omit<Phase1ReportData, 'biomarker_recommendations' | 'protocol_notes' | 'primary_endpoint_recommendation' | 'early_response_indicator'>),
     ...(biomarkerReport as Pick<Phase1ReportData, 'biomarker_recommendations' | 'protocol_notes' | 'primary_endpoint_recommendation' | 'early_response_indicator'>),
+    _opus_diagnostics: _opusDiagnostics,
   }
 }
 
