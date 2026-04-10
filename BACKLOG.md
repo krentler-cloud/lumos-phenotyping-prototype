@@ -6,6 +6,16 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
+- [ ] **Streamed token progress for Phenotype synthesis step**
+  The Phenotype synthesis step runs for 5-10+ minutes at 75% with no feedback. The Opus call uses `client.messages.stream()` which fires events as tokens arrive.
+  **Implementation:**
+  1. In `synthesizePhase1Report()` (`lib/pipeline/synthesize-phase1.ts`), listen to stream `text` events and count output tokens as they arrive
+  2. Accept an optional `onProgress?: (tokenCount: number, elapsedSec: number) => Promise<void>` callback parameter
+  3. Inside the stream loop, call `onProgress` every ~30 seconds with the current count and elapsed time
+  4. In `runPhase1Processing()` (`process-phase1/route.ts`), pass `onProgress` that updates the step_log detail in Supabase: e.g. `"Phenotype synthesis"` detail becomes `"~3,200 tokens generated (4m 12s)"`
+  5. The client already polls `/phase1-status` every 2.5 seconds, so the updated detail will appear automatically under the step — no client changes needed
+  **Note:** The Anthropic streaming SDK exposes events via `phenotypeStream.on('text', (text) => ...)`. Count `text.length` and divide by ~4 for approximate token count, or use the `message_delta` event which includes `usage.output_tokens`.
+
 - [ ] **Validate Voyage AI migration end-to-end**
   P2-F just merged to main (April 10, 2026). Railway is redeploying. Need to confirm:
   - Run a fresh Planning Phase analysis — confirm it completes and produces a valid report
