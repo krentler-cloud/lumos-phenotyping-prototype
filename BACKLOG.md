@@ -156,9 +156,41 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **F-6: Fix Subtype C concordance inflation** — April 10, 2026
   Now reports both `concordance_pct` (overall, includes Subtype C) and `predictive_concordance_pct` (A/B only). UI, synthesis prompt, and page context dispatchers all updated.
 
+- [x] **Parallelize synthesis calls + switch exploratory biomarkers to Sonnet** — April 10, 2026
+  - Exploratory biomarker synthesis switched from Opus → Sonnet (only uses 20 truncated chunks for a brainstorm — Sonnet is sufficient and 5-10x faster)
+  - Exploratory biomarkers + corpus intelligence now run in parallel via `Promise.all` instead of sequentially
+  - Both results merged into stored report in a single DB update
+  - Net effect: tail time after phenotype synthesis cut roughly in half
+
+- [x] **Add Opus synthesis diagnostics to step_log** — April 10, 2026
+  Phenotype synthesis step now logs: duration (seconds), input/output token counts, stop_reason, prompt char count, and max_tokens budget. Visible via `/phase1-status` API without needing Railway logs. Bumped abort timeout from 8→10 minutes.
+
 - [x] **Phase 2 processing page: live corpus stats + corrected descriptions**
 - [x] **Verify analysis runs end-to-end after the direct-function-call fix**
 - [x] **Migrate embedding model to Voyage AI** — PROMOTED and completed as P2-F
+
+---
+
+## Session Log — April 10, 2026 (PM session)
+
+**What was done:**
+1. P2-F merged to main: phenotype-oriented aspects + Voyage AI voyage-3 embedding migration (8,100 chunks re-embedded)
+2. F-5: Fixed Phase 2 methodology prompt (phantom ensemble → real methodology)
+3. F-6: Fixed Subtype C concordance inflation (now reports predictive concordance A/B only)
+4. Supabase migration 010_voyage_embeddings.sql applied (1536→1024 dims, RPC functions rebuilt)
+5. OpenAI fully removed from stack (package + Railway env var)
+6. `voyageai` SDK removed (broken ESM exports) — embed.ts calls REST API directly via fetch()
+7. Exploratory biomarkers switched from Opus → Sonnet
+8. Exploratory biomarkers + corpus intelligence now run in parallel (Promise.all)
+9. Added Opus diagnostics to step_log (token counts, duration, prompt size)
+
+**What needs validation:**
+- The first post-migration Planning Phase run completed but diagnostics weren't on that deploy yet. Next run will show exact Opus timing.
+- Phenotype synthesis appeared to take 30+ minutes on the first run — unclear if that was the stuck pre-deploy run or genuinely slow. Diagnostics on next run will clarify.
+
+**Open questions for next session:**
+- Is 40 chunks too many for Opus? The diagnostics will answer this. If input tokens are very high, consider reducing to 25-30 or adding a reranking step.
+- Processing page descriptions are stale (still say old aspects, 1536 dims, "Claude", "60-90 seconds") — see backlog item "Update all static pipeline descriptions."
 
 ---
 
