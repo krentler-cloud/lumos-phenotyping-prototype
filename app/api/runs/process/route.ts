@@ -56,19 +56,20 @@ export async function runProcessing(runId: string): Promise<void> {
       .join(', ')
     const treatmentText = p.prior_treatments.map(t => `${t.drug} ${t.response}`).join(', ')
 
+    // SCIENCE-FEEDBACK P2-F — phenotype-oriented aspects matching Phase 1 rewrite
     const aspectTexts = {
-      mechanism: `5-HT2A agonism neuroplasticity BDNF upregulation TrkB signaling psychoplastogen mechanism of action`,
-      safety_pk: `pharmacokinetics half-life bioavailability dose-response adverse events safety profile toxicology`,
-      biomarkers: `${biomarkerText} BDNF CRP TNF-alpha IL-6 cortisol inflammatory biomarkers`,
-      clinical_profile: `MDD ${p.diagnosis.severity} HAMD-17 ${p.diagnosis.hamd_score} ${treatmentText} age ${p.demographics.age} ${p.demographics.sex} sleep ${p.functional.sleep_efficiency_pct}% anhedonia ${p.functional.anhedonia_present}`,
+      responder_profile: `BDNF elevation neuroplasticity synaptic plasticity 5-HT2A agonist responder treatment response Val66Met Val/Val TrkB MADRS reduction remission ${biomarkerText}`,
+      nonresponder_profile: `inflammatory subtype treatment resistance elevated CRP IL-6 TNF-alpha non-responder flat BDNF prior antidepressant failure TRD immune activation`,
+      biomarker_stratification: `biomarker threshold cutoff clinical stratification BDNF serum ng/mL IL-6 pg/mL treatment response prediction ${treatmentText}`,
+      analog_outcomes: `psilocybin ketamine 5-HT2A clinical trial MADRS remission responder outcome Phase 2 MDD randomized controlled`,
     }
 
-    const [mechVec, safetyVec, biomarkerVec, clinicalVec] = await embedTexts(Object.values(aspectTexts))
+    const [responderVec, nonresponderVec, stratVec, analogVec] = await embedTexts(Object.values(aspectTexts))
     const aspects = {
-      mechanism: mechVec,
-      safety_pk: safetyVec,
-      biomarkers: biomarkerVec,
-      clinical_profile: clinicalVec,
+      responder_profile: responderVec,
+      nonresponder_profile: nonresponderVec,
+      biomarker_stratification: stratVec,
+      analog_outcomes: analogVec,
     }
     await log('Aspect embedding', 'complete', '4 aspect vectors built')
 

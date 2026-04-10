@@ -135,7 +135,10 @@ Patient outcomes:
 - Non-responders: ${ml.nonresponder_count} / 16 (${Math.round(ml.nonresponder_count / 16 * 100)}%)
 - Uncertain: ${ml.uncertain_count} / 16
 
-Subtype concordance with Phase 1 prediction: ${ml.concordance_pct}%
+Subtype concordance with Phase 1 prediction:
+- Overall (incl. Subtype C as concordant): ${ml.concordance_pct}%
+- Predictive (Subtypes A & B only, ${ml.subtype_ab_count} patients): ${ml.predictive_concordance_pct}%
+Note: Subtype C (mixed/intermediate) always counts as concordant in the overall number — the predictive concordance is the scientifically meaningful metric.
 
 MADRS Trajectories (Wk 0/2/4/8):
 ${trajectories}
@@ -213,7 +216,7 @@ WRITING STYLE (applies to every prose field below):
     }
   ],
 
-  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=16 clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the ML ensemble (logistic regression + random forest) was structured, what features it used, and what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=16 is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
+  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=16 clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the clinical ML analysis was structured — threshold-based subtype assignment using corpus-derived biomarker cutoffs (BDNF < 15 ng/mL → Subtype A, IL-6 ≥ 4 pg/mL → Subtype B, mixed → Subtype C), univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes. Explain what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=16 is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
 }
 
 Produce exactly one instance of each required key. The JSON must be valid and parseable. Do not include any text before the opening brace or after the closing brace.`

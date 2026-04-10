@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') })
 
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { VoyageAIClient } from 'voyageai'
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -44,14 +44,14 @@ const TRIALS_WITH_RESULTS = new Set([
 const CT_API_BASE = 'https://clinicaltrials.gov/api/v2/studies'
 const TARGET_CHARS = 512 * 4   // ~512 tokens
 const OVERLAP_CHARS = 64 * 4   // ~64 token overlap
-const EMBED_BATCH = 100
+const EMBED_BATCH = 128
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY! })
 
 // ── ClinicalTrials.gov fetch ─────────────────────────────────────────────────
 
@@ -397,8 +397,8 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += EMBED_BATCH) {
     const batch = texts.slice(i, i + EMBED_BATCH)
-    const res = await openai.embeddings.create({ model: 'text-embedding-3-small', input: batch })
-    embeddings.push(...res.data.sort((a, b) => a.index - b.index).map(d => d.embedding))
+    const res = await voyage.embed({ input: batch, model: 'voyage-multimodal-3' })
+    embeddings.push(...(res.data ?? []).sort((a, b) => (a.index ?? 0) - (b.index ?? 0)).map(d => d.embedding!))
   }
   return embeddings
 }

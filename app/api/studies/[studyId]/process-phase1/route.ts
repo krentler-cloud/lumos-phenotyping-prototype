@@ -60,31 +60,30 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       mechanismContext ? `${mechanismContext.mechanism_class} — context loaded` : 'no pre-extracted context'
     )
 
-    // ── STEP 3: Build drug-level aspect embeddings ─────────────────────────────
+    // ── STEP 3: Build phenotype-oriented aspect embeddings ──────────────────────
+    // SCIENCE-FEEDBACK P2-F — aspects rewritten from drug-descriptive (mechanism, efficacy,
+    // biomarkers, safety_pk) to phenotype-oriented queries that retrieve evidence about
+    // *who responds* rather than *what the drug does*.
     await log('Aspect embedding', 'running')
-    const mechClass = mechanismContext?.mechanism_class ?? '5-HT2A agonism'
-    const receptors = mechanismContext?.receptor_profile
-      .map(r => r.target)
-      .join(', ') ?? '5-HT2A, AMPA, mGluR'
 
     const aspectTexts = {
-      mechanism: `${drugName} ${mechClass} ${receptors} neuroplasticity BDNF TrkB synaptic plasticity psychoplastogen`,
-      efficacy: `forced swim test FST chronic mild stress CMS learned helplessness LH animal model MDD responder prediction antidepressant efficacy`,
-      biomarkers: `BDNF serum ng/mL CRP mg/L IL-6 pg/mL TNF-alpha inflammatory biomarkers threshold responder non-responder stratification`,
-      safety_pk: `${drugName} pharmacokinetics half-life bioavailability dose-response adverse events safety profile toxicology clinical trial`,
+      responder_profile: `BDNF elevation neuroplasticity synaptic plasticity 5-HT2A agonist responder treatment response Val66Met Val/Val TrkB MADRS reduction remission`,
+      nonresponder_profile: `inflammatory subtype treatment resistance elevated CRP IL-6 TNF-alpha non-responder flat BDNF prior antidepressant failure TRD immune activation`,
+      biomarker_stratification: `biomarker threshold cutoff clinical stratification BDNF serum ng/mL IL-6 pg/mL treatment response prediction validated prospective`,
+      analog_outcomes: `psilocybin ketamine 5-HT2A clinical trial MADRS remission responder outcome Phase 2 MDD randomized controlled`,
     }
 
-    const [mechVec, efficacyVec, biomarkerVec, safetyVec] = await embedTexts(
+    const [responderVec, nonresponderVec, stratVec, analogVec] = await embedTexts(
       Object.values(aspectTexts)
     )
 
     const aspects: Record<string, number[]> = {
-      mechanism: mechVec,
-      efficacy: efficacyVec,
-      biomarkers: biomarkerVec,
-      safety_pk: safetyVec,
+      responder_profile: responderVec,
+      nonresponder_profile: nonresponderVec,
+      biomarker_stratification: stratVec,
+      analog_outcomes: analogVec,
     }
-    await log('Aspect embedding', 'complete', '4 drug-level aspect vectors built')
+    await log('Aspect embedding', 'complete', '4 phenotype-oriented aspect vectors built')
 
     // ── STEP 4: Multi-aspect weighted corpus search ────────────────────────────
     await log('Weighted corpus search', 'running')

@@ -281,7 +281,7 @@ export default function Phase2FinalReport({
   ];
 
   const execSummary = deriveExecutiveSummary(report);
-  const { responder_count, nonresponder_count, uncertain_count, concordance_pct } = report.ml_result;
+  const { responder_count, nonresponder_count, uncertain_count, concordance_pct, predictive_concordance_pct, subtype_ab_count } = report.ml_result;
   const totalN = responder_count + nonresponder_count + uncertain_count;
 
   return (
@@ -352,12 +352,12 @@ export default function Phase2FinalReport({
               {/* ⓘ button fires a LumosAI question about concordance */}
               <button
                 onClick={() => askLumosAI(
-                  `The clinical analysis shows ${concordance_pct}% ML concordance between Phase 2 patient subtype assignments and the Planning Phase phenotype predictions. What does this concordance rate actually tell us, and what are its limitations as a measure of prediction quality?`
+                  `The clinical analysis shows ${predictive_concordance_pct}% predictive concordance (${subtype_ab_count} Subtype A/B patients) and ${concordance_pct}% overall concordance (all ${totalN} patients, including Subtype C as concordant). What is the difference between these two metrics, and which one is more scientifically meaningful for evaluating whether the Planning Phase predictions held up?`
                 )}
                 className="text-xs font-semibold px-2.5 py-1 rounded-full bg-bg-overlay border border-border-subtle text-text-secondary hover:border-brand-core hover:text-brand-core transition-colors whitespace-nowrap cursor-pointer"
                 title="Click to ask LumosAI about this metric"
               >
-                N={totalN} · {concordance_pct}% ML concordance ⓘ
+                N={totalN} · {predictive_concordance_pct}% concordance (A/B) ⓘ
               </button>
             </div>
             <p className="text-text-body text-sm leading-relaxed">{execSummary}</p>

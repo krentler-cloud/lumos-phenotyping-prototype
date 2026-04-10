@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Corpus pipeline data files (large, not for version control)
+scripts/corpus-pipeline/data/*.csv
+scripts/corpus-pipeline/data/*.jsonl
+scripts/corpus-pipeline/data/*.json
+!scripts/corpus-pipeline/data/.gitkeep

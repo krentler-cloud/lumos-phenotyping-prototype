@@ -69,7 +69,9 @@ export interface Phase2MLResult {
   responder_count: number
   nonresponder_count: number
   uncertain_count: number
-  concordance_pct: number  // % matching Phase 1 predictions
+  concordance_pct: number            // overall % (includes Subtype C as concordant)
+  predictive_concordance_pct: number  // % for Subtypes A & B only (excludes C padding)
+  subtype_ab_count: number            // how many patients are A or B (denominator for predictive)
 }
 
 // ── 1. Threshold-based subtype clustering ────────────────────────────────────
@@ -234,15 +236,23 @@ export function runClinicalML(
   const nonresponderCount = patients.filter(p => p.response_status === 'nonresponder').length
   const uncertainCount    = patients.filter(p => p.response_status === 'uncertain').length
 
-  // Concordance: % where assigned subtype matches expected response direction
-  // Subtype A should be responders, Subtype B should be non-responders
-  const concordant = assignments.filter(a => {
+  // SCIENCE-FEEDBACK F-6 — report concordance two ways to avoid Subtype C inflation.
+  // "Overall" includes Subtype C (always concordant — uncertain is expected).
+  // "Predictive" excludes Subtype C to show how well A/B actually predict response.
+  const abAssignments = assignments.filter(a => a.subtype === 'A' || a.subtype === 'B')
+  const predictiveConcordant = abAssignments.filter(a => {
     const p = patients.find(pt => pt.patient_code === a.patient_code)!
     if (a.subtype === 'A') return p.response_status === 'responder'
     if (a.subtype === 'B') return p.response_status === 'nonresponder'
-    return true  // Subtype C always counts (uncertain is expected)
+    return false
   }).length
-  const concordancePct = Math.round((concordant / patients.length) * 100)
+  const predictiveConcordancePct = abAssignments.length > 0
+    ? Math.round((predictiveConcordant / abAssignments.length) * 100)
+    : 0
+
+  const subtypeCCount = assignments.filter(a => a.subtype === 'C').length
+  const overallConcordant = predictiveConcordant + subtypeCCount
+  const concordancePct = Math.round((overallConcordant / patients.length) * 100)
 
   return {
     assignments,
@@ -253,5 +263,7 @@ export function runClinicalML(
     nonresponder_count: nonresponderCount,
     uncertain_count: uncertainCount,
     concordance_pct: concordancePct,
+    predictive_concordance_pct: predictiveConcordancePct,
+    subtype_ab_count: abAssignments.length,
   }
 }

@@ -64,7 +64,8 @@ export default async function SubtypingPage({
         pageId: "phase2/subtyping",
         pageLabel: "ML Subtyping Results",
         visibleData: {
-          "ML concordance with Planning Phase": ml ? `${ml.concordance_pct}%` : null,
+          "ML concordance (overall, incl. Subtype C)": ml ? `${ml.concordance_pct}%` : null,
+          "ML predictive concordance (Subtypes A/B only)": ml ? `${ml.predictive_concordance_pct}%` : null,
           "Responders": ml ? outOf(ml.responder_count, total) : null,
           "Non-responders": ml ? outOf(ml.nonresponder_count, total) : null,
           "Uncertain": ml ? outOf(ml.uncertain_count, total) : null,

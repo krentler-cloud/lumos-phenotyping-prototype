@@ -275,9 +275,9 @@ export default function SubtypingResults({
             {drugName} · N=16 MDD efficacy patients · SAD/MAD healthy volunteer data integrated separately ·{" "}
             <span
               className="cursor-help border-b border-dashed border-text-muted"
-              title="Concordance = % of patients whose Phase 2 ML-assigned subtype matches the Planning Phase phenotype hypothesis. This reflects internal consistency between preclinical prediction and clinical data — it is not a clinical validation metric."
+              title={`Overall concordance (${ml.concordance_pct}%) includes Subtype C patients as concordant — uncertain is expected for mixed profiles. Predictive concordance (${ml.predictive_concordance_pct}%) counts only Subtypes A & B (${ml.subtype_ab_count} patients), which is the scientifically meaningful measure of how well Planning Phase predictions matched clinical outcomes.`}
             >
-              {ml.concordance_pct}% concordance with Planning Phase prediction ⓘ
+              {ml.predictive_concordance_pct}% predictive concordance ({ml.subtype_ab_count} A/B patients) ⓘ
             </span>
           </p>
         </div>
@@ -295,7 +295,7 @@ export default function SubtypingResults({
           { label: "Responders", value: ml.responder_count, color: "var(--status-success)" },
           { label: "Non-Responders", value: ml.nonresponder_count, color: "var(--status-danger)" },
           { label: "Uncertain", value: ml.uncertain_count, color: "var(--status-warning)" },
-          { label: "Concordance ⓘ", value: `${ml.concordance_pct}%`, color: "var(--brand-core)" },
+          { label: "Concordance (A/B) ⓘ", value: `${ml.predictive_concordance_pct}%`, color: "var(--brand-core)" },
         ].map(card => (
           <div
             key={card.label}
