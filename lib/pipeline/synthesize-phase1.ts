@@ -505,9 +505,10 @@ OUTPUT FORMAT — respond with valid JSON only, no markdown, no code fences:
 }`
 
   const system = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
+  // Sonnet is sufficient — this is a hypothesis brainstorm from 20 truncated chunks, not deep synthesis
   const stream = await client.messages.stream({
-    model: 'claude-opus-4-6',
-    max_tokens: computeMaxTokens('claude-opus-4-6', prompt, system),
+    model: 'claude-sonnet-4-5',
+    max_tokens: computeMaxTokens('claude-sonnet-4-5', prompt, system),
     system,
     messages: [{ role: 'user', content: prompt }],
   })

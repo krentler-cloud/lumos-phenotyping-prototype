@@ -159,60 +159,79 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
     if (reportError) throw new Error(`Failed to store Phase 1 report: ${reportError.message}`)
     await log('Store report', 'complete')
 
-    // ── STEP 8: Exploratory biomarker synthesis (non-blocking — won't fail the run) ──
+    // ── STEPS 8+9: Exploratory biomarkers + Corpus intelligence (parallel, non-blocking) ──
+    // These are independent of each other — run them concurrently to cut tail time.
     await log('Exploratory biomarker synthesis', 'running')
-    try {
-      const exploratoryBiomarkers = await synthesizeExploratoryBiomarkers(
-        drugName,
-        indication,
-        matchedChunks,
-        report
-      )
-      // Merge into the stored report_data
-      await supabase.from('phase1_reports')
-        .update({ report_data: { ...report, exploratory_biomarkers: exploratoryBiomarkers } })
-        .eq('run_id', runId)
-      await log(
-        'Exploratory biomarker synthesis',
-        'complete',
-        `${exploratoryBiomarkers.length} exploratory signals identified`
-      )
-    } catch (exploratoryErr: unknown) {
-      const exploratoryMsg = exploratoryErr instanceof Error ? exploratoryErr.message : 'Unknown error'
-      console.error('[process-phase1] exploratory biomarkers failed (non-blocking):', exploratoryMsg)
-      await log('Exploratory biomarker synthesis', 'error', exploratoryMsg)
-      // Non-blocking: continue to mark run complete
-    }
-
-    // ── STEP 9: Corpus intelligence synthesis (non-blocking) ────────────────────
     await log('Corpus intelligence synthesis', 'running')
-    try {
-      const corpusIntelligence = await synthesizeCorpusIntelligence(
-        drugName,
-        indication,
-        matchedChunks,
-        searchStats
-      )
-      // Fetch current report_data (may include exploratory_biomarkers from step 8)
+
+    const exploratoryPromise = (async () => {
+      try {
+        const exploratoryBiomarkers = await synthesizeExploratoryBiomarkers(
+          drugName,
+          indication,
+          matchedChunks,
+          report
+        )
+        await supabase.from('phase1_reports')
+          .update({ report_data: { ...report, exploratory_biomarkers: exploratoryBiomarkers } })
+          .eq('run_id', runId)
+        await log(
+          'Exploratory biomarker synthesis',
+          'complete',
+          `${exploratoryBiomarkers.length} exploratory signals identified`
+        )
+        return exploratoryBiomarkers
+      } catch (exploratoryErr: unknown) {
+        const exploratoryMsg = exploratoryErr instanceof Error ? exploratoryErr.message : 'Unknown error'
+        console.error('[process-phase1] exploratory biomarkers failed (non-blocking):', exploratoryMsg)
+        await log('Exploratory biomarker synthesis', 'error', exploratoryMsg)
+        return null
+      }
+    })()
+
+    const corpusPromise = (async () => {
+      try {
+        const corpusIntelligence = await synthesizeCorpusIntelligence(
+          drugName,
+          indication,
+          matchedChunks,
+          searchStats
+        )
+        return corpusIntelligence
+      } catch (corpusErr: unknown) {
+        const corpusMsg = corpusErr instanceof Error ? corpusErr.message : 'Unknown error'
+        console.error('[process-phase1] corpus intelligence failed (non-blocking):', corpusMsg)
+        await log('Corpus intelligence synthesis', 'error', corpusMsg)
+        return null
+      }
+    })()
+
+    const [exploratoryResult, corpusIntelligence] = await Promise.all([exploratoryPromise, corpusPromise])
+
+    // Merge both results into the stored report in a single update
+    if (exploratoryResult || corpusIntelligence) {
       const { data: currentReportRow } = await supabase
         .from('phase1_reports')
         .select('report_data')
         .eq('run_id', runId)
         .single()
       const currentReportData = (currentReportRow?.report_data ?? report) as Record<string, unknown>
+      const merged = {
+        ...currentReportData,
+        ...(exploratoryResult ? { exploratory_biomarkers: exploratoryResult } : {}),
+        ...(corpusIntelligence ? { corpus_intelligence: corpusIntelligence } : {}),
+      }
       await supabase.from('phase1_reports')
-        .update({ report_data: { ...currentReportData, corpus_intelligence: corpusIntelligence } })
+        .update({ report_data: merged })
         .eq('run_id', runId)
+    }
+
+    if (corpusIntelligence) {
       await log(
         'Corpus intelligence synthesis',
         'complete',
         `${corpusIntelligence.corpus_gaps.length} gaps identified, ${corpusIntelligence.corpus_strengths.length} strengths`
       )
-    } catch (corpusErr: unknown) {
-      const corpusMsg = corpusErr instanceof Error ? corpusErr.message : 'Unknown error'
-      console.error('[process-phase1] corpus intelligence failed (non-blocking):', corpusMsg)
-      await log('Corpus intelligence synthesis', 'error', corpusMsg)
-      // Non-blocking: continue to mark run complete
     }
 
     // Mark run complete
