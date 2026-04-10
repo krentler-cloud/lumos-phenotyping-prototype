@@ -149,12 +149,8 @@ For BDNF-based inclusion criteria, always address the grey zone between the incl
 // SCIENCE-FEEDBACK: P1-E — mixed phenotype tiebreaker
 When generating phenotype classification criteria, always address patients who meet criteria for more than one subtype simultaneously. Either provide a hierarchical decision rule (e.g., biomarker profile takes precedence over treatment history when they conflict) or flag explicitly as a protocol gap in key_inclusion_criteria or key_exclusion_criteria. Do not leave mixed-phenotype patients unclassified.
 
-// SCIENCE-FEEDBACK: F2-A — FDA-standard safety requirements for serotonergic MDD trials
-SAFETY REQUIREMENTS (FDA standard for serotonergic MDD trials — include in safety_flags and key_exclusion_criteria as appropriate):
-1. SEROTONIN SYNDROME: For any 5-HT2A-active compound, explicitly address concomitant serotonergic medication risk in safety_flags. Specify required washout periods for SSRIs (≥2 weeks), SNRIs (≥2 weeks), and MAOIs (≥14 days minimum) as key_exclusion_criteria entries. Connect the non-responder 5-HT2A downregulation signal to the washout requirement — incomplete washout is both a safety hazard and a mechanistic confounder.
-2. SUICIDALITY MONITORING: FDA requires prospective C-SSRS (Columbia Suicide Severity Rating Scale) monitoring in all MDD trials regardless of mechanism. Include C-SSRS at baseline and post-dose timepoints as a protocol_note in the methodology_narrative. MADRS Item 10 ≥5 as an exclusion criterion is necessary but insufficient without a prospective monitoring protocol for enrolled patients.
-3. PLACEBO RESPONSE RULE: MDD trials have 30–50% placebo response rates. State explicitly in methodology_narrative what classification applies when a patient shows ≥50% MADRS reduction WITHOUT corresponding biomarker change (BDNF, IL-6, CRP). This decision rule must be present.
-4. FDA NOTES: Flag any class-level safety signals or black-box warnings relevant to the mechanism of action that a Phase 1 protocol should proactively address as safety_flags entries.
+// SCIENCE-FEEDBACK: F2-A — FDA safety requirements MOVED to Call 2 (Sonnet biomarker protocol)
+// where they are more relevant to protocol design than phenotype characterization.
 
 // SCIENCE-FEEDBACK: F2-B — behavioral profile dimensions
 BEHAVIORAL PROFILE: For each phenotype's demographics field, include expected patterns for: sleep quality (ISI or PSQI score range), appetite and weight changes, alcohol intake, caffeine intake, and physical activity level. These behavioral features correlate with inflammatory and neuroplasticity biomarker states and are standard MDD clinical characterization.
@@ -252,6 +248,14 @@ Include 6–9 biomarkers spanning inflammatory, neuroplasticity, behavioral, and
 
 // SCIENCE-FEEDBACK: P1-C — BDNF efficacy signal contradiction guard
 CRITICAL CONSISTENCY CHECK: If the corpus contains a warning or negative finding about using a specific biomarker as an efficacy marker (for example, Calder et al. 2025 meta-analysis found SMD=0.024, p=0.64 for post-dose peripheral BDNF as an efficacy endpoint), do NOT list that same biomarker as a positive responder signal without explicitly noting the contradiction in the preclinical_rationale field and explaining which evidence takes precedence and why. Silence on the contradiction is not acceptable — if you include a biomarker despite conflicting evidence, state the conflict directly.
+
+// SCIENCE-FEEDBACK: F2-A — FDA-standard safety requirements for serotonergic MDD trials
+// (Moved from Call 1 phenotype prompt — these are protocol/safety items, not phenotype dimensions)
+SAFETY REQUIREMENTS (FDA standard for serotonergic MDD trials — include in protocol_notes):
+1. SEROTONIN SYNDROME: For any 5-HT2A-active compound, address concomitant serotonergic medication risk. Specify required washout periods for SSRIs (≥2 weeks), SNRIs (≥2 weeks), and MAOIs (≥14 days minimum). Connect the non-responder 5-HT2A downregulation signal to the washout requirement — incomplete washout is both a safety hazard and a mechanistic confounder.
+2. SUICIDALITY MONITORING: FDA requires prospective C-SSRS monitoring in all MDD trials regardless of mechanism. Include C-SSRS at baseline and post-dose timepoints in protocol_notes. MADRS Item 10 ≥5 as an exclusion criterion is necessary but insufficient without a prospective monitoring protocol.
+3. PLACEBO RESPONSE RULE: MDD trials have 30–50% placebo response rates. State in protocol_notes what classification applies when a patient shows ≥50% MADRS reduction WITHOUT corresponding biomarker change (BDNF, IL-6, CRP).
+4. FDA NOTES: Flag any class-level safety signals or black-box warnings relevant to the mechanism of action in protocol_notes.
 
 // SCIENCE-FEEDBACK: F2-F — rater reliability and site qualification
 RATER RELIABILITY: MADRS and HAMD-17 are sensitive to inter-rater variability and rater drift across sites. Include in protocol_notes a recommendation for rater certification requirements (structured interview training, inter-rater reliability checks at study initiation) and whether central rater review is recommended given the trial size and site count.
@@ -361,7 +365,8 @@ export async function synthesizePhase1Report(
   chunks: MatchedChunk[],
   mechanismContext: MechanismContext | null,
   bayesianPrior: BayesianPrior,
-  sadMadCohorts?: SadMadCohort[]
+  sadMadCohorts?: SadMadCohort[],
+  onProgress?: (detail: string) => Promise<void>
 ): Promise<Phase1ReportData> {
   const client = getClient()
 
@@ -379,7 +384,10 @@ export async function synthesizePhase1Report(
   const phenotypeTimeout = setTimeout(() => phenotypeController.abort(), OPUS_TIMEOUT_MS)
 
   const opusStartTime = Date.now()
-  let phenotypeMsg: Awaited<ReturnType<typeof phenotypeStream.finalMessage>>
+  let outputChars = 0
+  let lastProgressUpdate = 0
+  const PROGRESS_INTERVAL_MS = 15_000 // update step_log every 15 seconds
+
   const phenotypeStream = await client.messages.stream(
     {
       model: 'claude-opus-4-6',
@@ -389,6 +397,20 @@ export async function synthesizePhase1Report(
     },
     { signal: phenotypeController.signal }
   )
+
+  // Stream progress: count output chars and periodically update the step_log
+  phenotypeStream.on('text', (text) => {
+    outputChars += text.length
+    const now = Date.now()
+    if (onProgress && now - lastProgressUpdate > PROGRESS_INTERVAL_MS) {
+      lastProgressUpdate = now
+      const elapsedSec = Math.round((now - opusStartTime) / 1000)
+      const approxTokens = Math.round(outputChars / 4)
+      onProgress(`generating... ~${approxTokens.toLocaleString()} tokens (${elapsedSec}s)`).catch(() => {})
+    }
+  })
+
+  let phenotypeMsg: Awaited<ReturnType<typeof phenotypeStream.finalMessage>>
   try {
     phenotypeMsg = await phenotypeStream.finalMessage()
   } finally {

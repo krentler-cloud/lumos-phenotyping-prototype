@@ -87,7 +87,9 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
 
     // ── STEP 4: Multi-aspect weighted corpus search ────────────────────────────
     await log('Weighted corpus search', 'running')
-    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 40, 80, 3)
+    // 25 final chunks balances evidence coverage against Opus prompt size (~13K chunk tokens).
+    // 40 was causing 10+ minute Opus calls; 25 should complete in 3-6 minutes.
+    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 25, 80, 3)
     await log(
       'Weighted corpus search',
       'complete',
@@ -136,7 +138,9 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       matchedChunks,
       mechanismContext,
       bayesianPrior,
-      sadMadCohorts.length > 0 ? sadMadCohorts : undefined
+      sadMadCohorts.length > 0 ? sadMadCohorts : undefined,
+      // Stream progress: update step_log detail every 15s so the UI shows token count
+      async (detail) => { await log('Phenotype synthesis', 'running', detail) }
     )
     const diag = report._opus_diagnostics
     await log(
