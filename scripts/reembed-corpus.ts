@@ -1,5 +1,5 @@
 /**
- * Re-embed all corpus chunks using Voyage AI voyage-multimodal-3.
+ * Re-embed all corpus chunks using Voyage AI voyage-3.
  * Run after migration 010_voyage_embeddings.sql sets embeddings to NULL.
  *
  * Usage: npx ts-node --project tsconfig.scripts.json scripts/reembed-corpus.ts
@@ -25,7 +25,7 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += EMBED_BATCH) {
     const batch = texts.slice(i, i + EMBED_BATCH)
-    const res = await voyage.embed({ input: batch, model: 'voyage-multimodal-3' })
+    const res = await voyage.embed({ input: batch, model: 'voyage-3' })
     embeddings.push(
       ...(res.data ?? [])
         .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
@@ -87,7 +87,7 @@ async function main() {
     console.log(`[reembed] ${processed}/${count} chunks embedded`)
   }
 
-  console.log(`[reembed] Done. ${processed} chunks re-embedded with voyage-multimodal-3.`)
+  console.log(`[reembed] Done. ${processed} chunks re-embedded with voyage-3.`)
 }
 
 main().catch(err => {

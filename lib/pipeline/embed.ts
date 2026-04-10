@@ -5,10 +5,10 @@ function getClient() {
 }
 
 const BATCH_SIZE = 128
-const MODEL = 'voyage-multimodal-3'
+const MODEL = 'voyage-3'
 
 /**
- * Embed an array of strings using Voyage AI voyage-multimodal-3.
+ * Embed an array of strings using Voyage AI voyage-3.
  * Batches in groups of 128 to stay within API limits.
  * Returns an array of 1024-dimensional embedding vectors.
  */

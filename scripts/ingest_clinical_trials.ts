@@ -397,7 +397,7 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += EMBED_BATCH) {
     const batch = texts.slice(i, i + EMBED_BATCH)
-    const res = await voyage.embed({ input: batch, model: 'voyage-multimodal-3' })
+    const res = await voyage.embed({ input: batch, model: 'voyage-3' })
     embeddings.push(...(res.data ?? []).sort((a, b) => (a.index ?? 0) - (b.index ?? 0)).map(d => d.embedding!))
   }
   return embeddings
