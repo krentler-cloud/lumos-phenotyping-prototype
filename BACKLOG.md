@@ -13,6 +13,18 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   - Run Ask LumosAI chat — confirm embedText works for query embedding
   - If anything fails, the rollback plan is: revert embed.ts to OpenAI, run reverse migration (1024→1536), re-embed with OpenAI
 
+- [ ] **Update all static pipeline descriptions to reflect P2-F changes**
+  Two pages have stale descriptions after the aspect rewrite + Voyage migration:
+  1. **Processing page** (`Phase1ProcessingClient.tsx` — `buildStepDescriptions()`):
+     - "Aspect embedding" still says "mechanism, efficacy, biomarkers, and safety/PK" and "1,536 dimensions" — should say the 4 phenotype-oriented aspects (responder profile, non-responder profile, biomarker stratification, analog outcomes) and "1,024 dimensions"
+     - "Weighted corpus search" says "sent to Claude" — should say "sent to Lumos AI" per branding rule
+     - Review all other descriptions for accuracy after the changes
+  2. **Landing page** (`app/studies/[studyId]/phase1/page.tsx` — the "What Lumos AI will do" card):
+     - "Multi-aspect corpus search" subtitle says "4 simultaneous vector queries across Headlamp MDD corpus" — should name the 4 phenotype-oriented aspects
+     - "Cross-species mapping" subtitle says "FST / CMS / LH animal models → human MDD subtypes" — check if this is still accurate or should reflect the new analog_outcomes framing
+     - The 3 stat cards at the bottom (39 Clinical Trial Docs, 144 Research Corpus, 8,100 Vector Embeddings) should pull live numbers from the DB, not be hardcoded
+  Both pages should derive descriptions from the actual code/config where possible, and use live corpus stats (already available via the server component pattern used in the processing page).
+
 - [ ] **Study design: account for healthy volunteers vs. MDD patients (N=80 total)**
   The full study is N=80: 16 MDD patients (Phase 2 phenotyping cohort) + 64 healthy volunteers (SAD/MAD PK/safety cohort). Currently the prototype only represents the 16 MDD patients and doesn't formally record total study N.
   - Update the `studies` table seed (or a new `study_design` table) to record `total_n: 80`, `mdd_n: 16`, `healthy_n: 64`
