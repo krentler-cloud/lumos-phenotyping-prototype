@@ -26,7 +26,7 @@ loadEnvFallbacks();
 
 const nextConfig: NextConfig = {
   // pdf-parse and mammoth require native bindings that can't be bundled by Turbopack.
-  serverExternalPackages: ["pdf-parse", "mammoth"],
+  serverExternalPackages: ["pdf-parse", "mammoth", "voyageai"],
 };
 
 export default nextConfig;
