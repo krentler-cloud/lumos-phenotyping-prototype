@@ -542,46 +542,76 @@ export async function synthesizePhase1Report(
   const estimatedInputTokens = Math.ceil(phenotypePrompt.length / 3.5)
   console.log(`[synthesize-phase1] Opus max_tokens = ${phenotypeMaxTokens}, prompt chars = ${phenotypePrompt.length}, est input tokens = ${estimatedInputTokens}`)
 
-  // 10-minute hard timeout — prevents indefinite hangs if the API stalls or stream drops
-  const OPUS_TIMEOUT_MS = 10 * 60 * 1000
-  const phenotypeController = new AbortController()
-  const phenotypeTimeout = setTimeout(() => phenotypeController.abort(), OPUS_TIMEOUT_MS)
+  const synthesisStartTime = Date.now()
+  const MAX_ATTEMPTS = 3
+  const STALL_TIMEOUT_MS = 60_000 // abort and retry if no tokens for 60 seconds
+  const PROGRESS_INTERVAL_MS = 15_000
 
-  const opusStartTime = Date.now()
-  let outputChars = 0
-  let lastProgressUpdate = 0
-  const PROGRESS_INTERVAL_MS = 15_000 // update step_log every 15 seconds
+  let phenotypeMsg: Anthropic.Message | null = null
 
-  const phenotypeStream = await client.messages.stream(
-    {
-      model: 'claude-opus-4-6',
-      max_tokens: phenotypeMaxTokens,
-      system: phenotypeSystem,
-      messages: [{ role: 'user', content: phenotypePrompt }],
-    },
-    { signal: phenotypeController.signal }
-  )
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController()
+    const opusStartTime = Date.now()
+    let outputChars = 0
+    let lastProgressUpdate = 0
+    let lastTokenTime = Date.now()
 
-  // Stream progress: count output chars and periodically update the step_log
-  phenotypeStream.on('text', (text) => {
-    outputChars += text.length
-    const now = Date.now()
-    if (onProgress && now - lastProgressUpdate > PROGRESS_INTERVAL_MS) {
-      lastProgressUpdate = now
-      const elapsedSec = Math.round((now - opusStartTime) / 1000)
-      const approxTokens = Math.round(outputChars / 4)
-      onProgress(`generating... ~${approxTokens.toLocaleString()} tokens (${elapsedSec}s)`).catch(() => {})
+    // Stall detector: abort if no tokens arrive for 60 seconds
+    const stallCheck = setInterval(() => {
+      if (Date.now() - lastTokenTime > STALL_TIMEOUT_MS) {
+        console.error(`[synthesize-phase1] Opus stalled — no tokens for ${STALL_TIMEOUT_MS / 1000}s (attempt ${attempt}/${MAX_ATTEMPTS}, ~${Math.round(outputChars / 4)} tokens generated)`)
+        controller.abort()
+      }
+    }, 10_000)
+
+    try {
+      const phenotypeStream = await client.messages.stream(
+        {
+          model: 'claude-opus-4-6',
+          max_tokens: phenotypeMaxTokens,
+          system: phenotypeSystem,
+          messages: [{ role: 'user', content: phenotypePrompt }],
+        },
+        { signal: controller.signal }
+      )
+
+      // Stream progress: count output chars, reset stall timer, periodically update step_log
+      phenotypeStream.on('text', (text) => {
+        outputChars += text.length
+        lastTokenTime = Date.now()
+        const now = lastTokenTime
+        if (onProgress && now - lastProgressUpdate > PROGRESS_INTERVAL_MS) {
+          lastProgressUpdate = now
+          const elapsedSec = Math.round((now - opusStartTime) / 1000)
+          const approxTokens = Math.round(outputChars / 4)
+          const attemptLabel = attempt > 1 ? ` (attempt ${attempt})` : ''
+          onProgress(`generating... ~${approxTokens.toLocaleString()} tokens (${elapsedSec}s)${attemptLabel}`).catch(() => {})
+        }
+      })
+
+      phenotypeMsg = await phenotypeStream.finalMessage()
+      clearInterval(stallCheck)
+      break // success — exit retry loop
+    } catch (err) {
+      clearInterval(stallCheck)
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      const isAbort = msg.includes('abort') || msg.includes('Abort')
+      if (isAbort && attempt < MAX_ATTEMPTS) {
+        console.warn(`[synthesize-phase1] Opus stalled on attempt ${attempt}, retrying...`)
+        if (onProgress) {
+          await onProgress(`stalled at ~${Math.round(outputChars / 4)} tokens — retrying (attempt ${attempt + 1}/${MAX_ATTEMPTS})...`).catch(() => {})
+        }
+        // Brief pause before retry
+        await new Promise(r => setTimeout(r, 2000))
+        continue
+      }
+      throw err // non-stall error or max attempts exhausted
     }
-  })
-
-  let phenotypeMsg: Awaited<ReturnType<typeof phenotypeStream.finalMessage>>
-  try {
-    phenotypeMsg = await phenotypeStream.finalMessage()
-  } finally {
-    clearTimeout(phenotypeTimeout)
   }
 
-  const opusDurationSec = Math.round((Date.now() - opusStartTime) / 1000)
+  if (!phenotypeMsg) throw new Error('Opus synthesis failed after all retry attempts')
+
+  const opusDurationSec = Math.round((Date.now() - synthesisStartTime) / 1000)
   const usage = phenotypeMsg.usage
   console.log(`[synthesize-phase1] Opus done in ${opusDurationSec}s | input=${usage?.input_tokens} output=${usage?.output_tokens} stop=${phenotypeMsg.stop_reason}`)
 
@@ -599,9 +629,9 @@ export async function synthesizePhase1Report(
     throw new Error(`Phase 1 Call 1 (phenotype) hit max_tokens — response truncated. Diagnostics: input=${usage?.input_tokens} output=${usage?.output_tokens} duration=${opusDurationSec}s`)
   }
 
-  const rawPhenotype = phenotypeMsg.content
-    .filter(b => b.type === 'text')
-    .map(b => (b as { type: 'text'; text: string }).text)
+  const rawPhenotype = phenotypeMsg!.content
+    .filter((b: { type: string }) => b.type === 'text')
+    .map((b: { type: string; text?: string }) => b.text ?? '')
     .join('')
 
   const coreReport = parseJson(rawPhenotype, 'phase1-phenotype') as Record<string, unknown>
