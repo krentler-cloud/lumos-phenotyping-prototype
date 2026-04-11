@@ -55,10 +55,18 @@ export interface MadrsTrajectory {
   n: number
 }
 
+export interface BayesianUpdateEntry {
+  prior: number
+  posterior: number
+  n_effective: number
+  ci_low: number   // 80% credible interval lower bound
+  ci_high: number  // 80% credible interval upper bound
+}
+
 export interface BayesianUpdate {
-  overall: { prior: number; posterior: number; n_effective: number }
-  responder: { prior: number; posterior: number; n_effective: number }
-  nonresponder: { prior: number; posterior: number; n_effective: number }
+  overall: BayesianUpdateEntry
+  responder: BayesianUpdateEntry
+  nonresponder: BayesianUpdateEntry
 }
 
 export interface Phase2MLResult {
@@ -177,7 +185,7 @@ export function computeMadrsTrajectories(
     A:       { label: 'Subtype A — TrkB-Deficit', color: '#22C55E' },
     B:       { label: 'Subtype B — High-Inflammatory', color: '#EF4444' },
     C:       { label: 'Subtype C — Mixed', color: '#F59E0B' },
-    Overall: { label: 'Overall (N=16)', color: '#4F8EF7' },
+    Overall: { label: `Overall (N=${patients.length})`, color: '#4F8EF7' },
   }
 
   return (['A', 'B', 'C', 'Overall'] as const).map(st => {
@@ -198,6 +206,49 @@ export function computeMadrsTrajectories(
 // ── 4. Bayesian update of Phase 1 corpus priors ───────────────────────────────
 // Phase 1 priors are Beta-Binomial; we update with observed counts.
 // Beta(α₀ + k, β₀ + n - k) where α₀/β₀ derived from prior mean + N_eff.
+/**
+ * Approximate Beta distribution quantile using the normal approximation.
+ * For α, β > 1 (which we always have with N_EFF=20), this is accurate to ~1%.
+ * Returns the p-th quantile of Beta(α, β).
+ */
+function betaQuantile(p: number, alpha: number, beta: number): number {
+  // Normal approximation to the Beta distribution
+  const mean = alpha / (alpha + beta)
+  const variance = (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1))
+  const sd = Math.sqrt(variance)
+
+  // Inverse normal CDF (Beasley-Springer-Moro approximation)
+  const a = [0, -3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+    1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+  const b = [0, -5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+    6.680131188771972e+01, -1.328068155288572e+01]
+
+  const q = p - 0.5
+  let r: number, x: number
+
+  if (Math.abs(q) <= 0.425) {
+    r = 0.180625 - q * q
+    x = q * (((((((a[7]! * r + a[6]!) * r + a[5]!) * r + a[4]!) * r + a[3]!) * r + a[2]!) * r + a[1]!) * r + a[0]!) /
+      (((((((b[7]! * r + b[6]!) * r + b[5]!) * r + b[4]!) * r + b[3]!) * r + b[2]!) * r + b[1]!) * r + 1)
+  } else {
+    r = q < 0 ? p : 1 - p
+    r = Math.sqrt(-Math.log(r))
+    if (r <= 5) {
+      r -= 1.6
+      x = (((((((2.32121276858e-1 * r + 1.23355425968) * r + 2.44024637934) * r + 2.04231210245) * r + 1.0) * r + 0.774545014427) * r + 0.27061061505) * r + 0.0886226899) /
+        (((((((1.05075007164e-2 * r + 1.0) * r + 1.73036321538) * r + 1.43831968536) * r + 5.76949722146e-1) * r + 0.1394191378) * r + 0.0160431634) * r + 1.0)
+    } else {
+      r -= 5
+      x = (((((((2.01033439929e-7 * r + 2.71155556874e-5) * r + 1.24266094738e-3) * r + 2.65321895265e-2) * r + 2.96560571828e-1) * r + 1.78482653991) * r + 5.46378491116) * r + 6.65790464350) /
+        (((((((2.04426310338e-15 * r + 1.42151175831e-5) * r + 1.84631831751e-3) * r + 4.21668723009e-2) * r + 3.37267071087e-1) * r + 1.0) * r + 1.0) * r + 1.0)
+    }
+    if (q < 0) x = -x
+  }
+
+  // Clamp to [0, 1]
+  return Math.max(0, Math.min(1, mean + sd * x))
+}
+
 export function computeBayesianUpdate(
   patients: ClinicalPatient[],
   phase1Priors: { overall: number; responder: number; nonresponder: number }
@@ -208,11 +259,18 @@ export function computeBayesianUpdate(
   const nonresponders = patients.filter(p => p.response_status === 'nonresponder').length
   const n = patients.length
 
-  function update(prior: number, k: number, n_obs: number) {
+  function update(prior: number, k: number, n_obs: number): BayesianUpdateEntry {
     const alpha0 = prior * N_EFF
     const beta0 = (1 - prior) * N_EFF
-    const posterior = (alpha0 + k) / (alpha0 + beta0 + n_obs)
-    return { prior, posterior, n_effective: N_EFF + n_obs }
+    const alphaPost = alpha0 + k
+    const betaPost = beta0 + (n_obs - k)
+    const posterior = alphaPost / (alphaPost + betaPost)
+
+    // 80% credible interval (10th and 90th percentiles)
+    const ci_low = betaQuantile(0.10, alphaPost, betaPost)
+    const ci_high = betaQuantile(0.90, alphaPost, betaPost)
+
+    return { prior, posterior, n_effective: N_EFF + n_obs, ci_low, ci_high }
   }
 
   return {

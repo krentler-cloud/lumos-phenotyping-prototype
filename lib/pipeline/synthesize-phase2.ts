@@ -95,6 +95,9 @@ function buildPhase2Prompt(
     .map(f => `  ${f.label}: importance=${f.importance.toFixed(3)}, direction=${f.direction}`)
     .join('\n')
 
+  // TODO: future versions should pull mdd_n from the study_design record rather than computing from patient data
+  const totalN = ml.responder_count + ml.nonresponder_count + ml.uncertain_count
+
   const bayesUpdate = ml.bayesian_update
   const responderDelta = Math.round((bayesUpdate.responder.posterior - bayesUpdate.responder.prior) * 100)
   const nonresponderDelta = Math.round((bayesUpdate.nonresponder.posterior - bayesUpdate.nonresponder.prior) * 100)
@@ -127,13 +130,13 @@ Non-Responder Profile (corpus confidence: ${Math.round(phase1.nonresponder_profi
 Top Phase 1 biomarkers: ${phase1.biomarker_recommendations.slice(0, 5).map(b => b.name).join(', ')}
 
 ═══════════════════════════════════════════════════════
-PHASE 2 CLINICAL DATA — N=16 XYL-1001 PARTICIPANTS
+PHASE 2 CLINICAL DATA — N=${totalN} XYL-1001 PARTICIPANTS
 ═══════════════════════════════════════════════════════
 
 Patient outcomes:
-- Responders: ${ml.responder_count} / 16 (${Math.round(ml.responder_count / 16 * 100)}%)
-- Non-responders: ${ml.nonresponder_count} / 16 (${Math.round(ml.nonresponder_count / 16 * 100)}%)
-- Uncertain: ${ml.uncertain_count} / 16
+- Responders: ${ml.responder_count} / ${totalN} (${Math.round(ml.responder_count / totalN * 100)}%)
+- Non-responders: ${ml.nonresponder_count} / ${totalN} (${Math.round(ml.nonresponder_count / totalN * 100)}%)
+- Uncertain: ${ml.uncertain_count} / ${totalN}
 
 Subtype concordance with Phase 1 prediction:
 - Overall (incl. Subtype C as concordant): ${ml.concordance_pct}%
@@ -166,7 +169,7 @@ WRITING STYLE (applies to every prose field below):
 - Where it aids clarity, wrap key threshold values and specific biomarker readings in **double asterisks** — they render bold in the UI. Example: "BDNF was **18.3 ng/mL** at baseline." Use judgment — bold the numbers that matter most, not every figure.
 
 {
-  "executive_summary": "3 sentences. (1) State what the N=16 clinical data revealed about overall drug response and concordance with Planning Phase predictions. (2) Name the 1-2 features that most strongly separated responders from non-responders (cite |r| values). (3) Characterize what remains uncertain and what a larger trial needs to resolve. No bullets. No 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
+  "executive_summary": "3 sentences. (1) State what the N=${totalN} clinical data revealed about overall drug response and concordance with Planning Phase predictions. (2) Name the 1-2 features that most strongly separated responders from non-responders (cite |r| values). (3) Characterize what remains uncertain and what a larger trial needs to resolve. No bullets. No 'validated' or 'confirmed' — use 'refined', 'updated', 'consistent with'.",
 
   "refined_responder_profile": {
     "summary": "3-4 sentence narrative. Lead with the MADRS outcome (cite Wk8 score and % improvement). Then name the baseline biomarker profile that characterized this group. Close with the strength of the Planning Phase prediction relative to what was actually observed — was the hypothesis borne out, refined, or surprised? Do not list; synthesize.",
@@ -195,7 +198,7 @@ WRITING STYLE (applies to every prose field below):
     "phase2_confidence": ${bayesUpdate.nonresponder.posterior.toFixed(3)},
     "validation_delta": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
     "posterior_label": "Prior ${Math.round(phase1.nonresponder_profile.corpus_hypothesis_confidence * 100)}% → Posterior ${Math.round(bayesUpdate.nonresponder.posterior * 100)}%",
-    "what_changed": "3-4 sentence analytical narrative. What did the N=16 data reveal about the non-responder phenotype that the Planning Phase corpus analysis could not? Name the specific feature or dimension that most refined the hypothesis. If the inflammatory burden was higher than predicted, interpret what this means for trial design. Do NOT use 'validated' or 'confirmed'."
+    "what_changed": "3-4 sentence analytical narrative. What did the N=${totalN} data reveal about the non-responder phenotype that the Planning Phase corpus analysis could not? Name the specific feature or dimension that most refined the hypothesis. If the inflammatory burden was higher than predicted, interpret what this means for trial design. Do NOT use 'validated' or 'confirmed'."
   },
 
   "enhanced_outcome_measures": [
@@ -216,7 +219,7 @@ WRITING STYLE (applies to every prose field below):
     }
   ],
 
-  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=16 clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the clinical ML analysis was structured — threshold-based subtype assignment using corpus-derived biomarker cutoffs (BDNF < 15 ng/mL → Subtype A, IL-6 ≥ 4 pg/mL → Subtype B, mixed → Subtype C), univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes. Explain what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=16 is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
+  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=${totalN} clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the clinical ML analysis was structured — threshold-based subtype assignment using corpus-derived biomarker cutoffs (BDNF < 15 ng/mL → Subtype A, IL-6 ≥ 4 pg/mL → Subtype B, mixed → Subtype C), univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes. Explain what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=${totalN} is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
 }
 
 Produce exactly one instance of each required key. The JSON must be valid and parseable. Do not include any text before the opening brace or after the closing brace.`

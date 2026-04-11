@@ -272,7 +272,7 @@ export default function SubtypingResults({
           <h1 className="text-2xl font-bold text-text-heading mb-1">2.2 Subtyping Results</h1>
           <p className="text-text-muted text-sm">
             {/* SCIENCE-FEEDBACK: P1-A */}
-            {drugName} · N=16 MDD efficacy patients · SAD/MAD healthy volunteer data integrated separately ·{" "}
+            {drugName} · N={ml.responder_count + ml.nonresponder_count + ml.uncertain_count} MDD efficacy patients · SAD/MAD healthy volunteer data integrated separately ·{" "}
             <span
               className="cursor-help border-b border-dashed border-text-muted"
               title={`Overall concordance (${ml.concordance_pct}%) includes Subtype C patients as concordant — uncertain is expected for mixed profiles. Predictive concordance (${ml.predictive_concordance_pct}%) counts only Subtypes A & B (${ml.subtype_ab_count} patients), which is the scientifically meaningful measure of how well Planning Phase predictions matched clinical outcomes.`}

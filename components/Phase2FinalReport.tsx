@@ -23,11 +23,11 @@ function deriveExecutiveSummary(report: FullReport): string {
     const firstPara = report.methodology_narrative.split(/\n\n+/)[0]?.trim();
     if (firstPara) return firstPara;
   }
-  return "Clinical analysis of the N=16 participant cohort refines the Planning Phase phenotype hypotheses and updates confidence in responder and non-responder profiles.";
+  return "Clinical analysis refines the Planning Phase phenotype hypotheses and updates confidence in responder and non-responder profiles.";
 }
 
 // ── Refined profile card ──────────────────────────────────────────────────────
-function ProfileCard({ profile, type }: { profile: RefinedProfile; type: "responder" | "nonresponder" }) {
+function ProfileCard({ profile, type, ciLow, ciHigh }: { profile: RefinedProfile; type: "responder" | "nonresponder"; ciLow?: number; ciHigh?: number }) {
   const [expanded, setExpanded] = useState(false);
   const [changedOpen, setChangedOpen] = useState(false);
 
@@ -51,6 +51,8 @@ function ProfileCard({ profile, type }: { profile: RefinedProfile; type: "respon
         <PosteriorBadge
           posterior={profile.phase2_confidence}
           prior={profile.phase1_confidence}
+          ciLow={ciLow}
+          ciHigh={ciHigh}
           onClick={() => askLumosAI(
             isResponder
               ? `The responder profile shows a Bayesian posterior of ${Math.round(profile.phase2_confidence * 100)}% (corpus prior: ${Math.round(profile.phase1_confidence * 100)}%). What does this posterior update tell us — does the clinical data strengthen or revise the Planning Phase responder prediction, and what does the change from prior to posterior mean?`
@@ -382,8 +384,8 @@ export default function Phase2FinalReport({
 
           {/* Phenotype cards */}
           <div className="space-y-5">
-            <ProfileCard profile={report.refined_responder_profile} type="responder" />
-            <ProfileCard profile={report.refined_nonresponder_profile} type="nonresponder" />
+            <ProfileCard profile={report.refined_responder_profile} type="responder" ciLow={report.ml_result.bayesian_update?.responder?.ci_low} ciHigh={report.ml_result.bayesian_update?.responder?.ci_high} />
+            <ProfileCard profile={report.refined_nonresponder_profile} type="nonresponder" ciLow={report.ml_result.bayesian_update?.nonresponder?.ci_low} ciHigh={report.ml_result.bayesian_update?.nonresponder?.ci_high} />
           </div>
 
           {/* Methodology accordion */}

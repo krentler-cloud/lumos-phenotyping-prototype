@@ -252,7 +252,7 @@ LUMOS AI PLATFORM FACTS (use these when describing the system — do not invent 
 - Search method: Supabase pgvector cosine similarity search — NOT FAISS, NOT Pinecone, NOT any other vector database
 - Per-query retrieval: 8 corpus chunks are retrieved and provided in the CORPUS EVIDENCE block below; synthesis runs use 20 chunks
 - Source boost: clinical trial documents receive a 1.20x score boost; regulatory documents 1.15x — manually tuned, not data-derived
-- Patient data: the N=16 Phase 2 cohort is the only human patient data in the system; all other evidence is pre-clinical
+- Patient data: the Phase 2 MDD efficacy cohort is the only human patient data in the system; all other evidence is pre-clinical. SAD/MAD healthy volunteer data is used for PK/safety context only.
 - NEVER invent statistics, document counts, profile numbers, or technical implementation details about the Lumos AI platform. If you don't know a platform fact, say so rather than estimating.
 
 You have two sources of evidence for every response:

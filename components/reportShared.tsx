@@ -118,14 +118,21 @@ export function ConfidenceBadge({
 export function PosteriorBadge({
   posterior,
   prior,
+  ciLow,
+  ciHigh,
   onClick,
 }: {
   posterior: number;
   prior: number;
+  ciLow?: number;
+  ciHigh?: number;
   onClick?: () => void;
 }) {
   const postPct = Math.round(posterior * 100);
   const priorPct = Math.round(prior * 100);
+  const ciLowPct = ciLow != null ? Math.round(ciLow * 100) : null;
+  const ciHighPct = ciHigh != null ? Math.round(ciHigh * 100) : null;
+  const ciText = ciLowPct != null && ciHighPct != null ? ` [${ciLowPct}–${ciHighPct}%]` : '';
   const color = postPct >= 70 ? "var(--status-success)" : postPct >= 45 ? "var(--status-warning)" : "var(--status-danger)";
   const badgeClasses = "text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap";
   const badgeStyle = { color, borderColor: color, background: `${color}18` };
@@ -137,19 +144,19 @@ export function PosteriorBadge({
         className={`${badgeClasses} cursor-pointer hover:opacity-80 transition-opacity`}
         style={badgeStyle}
       >
-        Posterior {postPct}% ⓘ
+        Posterior {postPct}%{ciText} ⓘ
       </button>
     );
   }
 
-  const tooltip = `Bayesian posterior after observing N=16 clinical outcomes. Corpus prior: ${priorPct}%. The posterior and prior measure different things (observed-outcome likelihood vs. corpus evidence strength) and are not directly comparable as a delta.`;
+  const tooltip = `Bayesian posterior after observing clinical outcomes${ciText ? ` (80% credible interval: ${ciLowPct}–${ciHighPct}%)` : ''}. Corpus prior: ${priorPct}%. The posterior and prior measure different things (observed-outcome likelihood vs. corpus evidence strength) and are not directly comparable as a delta.`;
   return (
     <span
       className={`${badgeClasses} cursor-help`}
       style={badgeStyle}
       title={tooltip}
     >
-      Posterior {postPct}% ⓘ
+      Posterior {postPct}%{ciText} ⓘ
     </span>
   );
 }

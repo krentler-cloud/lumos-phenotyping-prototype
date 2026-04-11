@@ -165,7 +165,7 @@ export default function Phase2ProcessingPage() {
             <p className="text-status-success text-xs uppercase tracking-widest mb-1">Clinical Analysis</p>
             <h1 className="text-2xl font-bold text-text-heading mb-1">Analysis Complete</h1>
             <p className="text-text-muted text-sm">
-              {ALL_STEPS.length} pipeline steps completed · Powered by Lumos AI™ · N=16 clinical patients
+              {ALL_STEPS.length} pipeline steps completed · Powered by Lumos AI™
             </p>
           </div>
           <a
@@ -250,7 +250,7 @@ export default function Phase2ProcessingPage() {
         <p className="text-text-muted text-sm">
           {isError
             ? "An error occurred during clinical analysis. You can re-run from the Clinical Analysis page."
-            : "Running clinical analysis — integrating Planning Phase hypotheses with N=16 patient outcomes. This typically takes 60–90 seconds."}
+            : "Running clinical analysis — integrating Planning Phase hypotheses with patient outcomes. This typically takes 3–5 minutes."}
         </p>
       </div>
 
