@@ -137,8 +137,11 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Fix vector search timeout for 13K+ chunk corpus** — April 11, 2026
   Corpus grew from ~150 docs to 248 docs / 13K chunks — IVFFlat search exceeded default 8s Postgres statement_timeout. Migration 012: `ALTER ROLE authenticator/anon SET statement_timeout = '30s'`. Also added 30s fetch timeout on service client. Planning Phase analysis confirmed working after fix.
 
-- [x] **E-2 ingestion script: 4-tier waterfall implemented** — April 11, 2026
-  Rewrote download logic with Unpaywall → PMC → Publisher → OpenAlex waterfall. Pre-fetches DOIs in batches. Fixed doc_already_exists crash (.maybe_single() → .limit(1)). Tested: 15/50 papers ingested, 0 failures, $0.13 spent. Ready for 1000-paper test run.
+- [x] **E-2 ingestion script: 4-tier waterfall + timeout fix** — April 11, 2026
+  Rewrote download logic with Unpaywall → PMC → Publisher → OpenAlex waterfall. Pre-fetches DOIs in batches. Fixed doc_already_exists crash (.maybe_single() → .limit(1)). Fixed vector search timeout (migration 012: statement_timeout → 30s, fetch timeout → 30s). Tested: 15/50 papers ingested, 0 DB failures. Corpus at 248 docs / 13K chunks and growing.
+  
+- [x] **Fix vector search timeout for 13K+ chunk corpus** — April 11, 2026
+  IVFFlat search exceeded default 8s Postgres statement_timeout after corpus grew to 248 docs / 13K chunks. Fix: migration 012 (ALTER ROLE authenticator/anon SET statement_timeout = '30s') + 30s fetch timeout on service client. Planning Phase analysis confirmed working on larger corpus.
 
 - [x] **Update pipeline descriptions** — April 10, 2026
   Processing page, landing page Phase1Steps, suggested questions — all updated to reflect current architecture (phenotype aspects, 1024 dims, reranking, compression). Removed all "Claude" references. Time estimates: 3-5 min.
