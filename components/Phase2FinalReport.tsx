@@ -268,7 +268,10 @@ export default function Phase2FinalReport({
   // Format date client-side so it uses the user's timezone, not the server's
   const genDateDisplay = (() => {
     try {
-      return new Date(generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const d = new Date(generatedAt);
+      const date = d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      return `${date} at ${time}`;
     } catch {
       return generatedAt;
     }

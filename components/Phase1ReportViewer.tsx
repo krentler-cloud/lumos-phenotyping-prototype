@@ -485,8 +485,12 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
   const [responderExpanded, setResponderExpanded] = useState(false);
   const [nonresponderExpanded, setNonresponderExpanded] = useState(false);
 
-  const genDate = new Date(generatedAt).toLocaleDateString("en-US", {
+  const genDateObj = new Date(generatedAt);
+  const genDate = genDateObj.toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
+  });
+  const genTime = genDateObj.toLocaleTimeString("en-US", {
+    hour: "numeric", minute: "2-digit",
   });
 
   return (
@@ -498,7 +502,7 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
           <div>
             <p className="text-brand-core text-xs uppercase tracking-widest mb-1">Planning Phase Analysis Report</p>
             <h1 className="text-2xl font-bold text-text-heading">{drugName} · {indication}</h1>
-            <p className="text-text-secondary text-xs mt-1">Generated {genDate}</p>
+            <p className="text-text-secondary text-xs mt-1">Generated {genDate} at {genTime}</p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0 print-hide">
             <form action={`/api/studies/${studyId}/rerun-phase1`} method="POST">
