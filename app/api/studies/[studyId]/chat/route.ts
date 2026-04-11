@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createServiceClient } from '@/lib/supabase/server'
 import { embedText } from '@/lib/pipeline/embed'
-import { searchCorpusWeighted, MatchedChunk } from '@/lib/pipeline/search'
+import { searchCorpusWeighted, rerankChunks, MatchedChunk } from '@/lib/pipeline/search'
 import { Phase1ReportData } from '@/lib/pipeline/synthesize-phase1'
 import { formatPageContextForPrompt, LumosPageContext } from '@/lib/context/pageContext'
 
@@ -223,7 +223,8 @@ export async function POST(
           .limit(1)
           .single()
       : Promise.resolve({ data: null }),
-    searchCorpusWeighted(queryVector, 8),
+    // Fetch 20 candidates, rerank to top 8 for better relevance at scale
+    searchCorpusWeighted(queryVector, 20).then(raw => rerankChunks(message, raw, 8)),
     supabase.from('corpus_docs').select('*', { count: 'exact', head: true }),
   ])
 

@@ -87,20 +87,184 @@ Preclinical efficacy: ${ctx.efficacy_models.map(e => `${e.model}${e.effect_size 
 `
 }
 
-// ── CALL 1: Phenotype characterization (Opus + full corpus) ──────────────────
+// ── Evidence Compression (Sonnet, parallel by aspect) ──────────────────────────
+
+export interface EvidenceFinding {
+  claim: string
+  threshold_or_value: string
+  doc_title: string
+  source_type: string
+  study_quality: string  // RCT, observational, animal, meta-analysis, case_report
+  sample_size?: string
+  p_value?: string
+  contradicts?: string   // Note if this contradicts another finding
+}
+
+export interface DimensionBrief {
+  dimension: string         // e.g. "responder_profile"
+  findings: EvidenceFinding[]
+  summary: string           // 2-3 sentence synthesis
+  chunk_count: number
+}
+
+export interface EvidenceBrief {
+  dimension_briefs: DimensionBrief[]
+  total_chunks_analyzed: number
+  compression_ratio: string
+}
+
+/**
+ * Compress reranked chunks into a structured evidence brief using parallel Sonnet calls.
+ * Splits chunks by aspect tag into 4 groups, each processed independently.
+ * Output is ~3,000-5,000 tokens — much smaller than raw chunks (~25K+).
+ */
+export async function compressToEvidenceBrief(
+  chunks: MatchedChunk[],
+  drugName: string,
+  indication: string,
+  onProgress?: (detail: string) => Promise<void>
+): Promise<EvidenceBrief> {
+  const client = getClient()
+
+  // Split chunks into groups by aspect tag
+  const groups: Record<string, MatchedChunk[]> = {}
+  for (const chunk of chunks) {
+    const key = chunk.aspect ?? 'untagged'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(chunk)
+  }
+
+  // Redistribute untagged chunks round-robin to smallest groups
+  const untagged = groups['untagged'] ?? []
+  delete groups['untagged']
+  const groupKeys = Object.keys(groups)
+  if (groupKeys.length > 0) {
+    for (let i = 0; i < untagged.length; i++) {
+      const smallest = groupKeys.reduce((a, b) => groups[a].length <= groups[b].length ? a : b)
+      groups[smallest].push(untagged[i])
+    }
+  }
+
+  const startTime = Date.now()
+
+  // Build parallel Sonnet calls — one per aspect group
+  const dimensionPromises = Object.entries(groups).map(async ([aspect, aspectChunks]) => {
+    const excerpts = aspectChunks
+      .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type})\n${c.content.slice(0, 600)}`)
+      .join('\n\n---\n\n')
+
+    const prompt = `You are extracting structured evidence findings from scientific corpus excerpts about ${drugName} in ${indication}.
+
+ASPECT: ${aspect}
+EXCERPTS (${aspectChunks.length} chunks):
+${excerpts}
+
+TASK:
+Extract every quantitative finding relevant to patient phenotyping and treatment response. For each finding, capture:
+- The specific claim or observation
+- Any threshold value, effect size, Ki value, p-value, or sample size
+- The source document title (exactly as shown in brackets)
+- Study quality: RCT, observational, animal_model, meta-analysis, case_report, or review
+- Note contradictions between studies explicitly
+
+OUTPUT FORMAT — respond with valid JSON only:
+{
+  "findings": [
+    {
+      "claim": "specific finding",
+      "threshold_or_value": "quantitative value if present, empty string if qualitative",
+      "doc_title": "exact document title",
+      "source_type": "clinical_trial|literature|regulatory",
+      "study_quality": "RCT|observational|animal_model|meta-analysis|case_report|review",
+      "sample_size": "N=X if reported",
+      "p_value": "p=X if reported",
+      "contradicts": "note if this contradicts another finding in this set"
+    }
+  ],
+  "summary": "2-3 sentence synthesis of the key findings from this aspect group"
+}`
+
+    const system = 'Extract structured evidence findings. Respond with raw JSON only — no markdown, no code fences.'
+    const maxTokens = computeMaxTokens('claude-sonnet-4-5', prompt, system)
+
+    const stream = await client.messages.stream({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const msg = await stream.finalMessage()
+    const raw = msg.content
+      .filter(b => b.type === 'text')
+      .map(b => (b as { type: 'text'; text: string }).text)
+      .join('')
+
+    const parsed = parseJson(raw, `evidence-${aspect}`) as {
+      findings: EvidenceFinding[]
+      summary: string
+    }
+
+    return {
+      dimension: aspect,
+      findings: parsed.findings ?? [],
+      summary: parsed.summary ?? '',
+      chunk_count: aspectChunks.length,
+    } as DimensionBrief
+  })
+
+  if (onProgress) {
+    await onProgress(`compressing ${chunks.length} chunks across ${Object.keys(groups).length} dimensions...`)
+  }
+
+  const dimensionBriefs = await Promise.all(dimensionPromises)
+
+  const durationSec = Math.round((Date.now() - startTime) / 1000)
+  const totalFindings = dimensionBriefs.reduce((n, d) => n + d.findings.length, 0)
+
+  return {
+    dimension_briefs: dimensionBriefs,
+    total_chunks_analyzed: chunks.length,
+    compression_ratio: `${chunks.length} chunks → ${totalFindings} findings (${durationSec}s)`,
+  }
+}
+
+/**
+ * Format an EvidenceBrief as a text block for injection into the Opus prompt.
+ */
+function formatEvidenceBrief(brief: EvidenceBrief): string {
+  return brief.dimension_briefs.map(d => {
+    const findingLines = d.findings.map((f, i) => {
+      const parts = [`  ${i + 1}. ${f.claim}`]
+      if (f.threshold_or_value) parts.push(`     Value: ${f.threshold_or_value}`)
+      parts.push(`     Source: "${f.doc_title}" (${f.source_type}, ${f.study_quality})`)
+      if (f.sample_size) parts.push(`     N: ${f.sample_size}`)
+      if (f.p_value) parts.push(`     p: ${f.p_value}`)
+      if (f.contradicts) parts.push(`     ⚠ Contradicts: ${f.contradicts}`)
+      return parts.join('\n')
+    }).join('\n')
+    return `── ${d.dimension.toUpperCase()} (${d.chunk_count} chunks analyzed) ──\nSummary: ${d.summary}\nFindings:\n${findingLines}`
+  }).join('\n\n')
+}
+
+// ── CALL 1: Phenotype characterization (Opus + evidence brief) ─────────────────
 function buildPhenotypePrompt(
   drugName: string,
   indication: string,
   chunks: MatchedChunk[],
   mechanismContext: MechanismContext | null,
   bayesianPrior: BayesianPrior,
-  sadMadCohorts?: SadMadCohort[]
+  sadMadCohorts?: SadMadCohort[],
+  evidenceBrief?: EvidenceBrief
 ): string {
   const mechPreamble = buildMechanismPreamble(mechanismContext, drugName)
 
-  const excerpts = chunks
-    .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}${c.aspect ? `, aspect: ${c.aspect}` : ''}) — similarity: ${c.similarity.toFixed(3)}\n${c.content}`)
-    .join('\n\n---\n\n')
+  // When evidence brief is available, use structured findings instead of raw chunks
+  const evidenceSection = evidenceBrief
+    ? `STRUCTURED EVIDENCE BRIEF (compressed from ${evidenceBrief.total_chunks_analyzed} corpus chunks by Lumos AI evidence extraction):\n${formatEvidenceBrief(evidenceBrief)}`
+    : chunks
+        .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}${c.aspect ? `, aspect: ${c.aspect}` : ''}) — similarity: ${c.similarity.toFixed(3)}\n${c.content}`)
+        .join('\n\n---\n\n')
 
   const priorSummary = `Subtype A (Acute-Responsive / FST-like): α=${bayesianPrior.subtype_a.alpha}, β=${bayesianPrior.subtype_a.beta}, posterior mean=${bayesianPrior.subtype_a.mean}
 Subtype B (Stress-Sensitised / CMS-like): α=${bayesianPrior.subtype_b.alpha}, β=${bayesianPrior.subtype_b.beta}, posterior mean=${bayesianPrior.subtype_b.mean}
@@ -118,8 +282,7 @@ ${mechPreamble}
 BAYESIAN SUBTYPE PRIORS (computed from corpus animal-model evidence):
 ${priorSummary}
 ${sadMadBlock}
-TOP MATCHED CORPUS EXCERPTS (${chunks.length} chunks, multi-aspect weighted search):
-${excerpts}
+${evidenceSection}
 
 TASK:
 This is a PLANNING PHASE analysis for ${drugName} in ${indication}.${sadMadCohorts && sadMadCohorts.length > 0 ? ' SAD/MAD human Phase 1 data is provided above — integrate actual PK, biomarker, and safety findings with corpus predictions. Where human data conflicts with corpus predictions, note the discordance explicitly.' : ' There is NO patient-level data yet.'}
@@ -366,12 +529,13 @@ export async function synthesizePhase1Report(
   mechanismContext: MechanismContext | null,
   bayesianPrior: BayesianPrior,
   sadMadCohorts?: SadMadCohort[],
-  onProgress?: (detail: string) => Promise<void>
+  onProgress?: (detail: string) => Promise<void>,
+  evidenceBrief?: EvidenceBrief
 ): Promise<Phase1ReportData> {
   const client = getClient()
 
-  // ── Call 1: Phenotype profiles (Opus + full corpus) ───────────────────────
-  const phenotypePrompt = buildPhenotypePrompt(drugName, indication, chunks, mechanismContext, bayesianPrior, sadMadCohorts)
+  // ── Call 1: Phenotype profiles (Opus + evidence brief or raw chunks) ──────
+  const phenotypePrompt = buildPhenotypePrompt(drugName, indication, chunks, mechanismContext, bayesianPrior, sadMadCohorts, evidenceBrief)
 
   const phenotypeSystem = 'You are a clinical research assistant. Respond with raw JSON only — no markdown, no code fences, no prose before or after. Start your response with { and end with }.'
   const phenotypeMaxTokens = computeMaxTokens('claude-opus-4-6', phenotypePrompt, phenotypeSystem)

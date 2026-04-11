@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { embedTexts } from '@/lib/pipeline/embed'
-import { searchCorpusMultiAspect } from '@/lib/pipeline/search'
+import { searchCorpusMultiAspect, rerankChunks, buildRerankQuery } from '@/lib/pipeline/search'
 import { computeBayesianPrior } from '@/lib/pipeline/score'
-import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
+import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, compressToEvidenceBrief, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
 export async function runPhase1Processing(studyId: string, runId: string): Promise<void> {
@@ -85,20 +85,30 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
     }
     await log('Aspect embedding', 'complete', '4 phenotype-oriented aspect vectors built')
 
-    // ── STEP 4: Multi-aspect weighted corpus search ────────────────────────────
+    // ── STEP 4: Broad corpus search ─────────────────────────────────────────────
     await log('Weighted corpus search', 'running')
-    // 25 final chunks balances evidence coverage against Opus prompt size (~13K chunk tokens).
-    // 40 was causing 10+ minute Opus calls; 25 should complete in 3-6 minutes.
-    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 25, 80, 3)
+    // Broad retrieval: 100 chunks from 600 raw candidates. Reranking (Step 5) will
+    // select the best 50, and evidence compression (Step 7) will distill for Opus.
+    const { chunks: matchedChunks, stats: searchStats } = await searchCorpusMultiAspect(aspects, 100, 150, 5)
     await log(
       'Weighted corpus search',
       'complete',
-      `${searchStats.rawCandidates} raw → ${searchStats.afterDedup} deduped → ${searchStats.afterCap} after per-doc cap (max 3) → ${searchStats.finalSent} sent to Claude | sim p50=${searchStats.similarityP50} p75=${searchStats.similarityP75} min=${searchStats.similarityMin.toFixed(3)}`
+      `${searchStats.rawCandidates} raw → ${searchStats.afterDedup} deduped → ${searchStats.afterCap} after per-doc cap (max 5) → ${searchStats.finalSent} retrieved | sim p50=${searchStats.similarityP50} p75=${searchStats.similarityP75} min=${searchStats.similarityMin.toFixed(3)}`
     )
 
-    // ── STEP 5: Compute Bayesian subtype priors ────────────────────────────────
+    // ── STEP 5: Rerank corpus evidence ────────────────────────────────────────
+    await log('Rerank corpus evidence', 'running')
+    const compositeQuery = buildRerankQuery(drugName, indication, aspectTexts)
+    const rerankedChunks = await rerankChunks(compositeQuery, matchedChunks, 50)
+    await log(
+      'Rerank corpus evidence',
+      'complete',
+      `${matchedChunks.length} → ${rerankedChunks.length} chunks | rerank score: ${rerankedChunks[rerankedChunks.length - 1]?.rerank_score?.toFixed(3) ?? '?'} – ${rerankedChunks[0]?.rerank_score?.toFixed(3) ?? '?'}`
+    )
+
+    // ── STEP 6: Compute Bayesian subtype priors (on reranked chunks) ──────────
     await log('Bayesian prior computation', 'running')
-    const bayesianPrior = computeBayesianPrior(matchedChunks)
+    const bayesianPrior = computeBayesianPrior(rerankedChunks)
     const dominant = [
       { label: 'A', mean: bayesianPrior.subtype_a.mean },
       { label: 'B', mean: bayesianPrior.subtype_b.mean },
@@ -110,7 +120,7 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       `dominant corpus subtype: ${dominant.label} (mean=${dominant.mean.toFixed(2)})`
     )
 
-    // ── STEP 6: Load SAD/MAD cohort data (non-blocking — enriches synthesis if present) ─
+    // ── STEP 7: Load SAD/MAD cohort data (non-blocking — enriches synthesis if present) ─
     // SCIENCE-FEEDBACK: P1-F
     let sadMadCohorts: SadMadCohort[] = []
     try {
@@ -130,17 +140,40 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       await log('Load SAD/MAD data', 'complete', 'Table not yet migrated — skipping')
     }
 
-    // ── STEP 7: Phenotype synthesis ────────────────────────────────────────
+    // ── STEP 8: Evidence compression (Sonnet, parallel by dimension) ──────────
+    await log('Evidence compression', 'running')
+    let evidenceBrief: Awaited<ReturnType<typeof compressToEvidenceBrief>> | undefined
+    try {
+      evidenceBrief = await compressToEvidenceBrief(
+        rerankedChunks,
+        drugName,
+        indication,
+        async (detail) => { await log('Evidence compression', 'running', detail) }
+      )
+      await log(
+        'Evidence compression',
+        'complete',
+        `${evidenceBrief.compression_ratio} | ${evidenceBrief.dimension_briefs.length} dimension groups`
+      )
+    } catch (compressErr: unknown) {
+      const compressMsg = compressErr instanceof Error ? compressErr.message : 'Unknown error'
+      console.error('[process-phase1] evidence compression failed, falling back to raw chunks:', compressMsg)
+      await log('Evidence compression', 'error', `Falling back to raw chunks: ${compressMsg.slice(0, 200)}`)
+      // evidenceBrief stays undefined — synthesizePhase1Report will use raw chunks
+    }
+
+    // ── STEP 9: Phenotype synthesis ────────────────────────────────────────
     await log('Phenotype synthesis', 'running')
     const report = await synthesizePhase1Report(
       drugName,
       indication,
-      matchedChunks,
+      rerankedChunks,
       mechanismContext,
       bayesianPrior,
       sadMadCohorts.length > 0 ? sadMadCohorts : undefined,
       // Stream progress: update step_log detail every 15s so the UI shows token count
-      async (detail) => { await log('Phenotype synthesis', 'running', detail) }
+      async (detail) => { await log('Phenotype synthesis', 'running', detail) },
+      evidenceBrief
     )
     const diag = report._opus_diagnostics
     await log(
@@ -151,13 +184,28 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
         : `responder confidence: ${report.overall_confidence.toFixed(2)}, biomarkers: ${report.biomarker_recommendations.length}`
     )
 
-    // ── STEP 8: Store report ───────────────────────────────────────────────────
+    // ── STEP 10: Store report ──────────────────────────────────────────────────
     await log('Store report', 'running')
+
+    // Store reranked chunks alongside report for evidence traceability
+    const reportWithEvidence = {
+      ...report,
+      _evidence_chunks: rerankedChunks.map(c => ({
+        chunk_id: c.chunk_id,
+        doc_id: c.doc_id,
+        title: c.title,
+        source_type: c.source_type,
+        content: c.content,
+        similarity: c.similarity,
+        rerank_score: c.rerank_score,
+        aspect: c.aspect,
+      })),
+    }
 
     const { error: reportError } = await supabase.from('phase1_reports').insert({
       run_id: runId,
       study_id: studyId,
-      report_data: report,
+      report_data: reportWithEvidence,
     })
 
     if (reportError) throw new Error(`Failed to store Phase 1 report: ${reportError.message}`)
@@ -173,7 +221,7 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
         const exploratoryBiomarkers = await synthesizeExploratoryBiomarkers(
           drugName,
           indication,
-          matchedChunks,
+          rerankedChunks,
           report
         )
         await supabase.from('phase1_reports')
@@ -198,7 +246,7 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
         const corpusIntelligence = await synthesizeCorpusIntelligence(
           drugName,
           indication,
-          matchedChunks,
+          rerankedChunks,
           searchStats
         )
         return corpusIntelligence

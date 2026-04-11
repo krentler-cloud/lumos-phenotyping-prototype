@@ -162,3 +162,83 @@ export async function searchCorpusMultiAspect(
 
   return { chunks: final, stats }
 }
+
+// ── Reranking ──────────────────────────────────────────────────────────────────
+
+export interface RankedChunk extends MatchedChunk {
+  rerank_score: number
+}
+
+/**
+ * Build a composite rerank query from all aspect texts.
+ * Gives the reranker full context about what matters in a single pass.
+ */
+export function buildRerankQuery(
+  drugName: string,
+  indication: string,
+  aspectTexts: Record<string, string>
+): string {
+  const composite = `${drugName} in ${indication}: ${Object.values(aspectTexts).join('; ')}`
+  return composite.slice(0, 1000) // Voyage rerank query limit
+}
+
+const VOYAGE_RERANK_URL = 'https://api.voyageai.com/v1/rerank'
+
+/**
+ * Rerank chunks using Voyage AI rerank-2 cross-attention model.
+ * Returns chunks sorted by rerank_score descending.
+ * Falls back to similarity-sorted chunks if the API fails.
+ */
+export async function rerankChunks(
+  query: string,
+  chunks: MatchedChunk[],
+  topK: number = 50
+): Promise<RankedChunk[]> {
+  const apiKey = process.env.VOYAGE_API_KEY
+  if (!apiKey) {
+    console.warn('[rerank] VOYAGE_API_KEY not set — falling back to similarity sort')
+    return chunks.slice(0, topK).map(c => ({ ...c, rerank_score: c.similarity }))
+  }
+
+  try {
+    const res = await fetch(VOYAGE_RERANK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'rerank-2',
+        query,
+        documents: chunks.map(c => c.content),
+        top_k: Math.min(topK, chunks.length),
+      }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text()
+      console.error(`[rerank] Voyage API error (${res.status}): ${body.slice(0, 300)}`)
+      console.warn('[rerank] Falling back to similarity sort')
+      return chunks.slice(0, topK).map(c => ({ ...c, rerank_score: c.similarity }))
+    }
+
+    const json = await res.json() as {
+      data: { index: number; relevance_score: number }[]
+    }
+
+    const ranked: RankedChunk[] = json.data.map(r => ({
+      ...chunks[r.index],
+      rerank_score: r.relevance_score,
+    }))
+
+    // Already sorted by relevance_score from the API, but ensure descending
+    ranked.sort((a, b) => b.rerank_score - a.rerank_score)
+
+    return ranked
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    console.error(`[rerank] Failed: ${msg}`)
+    console.warn('[rerank] Falling back to similarity sort')
+    return chunks.slice(0, topK).map(c => ({ ...c, rerank_score: c.similarity }))
+  }
+}

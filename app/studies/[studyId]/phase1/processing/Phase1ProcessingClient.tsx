@@ -28,7 +28,9 @@ const STEP_ICONS: Record<string, string> = {
   "Load mechanism context": "🔬",
   "Aspect embedding": "🧮",
   "Weighted corpus search": "🔍",
+  "Rerank corpus evidence": "🎯",
   "Bayesian prior computation": "∑",
+  "Evidence compression": "📝",
   "Phenotype synthesis": "🤖",
   "Store report": "💾",
   "Exploratory biomarker synthesis": "🔭",
@@ -61,15 +63,23 @@ function buildStepDescriptions(
       why: "A single query embedding optimized for, say, efficacy would systematically under-retrieve safety and biomarker literature. The four-aspect approach treats the analysis as four parallel information retrieval problems — each independently tuned — then merges the results. This is consistently more recall-complete than any single general-purpose embedding.",
     },
     "Weighted corpus search": {
-      what: `Retrieved the top 40 highest-scoring chunks from the Lumos corpus (${corpusDocCount} documents, ${corpusChunkCount.toLocaleString()} total chunks at ~512 tokens each) using cosine similarity search across all four aspect embeddings. Each aspect query fetches up to 80 raw candidates — 320 total across all four aspects — which are then deduplicated to the best-scoring version of each unique chunk, capped at 3 chunks per document to prevent any single paper from dominating, and trimmed to the final 40 sent to Claude. Documents classified as clinical trial records receive a 1.20× similarity score boost; regulatory documents receive 1.15×.`,
-      why: "The corpus is the evidentiary foundation of the entire analysis. Every confidence score, every biomarker recommendation, and every phenotype hypothesis is only as valid as the literature it rests on. Retrieval quality — meaning how well the top-40 chunks actually represent the relevant science — is the single highest-leverage variable in the pipeline.",
+      what: `Broad retrieval across the Lumos corpus (${corpusDocCount} documents, ${corpusChunkCount.toLocaleString()} total chunks at ~512 tokens each). Each of the four phenotype-oriented aspects queries up to 150 raw candidates — 600 total — which are deduplicated by chunk ID (keeping the best similarity score), capped at 5 chunks per document, and trimmed to the top 100 candidates. These 100 are passed to the reranking step for precision selection. Documents classified as clinical trial records receive a 1.20× similarity score boost; regulatory documents receive 1.15×.`,
+      why: "Broad retrieval ensures no relevant evidence is missed at the embedding similarity stage. The reranking step that follows uses cross-attention (not just geometric proximity) to select the most relevant chunks — but it can only select from what retrieval surfaces. Casting a wide net here is the foundation for precision downstream.",
+    },
+    "Rerank corpus evidence": {
+      what: "Reranked the 100 retrieved chunks using Lumos AI's cross-attention reranking model, which reads each chunk alongside the full phenotype query simultaneously. Unlike embedding similarity (which compares pre-computed vectors), reranking uses cross-attention to evaluate how well each chunk actually answers the phenotype stratification question. The top 50 chunks by rerank score are kept for evidence compression and Bayesian computation.",
+      why: "Embedding similarity measures geometric proximity in vector space — useful for broad retrieval, but it misses nuance. A chunk about 'BDNF levels in healthy volunteers' and one about 'BDNF as a responder stratification biomarker' may have similar embeddings but very different relevance. Cross-attention reranking catches this distinction, which is critical as the corpus scales to hundreds of thousands of documents where noise in the top-100 increases.",
     },
     "Bayesian prior computation": {
       what: "Computed Beta-Binomial priors from the response rate distributions observed across the retrieved corpus chunks — capturing mean response rate, variance, and effective sample size for each evidence dimension. The Beta distribution is the natural choice here because it models probabilities bounded between 0 and 1, and the Binomial captures the responder/non-responder structure of the underlying data. The result is a calibrated prior for each confidence dimension that reflects not just the average effect size but how much the evidence agrees with itself.",
       why: "Confidence scores need to reflect both the magnitude and the consistency of the evidence. A drug with five studies all showing 60% response rates should score differently than one with two studies at 90% and three at 30% — even if the averages match. The Bayesian framework captures that distinction by encoding variance explicitly, which is why the confidence percentages in the report are statistically grounded rather than heuristic.",
     },
+    "Evidence compression": {
+      what: "Split the 50 reranked chunks into groups by phenotype dimension and ran parallel extraction calls, each reading its group and pulling out structured findings: specific thresholds, effect sizes, p-values, sample sizes, study quality classifications, and contradictions between studies. The output is a structured evidence brief — approximately 70% smaller than the raw chunks — that preserves every quantitative finding and its source citation while removing redundant prose.",
+      why: "Sending 50 raw chunks (~25,000 tokens) directly to the synthesis model would be slow and expensive. More importantly, the synthesis model's job is to reason about evidence — not to parse it out of dense scientific text. Pre-extracting structured findings lets the synthesis model focus entirely on weighing evidence quality, resolving conflicts, and committing to phenotype hypotheses. This is the same principle as a systematic review: the reviewer reads a structured evidence table, not 50 full papers.",
+    },
     "Phenotype synthesis": {
-      what: "Lumos AI read all 40 retrieved corpus chunks alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all retrieved corpus chunks.",
+      what: "Lumos AI read the structured evidence brief (compressed from 50 reranked corpus chunks) alongside the drug's full mechanism context and synthesized responder and non-responder phenotype profiles, a ranked biomarker screening protocol, cross-species evidence mappings, and safety signals. The output is not extracted from any single source; it is reasoned from the pattern of evidence across all retrieved corpus evidence.",
       why: "This is the step where retrieval becomes interpretation. Lumos AI does what a scientific reviewer does — weighs evidence quality, resolves conflicting signals, and commits to ranked hypotheses about which patient characteristics predict response. Frontier-class reasoning is necessary because the task requires genuine inference, not pattern matching.",
     },
     "Store report": {
@@ -97,7 +107,9 @@ const ALL_STEPS = [
   "Load mechanism context",
   "Aspect embedding",
   "Weighted corpus search",
+  "Rerank corpus evidence",
   "Bayesian prior computation",
+  "Evidence compression",
   "Phenotype synthesis",
   "Store report",
   "Exploratory biomarker synthesis",
