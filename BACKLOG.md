@@ -6,13 +6,15 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
-- [ ] **Validate optimized pipeline end-to-end**
-  Latest deploy (April 10 late PM) has: 25 chunks (down from 40), FDA instructions moved to Sonnet, streaming token progress, parallel exploratory+corpus calls, exploratory on Sonnet. Need to confirm:
-  - Run a fresh Planning Phase analysis — confirm it completes in 3-6 minutes (was 10+ with 40 chunks)
-  - Check streaming progress shows token count updating during Phenotype synthesis step
-  - Check diagnostics in step_log detail (duration, input/output tokens, stop_reason)
-  - Verify report quality is still good with 25 chunks (phenotype-oriented aspects should compensate for fewer chunks)
-  - Run Ask LumosAI chat — confirm Voyage embedText works for query embedding
+- [ ] **Validate full Retrieve → Rerank → Compress → Synthesize pipeline**
+  Latest deploy (April 10 late PM) has the complete pipeline: broad retrieval (100 chunks), Voyage rerank-2 (→50), Sonnet evidence compression (4 parallel calls), Opus synthesis from structured brief (~8K tokens). Need to confirm:
+  - Run a fresh Planning Phase analysis — confirm it completes in ~3-4 minutes
+  - Check new steps in processing UI: "Rerank corpus evidence" and "Evidence compression" appear with timing
+  - Check streaming progress shows token count during Phenotype synthesis
+  - Check diagnostics (duration, tokens, compression ratio, rerank score range) in step_log
+  - Verify report quality — should be at least as good with better evidence selection
+  - Test Ask LumosAI chat — confirm reranked chunks improve relevance
+  - Check Evidence tab — confirm `_evidence_chunks` stored with rerank scores
   - Check Evidence tab — chunks should be more phenotype-relevant due to new aspects
   - Run Ask LumosAI chat — confirm embedText works for query embedding
   - If anything fails, the rollback plan is: revert embed.ts to OpenAI, run reverse migration (1024→1536), re-embed with OpenAI
@@ -180,13 +182,24 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 10. Reduced chunk count from 40→25 (40 was causing 10+ min Opus calls; 25 keeps ~13K chunk tokens)
 11. Moved F2-A (FDA safety requirements) from Opus phenotype prompt to Sonnet biomarker prompt (~500 token savings)
 12. Added streaming token progress: UI now shows "generating... ~2,400 tokens (45s)" during Phenotype synthesis instead of blank 75%
+13. **Full Retrieve → Rerank → Compress → Synthesize pipeline** — the big one:
+    - Broad retrieval: 100 chunks from 600 raw candidates (4 aspects × 150 each)
+    - Voyage rerank-2: cross-attention reranking selects top 50
+    - Evidence compression: 4 parallel Sonnet calls extract structured findings (~70% size reduction)
+    - Opus synthesis: receives structured evidence brief (~8K tokens, was ~13-20K raw)
+    - Chat endpoint: lightweight rerank (fetch 20, rerank to 8)
+    - Processing UI: new step icons/descriptions for Rerank and Evidence Compression
+    - Graceful fallback: if rerank or compression fails, falls back to raw chunks
+    - Reranked chunks stored as `_evidence_chunks` in report data for traceability
 
 **What needs validation (next session):**
-- Run a fresh Planning Phase analysis with the optimized pipeline (25 chunks, streaming progress, parallel tail calls)
-- Confirm synthesis completes in 3-6 minutes (was 10+ with 40 chunks)
-- Check streaming progress actually updates in the UI during Phenotype synthesis
-- Check diagnostics (duration, input/output tokens) in the step_log
-- Verify report quality is acceptable with 25 chunks
+- Run a fresh Planning Phase analysis with the full rerank+compress pipeline
+- Confirm total time is ~3-4 minutes (was 6-12 min)
+- Check rerank + compression steps appear in step_log with timing and scores
+- Check streaming progress shows token count during Phenotype synthesis
+- Check diagnostics (duration, input/output tokens, compression ratio)
+- Verify report quality is at least as good as before (better evidence → better reasoning)
+- Test Ask LumosAI chat — confirm reranked chunks improve relevance
 - Test Ask LumosAI chat (Voyage AI query embedding)
 
 **Open questions for next session:**
