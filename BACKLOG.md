@@ -134,14 +134,15 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Fix Ask LumosAI platform facts + add reranking to all chat routes** — April 10, 2026
   Chat was saying "Lumos AI does not use a reranking step" because system prompt described old architecture. Rewrote PLATFORM FACTS block with full pipeline description (reranking, compression, phenotype aspects). Added reranking to legacy runs/[runId]/chat route (was raw similarity only). Added PageContextDispatcher to processing page. Fixed stale "SHAP" reference in subtyping suggested questions.
 
-- [x] **Auto-retry on Opus stall** — April 10, 2026
-  Opus was stalling mid-stream (tokens stop but connection stays alive, so the 10-min abort never fires). Added stall detector: checks every 10s if any tokens arrived in the last 60s. If not, aborts and retries up to 3 attempts. Progress shows "stalled at ~3,316 tokens — retrying (attempt 2/3)..." Recovers in ~70s instead of hanging for 10+ min.
+- [x] **Fix Opus stall detection + auto-retry** — April 10, 2026
+  ROOT CAUSE FOUND: `AbortController.abort()` does NOT break a stalled `ReadableStream` in Node.js. Once `fetch()` returns and streaming begins, aborting the signal has no effect — `reader.read()` hangs forever. This is why every "stuck" run hung indefinitely — the 10-minute timeout called abort() but it did nothing.
+  FIX: `Promise.race` — race `finalMessage()` against a stall-timeout promise. When no tokens arrive for 60s, stall promise rejects and calls `phenotypeStream.abort()` (MessageStream's own method which rejects the internal endPromise). Retries up to 3 times. Progress shows "stalled at ~3,316 tokens — retrying (attempt 2/3)..."
 
 ---
 
 ## Session Log — April 10, 2026
 
-**What was done (20 items):**
+**What was done (21 items):**
 1. P2-F: phenotype-oriented aspects + Voyage AI voyage-3 migration (8,100 chunks re-embedded)
 2. F-5: Fixed phantom ensemble in methodology prompt
 3. F-6: Predictive concordance (A/B only) alongside overall concordance
@@ -160,8 +161,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 16. Redesigned Phase1Steps landing page to reflect current architecture
 17. Guard Phase 2 from running while Phase 1 is processing (API 409 + UI warning)
 18. Fixed Ask LumosAI platform facts + added reranking to all chat routes + processing page context
-19. Auto-retry on Opus stall (60s stall detection, 3 attempts, progress updates)
-20. Redesign Study Overview page added to backlog + study ingestion module (Later)
+19. Fixed root cause of Opus stalls: AbortController doesn't break stalled ReadableStream in Node.js. Replaced with Promise.race + phenotypeStream.abort()
+20. Fixed Ask LumosAI platform facts + reranking in all chat routes + processing page context
+21. Redesign Study Overview page added to backlog + study ingestion module (Later)
 
 **Validated results (last Planning Phase run):**
 - Pipeline: 600 raw → 472 deduped → 100 retrieved → 50 reranked → 51 findings → Opus synthesis
