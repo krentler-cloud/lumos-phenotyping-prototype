@@ -101,6 +101,13 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   **After test run:** Review tier stats, check ingestion_failed.jsonl for patterns, then decide on full run budget.
   **Full run estimate:** ~85K downloadable × 30% success = ~25K papers, ~750K chunks, ~$250 OpenAlex spend, ~$4 embedding cost, ~8 hour run.
 
+- [ ] **E-2b: Generate "missing high-relevance papers" report for manual retrieval**
+  After the E-2 ingestion run completes, generate a prioritized list of the highest-relevance papers that failed all 4 download tiers. These are paywalled papers with no OA version — the most valuable gaps in the corpus.
+  - Script: read `data/ingestion_failed.jsonl`, cross-reference with `data/papers_ranked.csv` for relevance scores
+  - Output: CSV sorted by relevance score with columns: rank, openalex_id, title, relevance_score, doi, failure_reason
+  - Top 50-100 papers can be retrieved manually via: university library access (anyone on Headlamp team with institutional login), author preprints on bioRxiv/medRxiv/ResearchGate, or interlibrary loan
+  - Upload recovered PDFs via the existing corpus ingest UI (`/api/corpus/ingest`)
+
 - [ ] **E-3: Qdrant migration (decision gate at ~25K papers)**
   Evaluate Qdrant Cloud vs. pgvector with HNSW index at scale.
   **April 11 assessment:** At 2.6M vectors with single concurrent user, pgvector and Qdrant have equivalent query latency. Qdrant's throughput advantage only matters at 50M+ vectors or under concurrent load. Stay on Supabase Pro for now. Triggers to revisit: query latency >500ms, storage overages >$50/month, or concurrent users.
