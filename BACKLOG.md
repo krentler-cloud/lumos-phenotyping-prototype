@@ -19,6 +19,12 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   - Run Ask LumosAI chat — confirm embedText works for query embedding
   - If anything fails, the rollback plan is: revert embed.ts to OpenAI, run reverse migration (1024→1536), re-embed with OpenAI
 
+- [ ] **Add generation timestamp (local time) to report headers**
+  Both Planning Phase and Clinical Analysis reports currently show "Generated Apr 10, 2026" — this is date only, no time. When re-running analyses multiple times in a day, there's no way to tell which report you're looking at.
+  - Planning Phase report header (`components/Phase1ReportViewer.tsx`): show full local timestamp, e.g. "Generated Apr 10, 2026 at 2:34 PM"
+  - Clinical Analysis report header (`components/Phase2FinalReport.tsx`): same treatment
+  - The timestamp comes from `runs.completed_at` (UTC) — convert to local time on the client side using `toLocaleString()` or similar
+
 - [ ] **Update all static pipeline descriptions to reflect P2-F changes**
   Two pages have stale descriptions after the aspect rewrite + Voyage migration:
   1. **Processing page** (`Phase1ProcessingClient.tsx` — `buildStepDescriptions()`):
