@@ -96,7 +96,7 @@ export default async function Phase1Page({
         </button>
       </form>
       <p className="text-center text-text-muted text-xs mt-3">
-        Estimated time: 60–90 seconds · No patient data required
+        Estimated time: 3–5 minutes · No patient data required
       </p>
     </div>
   );

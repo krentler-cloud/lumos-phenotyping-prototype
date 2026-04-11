@@ -27,10 +27,10 @@ function getSuggestions(
 ): string[] {
   if (pathname.includes("/phase1/processing")) {
     return [
-      "How do you ensure the corpus retrieval actually surfaces the most relevant science, rather than just text that matches surface keywords?",
+      "How does the reranking step improve on embedding similarity — what does cross-attention catch that vector search misses?",
+      "The evidence compression extracts structured findings before synthesis — what's lost in that compression, and how do you ensure nothing critical is dropped?",
       "The Bayesian priors are computed from keyword mentions in retrieved chunks — how is that a valid proxy for actual response rates?",
-      "Why four search aspects? What's the justification for that decomposition, and what might it miss?",
-      "What stops Claude from drawing on its training data rather than the retrieved corpus when synthesizing phenotypes?",
+      "What stops Lumos AI from drawing on general training data rather than the retrieved corpus when synthesizing phenotypes?",
       "How was the 1.20× source weight for clinical trial documents calibrated?",
     ];
   }

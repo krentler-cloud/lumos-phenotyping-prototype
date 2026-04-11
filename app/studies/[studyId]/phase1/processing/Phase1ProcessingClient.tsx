@@ -59,8 +59,8 @@ function buildStepDescriptions(
       why: "Drug names and indications are poor proxies for mechanism. Two antidepressants can share an indication but diverge completely in their receptor pharmacology, and that divergence is exactly what determines which patient subtypes respond. Grounding the search in molecular specifics prevents the model from retrieving superficially similar but mechanistically irrelevant evidence.",
     },
     "Aspect embedding": {
-      what: "Generated four independent semantic embeddings — mechanism, efficacy, biomarkers, and safety/PK — using Lumos AI's semantic search model (1,536 dimensions). An embedding converts language into a high-dimensional numerical vector where semantic similarity becomes geometric proximity — papers about serotonin transporter occupancy cluster near each other regardless of whether they use identical terminology. Running four separate embeddings rather than one allows each dimension of the analysis to pull evidence from different parts of the scientific literature.",
-      why: "A single query embedding optimized for, say, efficacy would systematically under-retrieve safety and biomarker literature. The four-aspect approach treats the analysis as four parallel information retrieval problems — each independently tuned — then merges the results. This is consistently more recall-complete than any single general-purpose embedding.",
+      what: "Generated four independent semantic embeddings — responder profile, non-responder profile, biomarker stratification, and analog outcomes — using Lumos AI's semantic search model (1,024 dimensions). An embedding converts language into a high-dimensional numerical vector where semantic similarity becomes geometric proximity — papers about serotonin transporter occupancy cluster near each other regardless of whether they use identical terminology. These four phenotype-oriented queries retrieve evidence about *who responds* rather than *what the drug does*, pulling from different parts of the scientific literature simultaneously.",
+      why: "A single query embedding would systematically under-retrieve evidence relevant to non-responder profiles or analog drug outcomes. The four-aspect approach treats the analysis as four parallel phenotype stratification problems — each independently tuned — then merges the results. This is consistently more recall-complete than any single general-purpose embedding.",
     },
     "Weighted corpus search": {
       what: `Broad retrieval across the Lumos corpus (${corpusDocCount} documents, ${corpusChunkCount.toLocaleString()} total chunks at ~512 tokens each). Each of the four phenotype-oriented aspects queries up to 150 raw candidates — 600 total — which are deduplicated by chunk ID (keeping the best similarity score), capped at 5 chunks per document, and trimmed to the top 100 candidates. These 100 are passed to the reranking step for precision selection. Documents classified as clinical trial records receive a 1.20× similarity score boost; regulatory documents receive 1.15×.`,
@@ -339,7 +339,7 @@ export default function Phase1ProcessingClient({
         <p className="text-text-muted text-sm">
           {isError
             ? "An error occurred during corpus analysis. You can re-run from the Planning Phase analysis page."
-            : "Running Planning Phase corpus analysis — no patient data required. This typically takes 60–90 seconds."}
+            : "Running Planning Phase corpus analysis — no patient data required. This typically takes 3–5 minutes."}
         </p>
       </div>
 

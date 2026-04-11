@@ -9,7 +9,7 @@ const STEPS = [
     detail: "IND clinical trial documentation",
     tooltip: {
       title: "IND package — the drug's complete pre-clinical dossier",
-      body: "An Investigational New Drug (IND) filing is the FDA-required submission before first-in-human dosing. It covers synthesis & manufacturing, preclinical pharmacology, toxicology, proposed trial protocol, and the investigator's brochure. Lumos ingests all IND documents as structured source material — treating them as highest-weight evidence throughout every downstream analysis step.",
+      body: "An Investigational New Drug (IND) filing is the FDA-required submission before first-in-human dosing. It covers synthesis & manufacturing, preclinical pharmacology, toxicology, proposed trial protocol, and the investigator's brochure. Lumos AI ingests all IND documents as highest-weight evidence throughout every downstream analysis step.",
     },
   },
   {
@@ -18,34 +18,43 @@ const STEPS = [
     detail: "Receptor profile, PK/PD, neuroplasticity signals, safety",
     tooltip: {
       title: "Structured pharmacology extraction",
-      body: "Claude parses the IND corpus to extract a structured drug profile: receptor binding affinities (e.g. 5-HT2A Ki in nM), selectivity ratios vs. off-targets, PK parameters (half-life, bioavailability, Cmax), neuroplasticity signals (BDNF upregulation, TrkB agonism), and pre-clinical safety flags. This structured context is then injected verbatim into every synthesis prompt — so the model reasons from precise pharmacology, not general knowledge.",
+      body: "Lumos AI parses the IND corpus to extract a structured drug profile: receptor binding affinities (e.g. 5-HT2A Ki in nM), selectivity ratios vs. off-targets, PK parameters (half-life, bioavailability, Cmax), neuroplasticity signals (BDNF upregulation, TrkB agonism), and pre-clinical safety flags. This structured context is injected into every synthesis prompt — so reasoning is grounded in precise pharmacology, not general knowledge.",
     },
   },
   {
     icon: "🧬",
-    label: "Multi-aspect corpus search",
-    detail: "4 simultaneous vector queries across Headlamp MDD corpus",
+    label: "Phenotype-oriented corpus search",
+    detail: "4 aspect queries → 600 raw candidates → 100 retrieved",
     tooltip: {
-      title: "Parallel semantic search across 4 independent query axes",
-      body: "Each document in Headlamp's research corpus is pre-embedded as a high-dimensional vector using Lumos AI's proprietary embedding model. Lumos runs 4 simultaneous cosine-similarity queries — mechanism of action, PK/safety, biomarker thresholds, and efficacy signals — fetching up to 80 candidates per aspect (320 raw). Results are deduplicated by chunk ID (keeping the best similarity score), source-type boosts are applied (clinical trial docs: 1.20×, regulatory: 1.15×), a 3-chunk-per-document cap prevents any single paper from dominating, and the top 40 are sent to the Lumos AI synthesis model. A single query would miss cross-domain evidence; 4 parallel queries cover the mechanistic search space.",
+      title: "Broad semantic retrieval across 4 phenotype dimensions",
+      body: "Lumos AI runs 4 simultaneous cosine-similarity queries — responder profile, non-responder profile, biomarker stratification, and analog outcomes — fetching up to 150 candidates per aspect (600 raw). Results are deduplicated, source-type boosts applied (clinical trial: 1.20×, regulatory: 1.15×), and capped at 5 chunks per document to prevent any single paper from dominating. The top 100 are passed to the reranking step.",
     },
   },
   {
-    icon: "🐭",
-    label: "Cross-species mapping",
-    detail: "FST / CMS / LH animal models → human MDD subtypes",
+    icon: "🎯",
+    label: "Cross-attention reranking",
+    detail: "100 candidates → 50 precision-selected chunks",
     tooltip: {
-      title: "Translating rodent models to human patient subtypes",
-      body: "Three validated preclinical depression paradigms are the field standard: Forced Swim Test (FST — acute behavioral despair, maps to Subtype A responders), Chronic Mild Stress (CMS — anhedonia and HPA dysregulation, maps to Subtype B inflammatory profile), and Learned Helplessness (LH — treatment-resistant, maps to Subtype C). Lumos identifies which models appear in the retrieved corpus chunks and uses those mappings to predict which human phenotypes the drug's preclinical efficacy data actually supports.",
+      title: "Reranking with cross-attention for precision selection",
+      body: "The 100 retrieved chunks are reranked using Lumos AI's cross-attention model, which reads each chunk alongside the full phenotype query simultaneously. Unlike embedding similarity (which compares pre-computed vectors), cross-attention evaluates how well each chunk actually answers the stratification question. The top 50 by rerank score are kept — significantly more accurate than similarity alone, especially as the corpus scales.",
     },
   },
   {
     icon: "∑",
     label: "Bayesian subtype priors",
-    detail: "Beta-Binomial posteriors from corpus animal-model evidence",
+    detail: "Beta-Binomial posteriors from corpus evidence",
     tooltip: {
       title: "Beta-Binomial posteriors: quantifying subtype confidence before trial data",
-      body: "Lumos counts corpus mentions of each animal model (FST → Subtype A, CMS → B, LH → C) and fits a Beta-Binomial: α = 1 + evidence_for_subtype, β = 1 + evidence_against. The posterior mean (α / α+β) gives a pre-trial probability that this drug works for each patient subtype. These priors aren't soft guesses — they're the starting state of a Bayesian update that will shift numerically when Phase 1 outcome data arrives, giving you a principled before/after comparison.",
+      body: "Lumos AI fits a Beta-Binomial model from corpus evidence for each patient subtype. The posterior mean gives a pre-trial probability that this drug works for each subtype. These priors are the starting state of a Bayesian update that will shift numerically when Phase 1 outcome data arrives, giving a principled before/after comparison.",
+    },
+  },
+  {
+    icon: "📝",
+    label: "Evidence compression",
+    detail: "50 chunks → structured findings (4 parallel extractions)",
+    tooltip: {
+      title: "Parallel extraction of structured evidence findings",
+      body: "The 50 reranked chunks are split by phenotype dimension and processed in parallel. Each extraction call reads its group and pulls out structured findings: specific thresholds, effect sizes, p-values, sample sizes, study quality classifications, and contradictions between studies. The output is ~70% smaller than raw chunks while preserving every quantitative finding and its source citation.",
     },
   },
   {
@@ -53,8 +62,8 @@ const STEPS = [
     label: "Phenotype synthesis",
     detail: "Lumos AI synthesis: predicted responder + non-responder profiles",
     tooltip: {
-      title: "Synthesis over retrieved evidence — two structured phenotype portraits",
-      body: "The Lumos AI synthesis model receives the drug's structured pharmacology, the Bayesian subtype priors, and the top 40 corpus chunks (weighted by relevance and source type). It synthesizes two structured phenotype profiles — predicted responder and non-responder — across five dimensions: demographics, core clinical presentation (MADRS/HAMD-17 thresholds), inflammatory markers, neuroplasticity signals (BDNF, TrkB), and imaging correlates. Every claim is grounded in specific corpus evidence with a confidence score. Confidence percentages reflect how consistently and strongly the corpus mechanistic evidence (animal model data, in vitro studies) supports each phenotype — they do not predict clinical response probability.",
+      title: "Synthesis from structured evidence — two phenotype portraits",
+      body: "Lumos AI receives the structured evidence brief (compressed from 50 reranked chunks), the drug's pharmacology, and Bayesian subtype priors. It synthesizes responder and non-responder phenotype profiles across five dimensions: demographics, core clinical presentation, inflammatory markers, neuroplasticity signals, and imaging correlates. Every claim is grounded in specific corpus evidence with a confidence score.",
     },
   },
   {
@@ -63,7 +72,7 @@ const STEPS = [
     detail: "Priority-ranked collection plan for Phase 1 trial",
     tooltip: {
       title: "Evidence-grounded biomarker collection plan with quantitative thresholds",
-      body: "A second Lumos AI analysis pass generates a ranked protocol of 6–9 biomarkers spanning inflammatory (CRP, IL-6, TNF-α), neuroplasticity (BDNF, TrkB), behavioral, imaging, and genetic domains. For each biomarker: a mechanistic rationale tied to the drug's receptor profile, a quantitative threshold that distinguishes responder from non-responder signal, collection timing mapped to trial visits (Baseline → Wk 2 → Wk 4 → Wk 8), and collection method. The output is a protocol your CRO can implement directly — not a literature review.",
+      body: "A second analysis pass generates a ranked protocol of 6–9 biomarkers spanning inflammatory (CRP, IL-6, TNF-α), neuroplasticity (BDNF, TrkB), behavioral, imaging, and genetic domains. Each includes a mechanistic rationale, quantitative threshold, collection timing mapped to trial visits, and collection method. The output is a protocol your CRO can implement directly.",
     },
   },
 ];
