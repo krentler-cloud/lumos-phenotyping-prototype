@@ -6,28 +6,18 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
-- [ ] **Update all static pipeline descriptions to reflect current architecture**
-  Multiple pages have stale descriptions after the P2-F + rerank+compress changes:
-  1. **Processing page** (`Phase1ProcessingClient.tsx` — `buildStepDescriptions()`):
-     - "Aspect embedding" still says "mechanism, efficacy, biomarkers, and safety/PK" and "1,536 dimensions" — should say the 4 phenotype-oriented aspects (responder profile, non-responder profile, biomarker stratification, analog outcomes) and "1,024 dimensions"
-     - "Weighted corpus search" says "sent to Claude" — should say "sent to Lumos AI" per branding rule
-     - Header says "This typically takes 60–90 seconds" — inaccurate. Either show a dynamic elapsed timer, or change to "3–5 minutes depending on corpus size"
-     - Suggested questions in Ask LumosAI sidebar are hardcoded and reference "Claude" ("What stops Claude from drawing on its training data...") — must say "Lumos AI" per branding rule. Update the static list to reflect the current pipeline (reranking, evidence compression, phenotype-oriented aspects).
-  2. **Landing page** (`app/studies/[studyId]/phase1/page.tsx` — the "What Lumos AI will do" card):
-     - Pipeline steps listed don't reflect the current architecture (no mention of reranking or evidence compression)
-     - The 3 stat cards at the bottom (39 Clinical Trial Docs, 144 Research Corpus, 8,100 Vector Embeddings) should pull live numbers from the DB, not be hardcoded
-  Both pages should derive descriptions from the actual code/config where possible, and use live corpus stats (already available via the server component pattern used in the processing page).
+- [ ] **Redesign Study Overview page to clearly articulate what we're doing**
+  The Study Overview page (`app/studies/[studyId]/overview/page.tsx`) needs to clearly communicate:
+  - What Lumos AI does (phenotype prediction for clinical trial enrichment)
+  - The two-phase structure: Planning Phase (corpus-only, no patients) → Clinical Analysis (real patient data)
+  - The study design: N=80 total (16 MDD efficacy patients + 64 healthy volunteers in SAD/MAD)
+  - What the pipeline actually does now (rerank+compress, evidence brief, Opus synthesis)
+  - Current corpus stats (live from DB)
+  Review the existing page and make it a compelling, accurate description of the platform for the MBA/PhD audience.
 
-- [ ] **Add generation timestamp (local time) to report headers**
-  Both Planning Phase and Clinical Analysis reports currently show "Generated Apr 10, 2026" — date only, no time.
-  - Planning Phase: `components/Phase1ReportViewer.tsx`
-  - Clinical Analysis: `components/Phase2FinalReport.tsx`
-  - Use `runs.completed_at` (UTC) → convert to local time on client with `toLocaleString()`
-
-- [ ] **Study design: account for healthy volunteers vs. MDD patients (N=80 total)**
-  The full study is N=80: 16 MDD patients + 64 healthy volunteers (SAD/MAD). Currently the prototype only represents the 16 MDD patients.
-  - Update studies table seed to record total_n, mdd_n, healthy_n
-  - Confirm Phase 2 patient population filters to MDD-diagnosed subjects only
+- [ ] **Run Supabase migration 011 (study design columns)**
+  Add `mdd_n` and `healthy_volunteer_n` columns. SQL ready in `supabase/migrations/011_study_design.sql`.
+  Quick paste in Supabase SQL Editor — non-breaking, has defaults.
 
 ---
 
@@ -41,9 +31,6 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [ ] **F-2: Phase 1 distributions as Bayesian priors for Phase 2**
   Replace threshold-based subtype assignment with likelihood-ratio approach using Phase 1 distributions.
   **Dependency:** F-1 must ship first.
-
-- [ ] **F-3: Posterior confidence intervals per patient**
-  Compute Beta distribution credible intervals (80% CI). Quick win — current Beta-Binomial already has the parameters.
 
 - [ ] **F-4: Evidence quality weighting in priors**
   Weight studies by source type (RCT 1.0 → case report 0.2). Track `evidence_quality_score` per biomarker.
@@ -87,6 +74,15 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Later
 
+- [ ] **Study ingestion module — multi-study support**
+  Currently the platform is hardcoded for the Xylo Bio XYL-1001 study: seed data in migration 005, trial_size/mdd_n/healthy_volunteer_n hardcoded, SAD/MAD cohort data tied to one study. For Lumos AI to support arbitrary clients and drugs, need:
+  - Study creation flow: UI or API to create a new study with drug name, indication, sponsor, trial design (total N, MDD N, healthy N, phase structure)
+  - IND document ingestion: upload IND package per study → auto-extract mechanism context (currently pre-seeded in DB)
+  - Study-scoped corpus: filter or tag corpus docs by study relevance (currently all docs are shared across all studies)
+  - Study-scoped patients: patient enrollment and data entry per study
+  - Multi-study dashboard: list studies, switch between them
+  **Not needed for Xylo Bio prototype — this is for the product roadmap when onboarding a second client.**
+
 - [ ] **Async job queue for long-running synthesis**
 - [ ] **Polygenic Risk Score (PRS)** — blocked on real genotype data (N ≥ 50)
 - [ ] **In silico twin** — blocked on labeled dataset (N ≥ 300)
@@ -97,18 +93,28 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 - `app/api/runs/` legacy routes — assess whether still needed or safe to remove
 - Processing page escape hatch timer is 90 seconds — should be 3-4 minutes
-- Dynamic chunk count scaling — currently hardcoded in `searchCorpusMultiAspect` params. The rerank+compress pipeline mitigates this (broad retrieval → rerank selects best), but the raw retrieval params (100 finalK, 150 rawPerAspect) may need tuning as corpus grows past 10K papers.
+- Dynamic chunk count scaling — the rerank+compress pipeline mitigates this (broad retrieval → rerank selects best), but retrieval params (100 finalK, 150 rawPerAspect) may need tuning as corpus grows past 10K papers
 
 ---
 
 ## Completed
 
+- [x] **Update pipeline descriptions** — April 10, 2026
+  Processing page, landing page Phase1Steps, suggested questions — all updated to reflect current architecture (phenotype aspects, 1024 dims, reranking, compression). Removed all "Claude" references. Time estimates: 3-5 min.
+
+- [x] **Add generation timestamps to report headers** — April 10, 2026
+  Both reports now show "Generated Apr 10, 2026 at 2:34 PM" with local timezone.
+
+- [x] **Study design N=80 + dynamic patient counts** — April 10, 2026
+  Migration 011 adds mdd_n/healthy_volunteer_n columns. All hardcoded N=16 in synthesis prompts, UI, and ML code replaced with dynamic counts from patient data. Phase 2 processing page time estimate updated.
+
+- [x] **F-3: Posterior confidence intervals** — April 10, 2026
+  Beta distribution 80% credible intervals computed from posterior parameters. PosteriorBadge shows "62% [48-75%]". Normal approximation to Beta quantile (accurate to ~1% for our parameter range).
+
 - [x] **Retrieve → Rerank → Compress → Synthesize pipeline** — April 10, 2026
-  Full production RAG pipeline: broad retrieval (600 raw → 100 deduped), Voyage rerank-2 (→50), 4 parallel Sonnet evidence compression calls (→structured findings), Opus synthesis from ~8K token brief. Chat endpoint gets lightweight rerank (fetch 20, rerank to 8). Graceful fallback if rerank or compression fails. First validated run: 127s Opus synthesis with 8,204 input tokens (was 10+ min with 20K+ raw tokens).
+  Full production RAG pipeline. First validated run: 127s Opus, 8,204 input tokens.
 
 - [x] **P2-F: Retrieval aspect rewrite + Voyage AI migration** — April 10, 2026
-  4 phenotype-oriented aspects. OpenAI → Voyage AI voyage-3 (1024 dims). 8,100 chunks re-embedded. OpenAI removed. SDK removed (broken ESM) — direct REST API via fetch().
-
 - [x] **F-5: Fix synthesis prompt — phantom ensemble → real methodology** — April 10, 2026
 - [x] **F-6: Fix Subtype C concordance inflation** — April 10, 2026
 - [x] **Parallelize synthesis calls + exploratory biomarkers to Sonnet** — April 10, 2026
@@ -116,32 +122,6 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Streaming token progress during Phenotype synthesis** — April 10, 2026
 - [x] **Phase 2 processing page: live corpus stats + corrected descriptions**
 - [x] **Verify analysis runs end-to-end after direct-function-call fix**
-
----
-
-## Session Log — April 10, 2026
-
-**What was done (13 items):**
-1. P2-F: phenotype-oriented aspects + Voyage AI voyage-3 migration (8,100 chunks re-embedded)
-2. F-5: Fixed phantom ensemble in methodology prompt
-3. F-6: Predictive concordance (A/B only) alongside overall concordance
-4. Supabase migration 010 (1536→1024 dims)
-5. OpenAI fully removed (package + Railway env var)
-6. `voyageai` SDK removed — embed.ts calls REST API directly
-7. Exploratory biomarkers: Opus → Sonnet
-8. Exploratory + corpus intelligence: parallel via Promise.all
-9. Opus diagnostics in step_log (tokens, duration, prompt size)
-10. Chunk count 40→25 (then superseded by rerank pipeline)
-11. FDA safety instructions moved from Opus to Sonnet biomarker prompt
-12. Streaming token progress every 15s during Phenotype synthesis
-13. Full Retrieve → Rerank → Compress → Synthesize pipeline
-
-**Validated results (last run):**
-- Pipeline: 600 raw → 472 deduped → 100 retrieved → 50 reranked → 51 findings extracted → Opus synthesis
-- Opus: 127s, 8,204 input tokens, 5,877 output tokens, stop=end_turn
-- Evidence compression: 45s (4 parallel Sonnet calls)
-- Total pipeline: ~3.5 minutes (was 10+ min before)
-- Report generated successfully with 38% corpus confidence, 9 biomarkers
 
 ---
 
