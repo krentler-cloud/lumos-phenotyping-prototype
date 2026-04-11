@@ -31,6 +31,19 @@ export function createServiceClient() {
   const { createClient } = require('@supabase/supabase-js')
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      db: {
+        // Vector search on 13K+ chunks can exceed the default 8s statement timeout.
+        // This sets the Postgres statement_timeout for this client's session.
+        schema: 'public',
+      },
+      global: {
+        // Increase fetch timeout to 30s for heavy vector searches
+        fetch: (url: string, options: RequestInit = {}) => {
+          return fetch(url, { ...options, signal: AbortSignal.timeout(30_000) })
+        },
+      },
+    }
   )
 }
