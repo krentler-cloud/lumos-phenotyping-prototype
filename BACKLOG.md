@@ -134,6 +134,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Completed
 
+- [x] **Fix vector search timeout for 13K+ chunk corpus** — April 11, 2026
+  Corpus grew from ~150 docs to 248 docs / 13K chunks — IVFFlat search exceeded default 8s Postgres statement_timeout. Migration 012: `ALTER ROLE authenticator/anon SET statement_timeout = '30s'`. Also added 30s fetch timeout on service client. Planning Phase analysis confirmed working after fix.
+
 - [x] **E-2 ingestion script: 4-tier waterfall implemented** — April 11, 2026
   Rewrote download logic with Unpaywall → PMC → Publisher → OpenAlex waterfall. Pre-fetches DOIs in batches. Fixed doc_already_exists crash (.maybe_single() → .limit(1)). Tested: 15/50 papers ingested, 0 failures, $0.13 spent. Ready for 1000-paper test run.
 
