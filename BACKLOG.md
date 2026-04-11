@@ -18,6 +18,12 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [ ] **Run Supabase migration 011 (study design columns)**
   Add `mdd_n` and `healthy_volunteer_n` columns. SQL ready in `supabase/migrations/011_study_design.sql`.
   Quick paste in Supabase SQL Editor — non-breaking, has defaults.
+  ```sql
+  ALTER TABLE studies ADD COLUMN IF NOT EXISTS mdd_n int DEFAULT 16;
+  ALTER TABLE studies ADD COLUMN IF NOT EXISTS healthy_volunteer_n int DEFAULT 64;
+  UPDATE studies SET mdd_n = 16, healthy_volunteer_n = 64
+  WHERE id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+  ```
 
 ---
 
@@ -122,6 +128,41 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Streaming token progress during Phenotype synthesis** — April 10, 2026
 - [x] **Phase 2 processing page: live corpus stats + corrected descriptions**
 - [x] **Verify analysis runs end-to-end after direct-function-call fix**
+- [x] **Guard Phase 2 from running while Phase 1 is processing** — April 10, 2026
+  API returns 409 if Phase 1 is processing/queued. UI replaces run button with warning banner.
+
+---
+
+## Session Log — April 10, 2026
+
+**What was done (17 items):**
+1. P2-F: phenotype-oriented aspects + Voyage AI voyage-3 migration (8,100 chunks re-embedded)
+2. F-5: Fixed phantom ensemble in methodology prompt
+3. F-6: Predictive concordance (A/B only) alongside overall concordance
+4. Supabase migration 010 (1536→1024 dims)
+5. OpenAI fully removed (package + Railway env var)
+6. `voyageai` SDK removed — embed.ts calls REST API directly
+7. Exploratory biomarkers: Opus → Sonnet
+8. Exploratory + corpus intelligence: parallel via Promise.all
+9. Opus diagnostics in step_log (tokens, duration, prompt size)
+10. Streaming token progress every 15s during Phenotype synthesis
+11. Full Retrieve → Rerank → Compress → Synthesize pipeline (the big one)
+12. Updated all pipeline descriptions (processing page, landing page, suggested questions)
+13. Added generation timestamps to report headers (local time)
+14. Study design N=80: migration 011 + dynamic patient counts replacing hardcoded N=16
+15. F-3: Posterior confidence intervals (80% CI on PosteriorBadge)
+16. Redesigned Phase1Steps landing page to reflect current architecture
+17. Guard Phase 2 from running while Phase 1 is processing (API 409 + UI warning)
+
+**Validated results (last Planning Phase run):**
+- Pipeline: 600 raw → 472 deduped → 100 retrieved → 50 reranked → 51 findings → Opus synthesis
+- Opus: 127s, 8,204 input tokens, 5,877 output tokens, stop=end_turn
+- Evidence compression: 45s (4 parallel Sonnet calls)
+- Total pipeline: ~3.5 minutes (was 10+ min before)
+
+**Pending manual steps:**
+- Run Supabase migration 011 (study design columns) — see "Now" section above
+- The F-3 confidence intervals and Phase 2 guard will show on the next Clinical Analysis run
 
 ---
 
