@@ -556,14 +556,6 @@ export async function synthesizePhase1Report(
     let lastProgressUpdate = 0
     let lastTokenTime = Date.now()
 
-    // Stall detector: abort if no tokens arrive for 60 seconds
-    const stallCheck = setInterval(() => {
-      if (Date.now() - lastTokenTime > STALL_TIMEOUT_MS) {
-        console.error(`[synthesize-phase1] Opus stalled — no tokens for ${STALL_TIMEOUT_MS / 1000}s (attempt ${attempt}/${MAX_ATTEMPTS}, ~${Math.round(outputChars / 4)} tokens generated)`)
-        controller.abort()
-      }
-    }, 10_000)
-
     try {
       const phenotypeStream = await client.messages.stream(
         {
@@ -589,15 +581,33 @@ export async function synthesizePhase1Report(
         }
       })
 
-      phenotypeMsg = await phenotypeStream.finalMessage()
-      clearInterval(stallCheck)
+      // Race finalMessage() against a stall detector.
+      // AbortController.abort() does NOT break a stalled ReadableStream in Node.js —
+      // the reader.read() promise hangs forever. So we use Promise.race instead:
+      // if no tokens arrive for STALL_TIMEOUT_MS, the stall promise rejects and we
+      // force-abort the stream via its own abort() method.
+      const stallPromise = new Promise<never>((_, reject) => {
+        const check = setInterval(() => {
+          if (Date.now() - lastTokenTime > STALL_TIMEOUT_MS) {
+            clearInterval(check)
+            phenotypeStream.abort() // force-abort the MessageStream directly
+            reject(new Error(`STALL: no tokens for ${STALL_TIMEOUT_MS / 1000}s (~${Math.round(outputChars / 4)} tokens generated)`))
+          }
+        }, 5_000)
+        // Clean up interval if finalMessage resolves first
+        phenotypeStream.on('end', () => clearInterval(check))
+      })
+
+      phenotypeMsg = await Promise.race([
+        phenotypeStream.finalMessage(),
+        stallPromise,
+      ])
       break // success — exit retry loop
     } catch (err) {
-      clearInterval(stallCheck)
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      const isAbort = msg.includes('abort') || msg.includes('Abort')
-      if (isAbort && attempt < MAX_ATTEMPTS) {
-        console.warn(`[synthesize-phase1] Opus stalled on attempt ${attempt}, retrying...`)
+      const isStall = msg.startsWith('STALL:')
+      if (isStall && attempt < MAX_ATTEMPTS) {
+        console.warn(`[synthesize-phase1] Opus stalled on attempt ${attempt}: ${msg}`)
         if (onProgress) {
           await onProgress(`stalled at ~${Math.round(outputChars / 4)} tokens — retrying (attempt ${attempt + 1}/${MAX_ATTEMPTS})...`).catch(() => {})
         }
