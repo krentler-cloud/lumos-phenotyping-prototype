@@ -58,23 +58,52 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 ---
 
 ## Large-Scale Corpus Expansion (Track E — XOLO Papers, all ~159K)
-*P2-F Voyage migration complete ✓. Rerank+compress pipeline complete ✓.*
+*P2-F Voyage migration complete ✓. Rerank+compress pipeline complete ✓. Supabase upgraded to Pro ✓.*
 
-- [ ] **E-0: Prerequisites**
-  - [ ] Sudhanshu exports XOLO Papers Google Sheet as CSV
-  - [ ] OpenAlex API key obtained at openalex.org
+- [x] **E-0: Prerequisites** ✓
+  - [x] XOLO Papers Google Sheet exported as CSV (`data/xolo_papers.csv`, 159,094 IDs)
+  - [x] OpenAlex API key obtained
   - [x] P2-F Voyage AI migration ✓
   - [x] `scripts/corpus-pipeline/` directory ✓
-  - [x] Rerank+compress pipeline ✓ (scales to large corpus)
+  - [x] Rerank+compress pipeline ✓
+  - [x] Supabase upgraded to Pro plan ✓
 
-- [ ] **E-1: Assessment + relevance ranking** *(running now)*
-  `scripts/corpus-pipeline/01_rank_papers.py` — fetches metadata, ranks all ~159K papers by relevance.
+- [x] **E-1: Assessment + relevance ranking** ✓ (April 11, 2026)
+  `scripts/corpus-pipeline/01_rank_papers.py` — 159,094 papers fetched, 96K with abstracts embedded with voyage-3, ranked by phenotype relevance. Output: `data/papers_ranked.csv`. Top hit: "Combined Detection of Serum Brain-Derived Neurotrophic Factor and Interleukin-6" (0.6944 relevance).
 
-- [ ] **E-2: Full corpus ingest — all ~159K papers**
-  `scripts/corpus-pipeline/02_ingest_batch.py` — ingests in ranked order, resumable.
+- [ ] **E-2: Full corpus ingest — all ~159K papers** *(4-tier waterfall implemented, ready for test run)*
+  `scripts/corpus-pipeline/02_ingest_batch.py` — ingests in ranked order, fully resumable via checkpoint.
+
+  **4-tier waterfall implemented and tested (April 11, 2026):**
+  1. **Unpaywall API** (free) — queries by DOI, gets OA repo copies. ~13% of successes in testing.
+  2. **PubMed Central direct PDF** (free) — for papers with PMCIDs. 0% in initial test (top-ranked papers lack PMCIDs).
+  3. **Direct publisher URL** (free, allowlisted domains only) — mdpi.com, springer.com, frontiersin.org, arxiv.org, plos.org. 0% in test (most publishers block automated access via Cloudflare).
+  4. **OpenAlex hosted PDFs** ($0.01/PDF) — `content.openalex.org` direct API. **87% of successes** — the primary source. Budget-capped via `--tier4-budget` CLI arg (default $150).
+
+  **Test results (50 papers):** 15 ingested (30%), 0 DB/embed/extract failures, $0.13 spent on Tier 4.
+  Tier 4 (OpenAlex) is the main workhorse. The 70% failure rate = genuinely paywalled papers with no OA version.
+
+  **Pre-fetch step:** DOIs + PMCIDs batch-fetched from OpenAlex API at startup (50 per call, ~3 min for 85K papers).
+
+  **Fixes applied:**
+  - `doc_already_exists()` uses `.limit(1)` not `.maybe_single()` (was returning None and crashing)
+  - DB insert retry (3 attempts with backoff)
+  - MDPI URL normalization (strip `?version=`)
+  - All previous fixes preserved (voyage-3, vo.embed(), sequential processing, Python 3.9 compat)
+
+  **Next step:** Test run with `--limit 1000 --tier4-budget 10` (~$10 spend, ~300 papers expected to ingest). Verify:
+  - Pipeline runs stably for 1000 papers without crashing
+  - Embedding costs are in line (~$0.06 for 300 papers × 30 chunks × 512 tokens)
+  - Supabase handles the volume (should be ~9,000 new chunks)
+  - Checkpoint/resume works if interrupted
+  - Run: `cd scripts/corpus-pipeline && python3 02_ingest_batch.py --limit 1000 --tier4-budget 10`
+  
+  **After test run:** Review tier stats, check ingestion_failed.jsonl for patterns, then decide on full run budget.
+  **Full run estimate:** ~85K downloadable × 30% success = ~25K papers, ~750K chunks, ~$250 OpenAlex spend, ~$4 embedding cost, ~8 hour run.
 
 - [ ] **E-3: Qdrant migration (decision gate at ~25K papers)**
   Evaluate Qdrant Cloud vs. pgvector with HNSW index at scale.
+  **April 11 assessment:** At 2.6M vectors with single concurrent user, pgvector and Qdrant have equivalent query latency. Qdrant's throughput advantage only matters at 50M+ vectors or under concurrent load. Stay on Supabase Pro for now. Triggers to revisit: query latency >500ms, storage overages >$50/month, or concurrent users.
 
 ---
 
@@ -104,6 +133,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 ---
 
 ## Completed
+
+- [x] **E-2 ingestion script: 4-tier waterfall implemented** — April 11, 2026
+  Rewrote download logic with Unpaywall → PMC → Publisher → OpenAlex waterfall. Pre-fetches DOIs in batches. Fixed doc_already_exists crash (.maybe_single() → .limit(1)). Tested: 15/50 papers ingested, 0 failures, $0.13 spent. Ready for 1000-paper test run.
 
 - [x] **Update pipeline descriptions** — April 10, 2026
   Processing page, landing page Phase1Steps, suggested questions — all updated to reflect current architecture (phenotype aspects, 1024 dims, reranking, compression). Removed all "Claude" references. Time estimates: 3-5 min.
