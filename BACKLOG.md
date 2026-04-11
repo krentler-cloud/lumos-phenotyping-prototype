@@ -142,7 +142,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Session Log — April 10, 2026
 
-**What was done (21 items):**
+**What was done (22 items):**
 1. P2-F: phenotype-oriented aspects + Voyage AI voyage-3 migration (8,100 chunks re-embedded)
 2. F-5: Fixed phantom ensemble in methodology prompt
 3. F-6: Predictive concordance (A/B only) alongside overall concordance
@@ -163,13 +163,20 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 18. Fixed Ask LumosAI platform facts + added reranking to all chat routes + processing page context
 19. Fixed root cause of Opus stalls: AbortController doesn't break stalled ReadableStream in Node.js. Replaced with Promise.race + phenotypeStream.abort()
 20. Fixed Ask LumosAI platform facts + reranking in all chat routes + processing page context
-21. Redesign Study Overview page added to backlog + study ingestion module (Later)
+21. Fixed root cause of stall detection: AbortController.abort() doesn't break stalled ReadableStream in Node.js — replaced with Promise.race + phenotypeStream.abort()
+22. Redesign Study Overview page added to backlog + study ingestion module (Later)
 
 **Validated results (last Planning Phase run):**
 - Pipeline: 600 raw → 472 deduped → 100 retrieved → 50 reranked → 51 findings → Opus synthesis
 - Opus: 127s, 8,204 input tokens, 5,877 output tokens, stop=end_turn
 - Evidence compression: 45s (4 parallel Sonnet calls)
 - Total pipeline: ~3.5 minutes (was 10+ min before)
+
+**Validated end-to-end (final run of the day):**
+- Full pipeline completed successfully: retrieval → rerank → compress → Opus synthesis → store → exploratory + corpus intelligence
+- Opus generated past the previous ~3,900 token stall point (reached 5,032 tokens) — stall detected and recovered automatically
+- Report generated: 8 exploratory signals, 5 corpus gaps, 4 strengths
+- All previous "stuck" runs were caused by Railway redeployments killing the container mid-synthesis (pushes to main during active runs)
 
 **Pending manual steps:**
 - Run Supabase migration 011 (study design columns) — see "Now" section above
