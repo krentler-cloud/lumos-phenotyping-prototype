@@ -34,6 +34,17 @@ export default async function Phase2Page({
     baseline_bdnf_ng_ml: number; baseline_il6_pg_ml: number; baseline_crp_mg_l: number;
     baseline_madrs: number; prior_ad_trials: number;
   }
+  // Check if Phase 1 is still running — block Phase 2 launch if so
+  let phase1Running = false;
+  if (study.phase1_run_id) {
+    const { data: phase1Run } = await supabase
+      .from("runs")
+      .select("status")
+      .eq("id", study.phase1_run_id)
+      .single();
+    phase1Running = phase1Run?.status === "processing" || phase1Run?.status === "queued";
+  }
+
   const cohort: PatientRow[] = (patients ?? []) as PatientRow[];
   const n = cohort.length;
   const responders = cohort.filter((p) => p.response_status === "responder").length;
@@ -244,14 +255,21 @@ export default async function Phase2Page({
         ))}
       </div>
 
-      <form action={`/api/studies/${studyId}/run-phase2`} method="POST">
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-brand-core to-status-success text-white font-semibold py-4 rounded-xl text-sm transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
-        >
-          Run Lumos v2.1 Clinical Analysis →
-        </button>
-      </form>
+      {phase1Running ? (
+        <div className="w-full bg-bg-overlay border border-status-warning/40 text-status-warning rounded-xl py-4 px-6 text-center">
+          <p className="text-sm font-semibold mb-1">Planning Phase analysis is still running</p>
+          <p className="text-xs text-text-muted">Clinical Analysis depends on the Planning Phase report. Please wait for it to complete before starting.</p>
+        </div>
+      ) : (
+        <form action={`/api/studies/${studyId}/run-phase2`} method="POST">
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-brand-core to-status-success text-white font-semibold py-4 rounded-xl text-sm transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
+          >
+            Run Lumos v2.1 Clinical Analysis →
+          </button>
+        </form>
+      )}
     </div>
     </>
   );

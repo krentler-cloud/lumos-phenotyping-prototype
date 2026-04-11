@@ -31,6 +31,20 @@ export async function POST(
       return NextResponse.json({ error: 'Phase 1 must be completed before running Phase 2' }, { status: 400 })
     }
 
+    // Check Phase 1 is actually complete, not still processing
+    const { data: phase1Run } = await supabase
+      .from('runs')
+      .select('status')
+      .eq('id', study.phase1_run_id)
+      .single()
+
+    if (phase1Run?.status === 'processing' || phase1Run?.status === 'queued') {
+      return NextResponse.json({
+        error: 'Planning Phase analysis is still running. Please wait for it to complete before starting Clinical Analysis.',
+        phase1_status: phase1Run.status,
+      }, { status: 409 })
+    }
+
     // If a Phase 2 run already exists, redirect to its current state
     if (study.phase2_run_id) {
       const { data: existingRun } = await supabase
