@@ -2,9 +2,14 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createServiceClient } from '@/lib/supabase/server'
 import { embedText } from '@/lib/pipeline/embed'
-import { searchCorpusWeighted } from '@/lib/pipeline/search'
+import { searchCorpusWeighted, rerankChunks } from '@/lib/pipeline/search'
 
 const SYSTEM_PROMPT = `You are Lumos AI, a clinical research assistant. You answer questions about a specific patient phenotyping report and the underlying scientific corpus.
+
+PLATFORM FACTS:
+- Corpus evidence is retrieved by embedding similarity and reranked by Lumos AI's cross-attention model for precision selection
+- The 8 corpus chunks below are the top reranked results for the current question
+- Synthesis reports are generated from a broader evidence base (100 candidates reranked to 50, compressed to structured findings)
 
 Rules:
 - Answer ONLY based on the provided report data and corpus excerpts. Do not use outside knowledge.
@@ -38,7 +43,8 @@ export async function POST(
 
     // Embed user message and retrieve relevant corpus chunks
     const queryVec = await embedText(message)
-    const chunks = await searchCorpusWeighted(queryVec, 8)
+    const rawChunks = await searchCorpusWeighted(queryVec, 20)
+    const chunks = await rerankChunks(message, rawChunks, 8)
 
     const corpusContext = chunks
       .map((c, i) => `[${i + 1}] "${c.title}" (${c.source_type}):\n${c.content}`)

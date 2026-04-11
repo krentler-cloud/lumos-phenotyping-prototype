@@ -50,7 +50,7 @@ function getSuggestions(
     return [
       "How stable are these subtype assignments — would enrolling 10 additional patients meaningfully shift them?",
       `What's the biological basis for distinguishing${predictedSubtype ? ` ${predictedSubtype}` : " the subtypes"} — are these clusters truly distinct or a continuous spectrum forced into categories?`,
-      "How do the SHAP attributions from the clinical model compare to what the Planning Phase analysis predicted would matter?",
+      "How do the Pearson correlation feature importances compare to what the Planning Phase analysis predicted would matter most?",
       "What's the estimated misclassification rate given this cohort size?",
       "Where did the clinical subtype assignments agree with and diverge from the Planning Phase predictions?",
     ];
