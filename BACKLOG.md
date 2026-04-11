@@ -131,11 +131,14 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Guard Phase 2 from running while Phase 1 is processing** — April 10, 2026
   API returns 409 if Phase 1 is processing/queued. UI replaces run button with warning banner.
 
+- [x] **Fix Ask LumosAI platform facts + add reranking to all chat routes** — April 10, 2026
+  Chat was saying "Lumos AI does not use a reranking step" because system prompt described old architecture. Rewrote PLATFORM FACTS block with full pipeline description (reranking, compression, phenotype aspects). Added reranking to legacy runs/[runId]/chat route (was raw similarity only). Added PageContextDispatcher to processing page. Fixed stale "SHAP" reference in subtyping suggested questions.
+
 ---
 
 ## Session Log — April 10, 2026
 
-**What was done (17 items):**
+**What was done (18 items):**
 1. P2-F: phenotype-oriented aspects + Voyage AI voyage-3 migration (8,100 chunks re-embedded)
 2. F-5: Fixed phantom ensemble in methodology prompt
 3. F-6: Predictive concordance (A/B only) alongside overall concordance
@@ -153,6 +156,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 15. F-3: Posterior confidence intervals (80% CI on PosteriorBadge)
 16. Redesigned Phase1Steps landing page to reflect current architecture
 17. Guard Phase 2 from running while Phase 1 is processing (API 409 + UI warning)
+18. Fixed Ask LumosAI platform facts + added reranking to all chat routes + processing page context
 
 **Validated results (last Planning Phase run):**
 - Pipeline: 600 raw → 472 deduped → 100 retrieved → 50 reranked → 51 findings → Opus synthesis
