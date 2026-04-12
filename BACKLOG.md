@@ -6,6 +6,20 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
+- [ ] **Rebuild vector search index (BLOCKING — search is broken until done)**
+  The IVFFlat index was dropped but the rebuild failed due to DB resource exhaustion from 12 hours of ingestion. DB needs to cool down first.
+  1. Wait for Supabase DB to recover (try `SELECT 1;` in SQL editor — if it works, proceed)
+  2. Create HNSW index (better than IVFFlat for our scale — no tuning, handles concurrent reads/writes):
+     ```sql
+     CREATE INDEX corpus_chunks_embedding_idx ON corpus_chunks
+     USING hnsw (embedding vector_cosine_ops);
+     ```
+  3. After index builds, run a Planning Phase analysis to validate search works on 3,500+ doc corpus
+  4. If HNSW build also fails (memory), consider upgrading Supabase compute add-on temporarily ($25/mo for 2 CPU / 4 GB RAM) to build the index, then downgrade
+
+- [ ] **Fix CorpusDocList "1000 documents ready" pagination**
+  The doc list on the corpus page caps at 1,000 rows (PostgREST default limit). Stats are fixed but the list still shows "1000 documents ready" instead of 3,543. Needs `count: 'exact'` for the header and pagination for the list.
+
 - [ ] **Redesign Study Overview page to clearly articulate what we're doing**
   The Study Overview page (`app/studies/[studyId]/overview/page.tsx`) needs to clearly communicate:
   - What Lumos AI does (phenotype prediction for clinical trial enrichment)
@@ -71,7 +85,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **E-1: Assessment + relevance ranking** ✓ (April 11, 2026)
   `scripts/corpus-pipeline/01_rank_papers.py` — 159,094 papers fetched, 96K with abstracts embedded with voyage-3, ranked by phenotype relevance. Output: `data/papers_ranked.csv`. Top hit: "Combined Detection of Serum Brain-Derived Neurotrophic Factor and Interleukin-6" (0.6944 relevance).
 
-- [ ] **E-2: Full corpus ingest — all ~159K papers** *(4-tier waterfall implemented, ready for test run)*
+- [ ] **E-2: Full corpus ingest — all ~159K papers** *(first 10K batch COMPLETE, index rebuild pending)*
   `scripts/corpus-pipeline/02_ingest_batch.py` — ingests in ranked order, fully resumable via checkpoint.
 
   **4-tier waterfall implemented and tested (April 11, 2026):**
