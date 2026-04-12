@@ -1,38 +1,31 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
-interface CorpusDocRow {
-  source_type: string
-  chunk_count: number | null
-  status: string
-  created_at: string
-}
-
 export async function GET() {
   try {
     const supabase = createServiceClient()
 
-    const { data: docs, error } = await supabase
-      .from('corpus_docs')
-      .select('source_type, chunk_count, status, created_at')
-      .eq('status', 'ready')
-
-    if (error) throw new Error(error.message)
-
-    const rows = (docs ?? []) as CorpusDocRow[]
-    const totalDocs = rows.length
-    const totalChunks = rows.reduce((sum: number, d: CorpusDocRow) => sum + (d.chunk_count ?? 0), 0)
+    // Use count queries — PostgREST default row limit is 1,000 which silently truncates
+    const [totalResult, chunkResult, litResult, ctResult, regResult, latestResult] = await Promise.all([
+      supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('status', 'ready'),
+      supabase.from('corpus_chunks').select('*', { count: 'exact', head: true }),
+      supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('status', 'ready').eq('source_type', 'literature'),
+      supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('status', 'ready').eq('source_type', 'clinical_trial'),
+      supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('status', 'ready').eq('source_type', 'regulatory'),
+      supabase.from('corpus_docs').select('created_at').eq('status', 'ready').order('created_at', { ascending: false }).limit(1).single(),
+    ])
 
     const bySourceType: Record<string, number> = {}
-    for (const doc of rows) {
-      bySourceType[doc.source_type] = (bySourceType[doc.source_type] ?? 0) + 1
-    }
+    if (litResult.count) bySourceType['literature'] = litResult.count
+    if (ctResult.count) bySourceType['clinical_trial'] = ctResult.count
+    if (regResult.count) bySourceType['regulatory'] = regResult.count
 
-    const lastUpdated = rows.length > 0
-      ? rows.sort((a: CorpusDocRow, b: CorpusDocRow) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
-      : null
-
-    return NextResponse.json({ total_docs: totalDocs, total_chunks: totalChunks, by_source_type: bySourceType, last_updated: lastUpdated })
+    return NextResponse.json({
+      total_docs: totalResult.count ?? 0,
+      total_chunks: chunkResult.count ?? 0,
+      by_source_type: bySourceType,
+      last_updated: latestResult.data?.created_at ?? null,
+    })
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
