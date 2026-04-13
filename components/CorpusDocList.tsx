@@ -198,25 +198,34 @@ function DeleteButton({ doc, onDeleted }: { doc: CorpusDoc; onDeleted: () => voi
 // ── Main list component ───────────────────────────────────────────────────────
 export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: number }) {
   const [docs, setDocs] = useState<CorpusDoc[]>([]);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const pageSize = 100;
 
-  const fetchDocs = async () => {
-    const res = await fetch("/api/corpus/docs");
-    if (res.ok) setDocs(await res.json());
+  const fetchDocs = async (p: number = page) => {
+    const res = await fetch(`/api/corpus/docs?page=${p}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setDocs(data.docs ?? data); // handle both old and new API format
+      setTotalDocs(data.total ?? (data.docs ?? data).length);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchDocs();
-  }, [refreshTrigger]);
+    fetchDocs(page);
+  }, [refreshTrigger, page]);
 
   // Poll every 3s while any doc is still processing
   useEffect(() => {
     const hasProcessing = docs.some(d => d.status === "processing" || d.status === "pending");
     if (!hasProcessing) return;
-    const interval = setInterval(fetchDocs, 3000);
+    const interval = setInterval(() => fetchDocs(page), 3000);
     return () => clearInterval(interval);
-  }, [docs]);
+  }, [docs, page]);
+
+  const totalPages = Math.ceil(totalDocs / pageSize);
 
   if (loading) {
     return (
@@ -254,7 +263,7 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
       <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle">
           <span className="text-text-heading font-medium text-sm">
-            {ready.length} document{ready.length !== 1 ? "s" : ""} ready
+            {totalDocs.toLocaleString()} document{totalDocs !== 1 ? "s" : ""} total · showing {docs.length} on page {page}
           </span>
           {errors.length > 0 && (
             <span className="text-status-danger text-xs">{errors.length} failed</span>
@@ -303,6 +312,29 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border-subtle text-xs text-text-muted">
+          <span>Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1 rounded border border-border-subtle hover:bg-bg-overlay disabled:opacity-30 transition-colors"
+            >
+              ← Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1 rounded border border-border-subtle hover:bg-bg-overlay disabled:opacity-30 transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

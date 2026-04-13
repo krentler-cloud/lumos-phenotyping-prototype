@@ -63,7 +63,8 @@ export async function searchCorpus(
 export async function searchCorpusWeighted(
   queryVector: number[],
   topK: number = 30,
-  sourceBoost: Record<string, number> = { clinical_trial: 1.20, regulatory: 1.15 }
+  // Boost increased from 1.20→1.50 after corpus grew to 7,700 literature vs 39 clinical trial docs (198:1 ratio)
+  sourceBoost: Record<string, number> = { clinical_trial: 1.50, regulatory: 1.30 }
 ): Promise<MatchedChunk[]> {
   const supabase = createServiceClient()
   return retryRpc('Weighted vector search', () =>
