@@ -201,10 +201,11 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
   const [totalDocs, setTotalDocs] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const pageSize = 100;
 
   const fetchDocs = async (p: number = page) => {
-    const res = await fetch(`/api/corpus/docs?page=${p}&pageSize=${pageSize}`);
+    const res = await fetch(`/api/corpus/docs?page=${p}&pageSize=${pageSize}${sourceFilter !== 'all' ? `&source_type=${sourceFilter}` : ''}`);
     if (res.ok) {
       const data = await res.json();
       setDocs(data.docs ?? data); // handle both old and new API format
@@ -215,7 +216,7 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
 
   useEffect(() => {
     fetchDocs(page);
-  }, [refreshTrigger, page]);
+  }, [refreshTrigger, page, sourceFilter]);
 
   // Poll every 3s while any doc is still processing
   useEffect(() => {
@@ -258,6 +259,20 @@ export default function CorpusDocList({ refreshTrigger }: { refreshTrigger?: num
           {processing.length} document{processing.length > 1 ? "s" : ""} still processing…
         </div>
       )}
+
+      {/* Source type filter */}
+      <div>
+        <select
+          value={sourceFilter}
+          onChange={e => { setSourceFilter(e.target.value); setPage(1); }}
+          className="bg-bg-page border border-border-subtle text-text-muted text-xs rounded-lg px-3 py-1.5 cursor-pointer hover:border-brand-core transition-colors focus:outline-none focus:border-brand-core"
+        >
+          <option value="all">All types</option>
+          <option value="literature">Literature</option>
+          <option value="clinical_trial">Clinical Trial</option>
+          <option value="regulatory">Regulatory</option>
+        </select>
+      </div>
 
       {/* Document table */}
       <div className="bg-bg-surface border border-border-subtle rounded-xl overflow-hidden">

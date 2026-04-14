@@ -30,7 +30,7 @@ const OBJECTIVES = [
     number: "03",
     title: "Clinical Validation & CRO Readiness",
     description:
-      "Apply ML-driven subtyping to Phase 1 patient data, update Bayesian posteriors with observed outcomes, and produce actionable CRO screening recommendations.",
+      "Apply threshold-based subtyping and Bayesian updating to Phase 1 patient data, update posteriors with observed outcomes, and produce actionable CRO screening recommendations.",
     phase: "Clinical",
     phaseKey: "phase2",
     reportPath: "phase2/report",
@@ -38,32 +38,34 @@ const OBJECTIVES = [
   },
 ] as const;
 
-const METHODOLOGY_STEPS = [
-  {
-    icon: "◈",
-    title: "Corpus Retrieval",
-    description:
-      "Multi-aspect weighted search across 100+ scientific documents. Clinical trial documents receive a source boost to surface IND-specific evidence.",
-  },
-  {
-    icon: "∿",
-    title: "Bayesian Prior Estimation",
-    description:
-      "Beta-Binomial priors are computed from FST/CMS/LH animal-model mentions in the corpus, producing a probabilistic subtype distribution before any patient data.",
-  },
-  {
-    icon: "⬡",
-    title: "Phenotype Synthesis",
-    description:
-      "Lumos AI synthesizes responder and non-responder phenotype profiles across five dimensions: demographics, clinical, inflammatory, neuroplasticity, and imaging.",
-  },
-  {
-    icon: "◉",
-    title: "Clinical Subtyping",
-    description:
-      "Logistic regression trained on real patient biomarkers, with SHAP-based feature attribution and Bayesian posterior updates from observed clinical outcomes.",
-  },
-];
+function getMethodologySteps(corpusDocCount: string) {
+  return [
+    {
+      icon: "◈",
+      title: "Corpus Retrieval + Reranking",
+      description:
+        `4 phenotype-oriented aspect queries retrieve 600 raw candidates from ${corpusDocCount} documents, deduplicated to 100, then reranked by Lumos AI's cross-attention model to the top 50. Clinical trial and regulatory documents receive reserved slots to ensure IND-specific evidence is always represented.`,
+    },
+    {
+      icon: "∿",
+      title: "Evidence Compression",
+      description:
+        "The 50 reranked chunks are split by phenotype dimension and processed in parallel, extracting structured findings: thresholds, effect sizes, study quality, and contradictions. The output is a ~70% compressed evidence brief that preserves every quantitative finding.",
+    },
+    {
+      icon: "⬡",
+      title: "Phenotype Synthesis",
+      description:
+        "Lumos AI synthesizes responder and non-responder phenotype profiles from the structured evidence brief across five dimensions: demographics, clinical, inflammatory, neuroplasticity, and imaging.",
+    },
+    {
+      icon: "◉",
+      title: "Clinical Validation",
+      description:
+        "Threshold-based subtype assignment using corpus-derived biomarker cutoffs, univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes.",
+    },
+  ];
+}
 
 export default async function StudyOverviewPage({
   params,
@@ -80,6 +82,17 @@ export default async function StudyOverviewPage({
     .single();
 
   if (!study) notFound();
+
+  // Fetch corpus stats
+  const [docCount, chunkCount, litCount, ctCount] = await Promise.all([
+    supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('status', 'ready'),
+    supabase.from('corpus_chunks').select('*', { count: 'exact', head: true }),
+    supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('source_type', 'literature'),
+    supabase.from('corpus_docs').select('*', { count: 'exact', head: true }).eq('source_type', 'clinical_trial'),
+  ]);
+
+  const corpusDocCount = docCount.count?.toLocaleString() ?? "—";
+  const METHODOLOGY_STEPS = getMethodologySteps(corpusDocCount);
 
   // Fetch run statuses
   const [phase1Run, phase2Run] = await Promise.all([
@@ -256,7 +269,7 @@ export default async function StudyOverviewPage({
                   <p className="text-text-secondary text-xs mt-0.5">Phase 2 complete</p>
                 </td>
                 <td className="px-5 py-4 text-text-muted text-xs">
-                  Clinical subtyping · ML predictions · SHAP attributions · CRO screening prompts
+                  Clinical subtyping · Bayesian posterior updates · Pearson correlation feature importance · CRO screening prompts
                 </td>
                 <td className="px-5 py-4">
                   {phase2Complete ? (
@@ -301,6 +314,24 @@ export default async function StudyOverviewPage({
                 <p className="text-text-heading text-xs font-semibold mb-1.5">{step.title}</p>
                 <p className="text-text-secondary text-[11px] leading-relaxed">{step.description}</p>
               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Corpus Stats */}
+      <div>
+        <h2 className="text-text-muted text-xs uppercase tracking-widest mb-4">Corpus Overview</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: "Total Documents", value: docCount.count?.toLocaleString() ?? "—" },
+            { label: "Vector Embeddings", value: chunkCount.count?.toLocaleString() ?? "—" },
+            { label: "Literature Papers", value: litCount.count?.toLocaleString() ?? "—" },
+            { label: "Clinical Trial Docs", value: ctCount.count?.toLocaleString() ?? "—" },
+          ].map(stat => (
+            <div key={stat.label} className="bg-bg-surface border border-border-subtle rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-brand-core">{stat.value}</div>
+              <div className="text-text-muted text-xs mt-0.5">{stat.label}</div>
             </div>
           ))}
         </div>
