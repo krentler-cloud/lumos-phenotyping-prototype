@@ -69,7 +69,10 @@ function madrsReduction(p: ClinicalPatientFull): number | null {
   return ((p.baseline_madrs - p.wk8_madrs) / p.baseline_madrs) * 100;
 }
 
-function subtypeRationale(p: ClinicalPatientFull): string {
+function subtypeRationale(p: ClinicalPatientFull, assignment?: { reason: string; llr_score?: number; assignment_method?: string }): string {
+  // F-2: Use the ML assignment reason when available (includes LLR details)
+  if (assignment?.reason) return assignment.reason;
+  // Fallback: hardcoded rationale for pre-F-2 reports
   if (p.subtype_label === "A")
     return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL < 15 ng/mL threshold → TrkB-deficit phenotype. Low BDNF indicates impaired neurotrophin signalling that this drug's TrkB agonism is designed to restore.`;
   if (p.subtype_label === "B")
@@ -117,7 +120,7 @@ function MadrsSparkline({ p }: { p: ClinicalPatientFull }) {
 
 // ── Patient detail panel ──────────────────────────────────────────────────────
 
-function DetailPanel({ p }: { p: ClinicalPatientFull }) {
+function DetailPanel({ p, assignment }: { p: ClinicalPatientFull; assignment?: { reason: string; llr_score?: number; assignment_method?: string } }) {
   const subtypeColor = SUBTYPE_COLORS[p.subtype_label] ?? "var(--text-muted)";
   const reduction = madrsReduction(p);
 
@@ -236,7 +239,7 @@ function DetailPanel({ p }: { p: ClinicalPatientFull }) {
               </span>
             </div>
             <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">Subtype Assignment</p>
-            <p className="text-text-muted text-xs leading-relaxed">{subtypeRationale(p)}</p>
+            <p className="text-text-muted text-xs leading-relaxed">{subtypeRationale(p, assignment)}</p>
             {reduction !== null && (
               <div className="mt-3 pt-3 border-t" style={{ borderColor: `${subtypeColor}20` }}>
                 <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-1">MADRS Reduction (Wk 8)</p>
@@ -338,11 +341,15 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
 export default function PatientPopulation({
   patients,
   drugName,
+  assignments,
 }: {
   studyId: string;
   drugName: string;
   patients: ClinicalPatientFull[];
+  assignments?: { patient_code: string; reason: string; llr_score?: number; assignment_method?: string }[];
 }) {
+  const assignmentMap = new Map(assignments?.map(a => [a.patient_code, a]) ?? []);
+  const assignmentMethod = assignments?.[0]?.assignment_method;
   const [subtypeFilter, setSubtypeFilter] = useState<SubtypeFilter>("All");
   const [sortKey, setSortKey] = useState<SortKey>("patient_code");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -529,7 +536,7 @@ export default function PatientPopulation({
                   {isSelected && (
                     <tr key={`${p.patient_code}-detail`}>
                       <td colSpan={9} className="p-0">
-                        <DetailPanel p={p} />
+                        <DetailPanel p={p} assignment={assignmentMap.get(p.patient_code)} />
                       </td>
                     </tr>
                   )}
@@ -541,7 +548,9 @@ export default function PatientPopulation({
       </div>
 
       <p className="text-center text-nav-item-muted text-xs mt-6">
-        Click any row to expand patient detail · Subtype thresholds: BDNF &lt; 15 ng/mL → A · IL-6 ≥ 4 pg/mL → B · Mixed → C
+        Click any row to expand patient detail · {assignmentMethod === 'likelihood_ratio'
+          ? 'Subtype assignment: Corpus likelihood ratio · LLR > 1 → A · LLR < -1 → B · Mixed → C'
+          : 'Subtype thresholds: BDNF < 15 ng/mL → A · IL-6 ≥ 4 pg/mL → B · Mixed → C'}
       </p>
     </div>
   );

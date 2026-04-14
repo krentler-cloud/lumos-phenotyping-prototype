@@ -27,6 +27,17 @@ export default async function PatientsPage({
     .eq("study_id", studyId)
     .order("patient_code");
 
+  // F-2: Load ML assignments from Phase 2 report for LLR rationale display
+  const { data: phase2Report } = await supabase
+    .from("phase2_reports")
+    .select("report_data")
+    .eq("study_id", studyId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+  const mlAssignments = (phase2Report?.report_data as Record<string, unknown>)?.ml_result as
+    { assignments?: { patient_code: string; reason: string; llr_score?: number; assignment_method?: string }[] } | undefined;
+
   const cohort = (patients ?? []) as ClinicalPatientFull[];
   const n = cohort.length;
   const responders = cohort.filter(p => p.response_status === "responder").length;
@@ -51,6 +62,7 @@ export default async function PatientsPage({
         studyId={studyId}
         drugName={study.drug_name}
         patients={cohort}
+        assignments={mlAssignments?.assignments}
       />
     </>
   );

@@ -102,6 +102,15 @@ function buildPhase2Prompt(
   const responderDelta = Math.round((bayesUpdate.responder.posterior - bayesUpdate.responder.prior) * 100)
   const nonresponderDelta = Math.round((bayesUpdate.nonresponder.posterior - bayesUpdate.nonresponder.prior) * 100)
 
+  // F-2: Build methodology description based on assignment method
+  const assignmentMethodDesc = ml.assignments[0]?.assignment_method === 'likelihood_ratio'
+    ? `likelihood-ratio subtype assignment using Phase 1 corpus-derived population distributions as Gaussian priors. Each patient biomarker vector was scored against responder and nonresponder population distributions (mean and SD from corpus evidence), producing a log-likelihood ratio (LLR) that quantifies how much more consistent their profile is with one population vs the other. LLR > +1.0 = Subtype A (responder-favored), LLR < -1.0 = Subtype B (nonresponder-favored), |LLR| within 1.0 = Subtype C (indeterminate). This is more principled than fixed thresholds because it uses all available biomarkers simultaneously and derives decision boundaries from corpus evidence rather than arbitrary cutoffs.`
+    : `threshold-based subtype assignment using corpus-derived biomarker cutoffs (BDNF < 15 ng/mL = Subtype A, IL-6 >= 4 pg/mL = Subtype B, mixed = Subtype C).`
+
+  const subtypeMethodDesc = ml.assignments[0]?.assignment_method === 'likelihood_ratio'
+    ? `Likelihood-ratio from Phase 1 corpus distributions (F-2). LLR > +1.0 = Subtype A (responder-favored), LLR < -1.0 = Subtype B (nonresponder-favored), |LLR| within 1.0 = Subtype C (indeterminate). Uses all available biomarkers simultaneously.`
+    : `Threshold-based: BDNF < 15 ng/mL + IL-6 < 3.5 = A, IL-6 >= 4.0 = B, mixed = C (fallback, no corpus distributions available).`
+
   return `You are a clinical research scientist at Headlamp Health synthesizing the Phase 2 re-analysis for ${drugName} (${indication}).
 
 DRUG: ${drugName}
@@ -137,6 +146,8 @@ Patient outcomes:
 - Responders: ${ml.responder_count} / ${totalN} (${Math.round(ml.responder_count / totalN * 100)}%)
 - Non-responders: ${ml.nonresponder_count} / ${totalN} (${Math.round(ml.nonresponder_count / totalN * 100)}%)
 - Uncertain: ${ml.uncertain_count} / ${totalN}
+
+Subtype assignment method: ${subtypeMethodDesc}
 
 Subtype concordance with Phase 1 prediction:
 - Overall (incl. Subtype C as concordant): ${ml.concordance_pct}%
@@ -219,7 +230,7 @@ WRITING STYLE (applies to every prose field below):
     }
   ],
 
-  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=${totalN} clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the clinical ML analysis was structured — threshold-based subtype assignment using corpus-derived biomarker cutoffs (BDNF < 15 ng/mL → Subtype A, IL-6 ≥ 4 pg/mL → Subtype B, mixed → Subtype C), univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes. Explain what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=${totalN} is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
+  "methodology_narrative": "4 paragraphs, each 3-4 sentences, written as continuous prose (no headers, no bullets). Paragraph 1: what Phase 2 added that Phase 1 could not — the N=${totalN} clinical cohort, observed outcomes, and Bayesian update framework. Paragraph 2: how the clinical ML analysis was structured — ${assignmentMethodDesc} Also: univariate feature importance via Pearson correlation, and Beta-Binomial Bayesian updating of Planning Phase priors with observed clinical outcomes. Explain what the concordance rate means in terms of Planning Phase predictive accuracy. Paragraph 3: what the clinical data most meaningfully refined — cite the top 2-3 feature importances and what they imply about mechanism. Paragraph 4: honest limitations — N=${totalN} is powered for signal-finding not confirmation; the Bayesian posteriors should be interpreted as informative priors for Phase 2b design, not as clinical evidence. What would a 60-patient trial change?"
 }
 
 Produce exactly one instance of each required key. The JSON must be valid and parseable. Do not include any text before the opening brace or after the closing brace.`

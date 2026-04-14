@@ -33,7 +33,7 @@ const SUBTYPE_LABELS: Record<string, string> = {
 };
 
 // ── SVG Scatter Plot (BDNF vs IL-6) ─────────────────────────────────────────
-function ScatterPlot({ patients }: { patients: Patient[] }) {
+function ScatterPlot({ patients, assignmentMethod }: { patients: Patient[]; assignmentMethod?: string }) {
   const W = 420, H = 280;
   const PAD = { top: 20, right: 20, bottom: 48, left: 52 };
 
@@ -48,7 +48,9 @@ function ScatterPlot({ patients }: { patients: Patient[] }) {
     return PAD.top + ((il6Max - v) / (il6Max - il6Min)) * (H - PAD.top - PAD.bottom);
   }
 
-  // Threshold lines from Phase 1 corpus hypothesis
+  const useLLR = assignmentMethod === 'likelihood_ratio';
+
+  // Threshold lines only shown for legacy threshold-based assignment
   const bdnfThreshX = scaleX(15);
   const il6ThreshY = scaleY(4);
 
@@ -60,21 +62,25 @@ function ScatterPlot({ patients }: { patients: Patient[] }) {
       {/* Background */}
       <rect width={W} height={H} fill="var(--bg-overlay)" rx="8" />
 
-      {/* Quadrant shading */}
-      {/* Bottom-left: Subtype A zone (low BDNF, low IL-6) */}
-      <rect
-        x={PAD.left} y={il6ThreshY}
-        width={bdnfThreshX - PAD.left}
-        height={H - PAD.bottom - il6ThreshY}
-        fill="var(--status-success)" opacity="0.05"
-      />
-      {/* Top-right: Subtype B zone (high IL-6) */}
-      <rect
-        x={PAD.left} y={PAD.top}
-        width={W - PAD.left - PAD.right}
-        height={il6ThreshY - PAD.top}
-        fill="var(--status-danger)" opacity="0.05"
-      />
+      {/* Quadrant shading — only for threshold method */}
+      {!useLLR && (
+        <>
+          {/* Bottom-left: Subtype A zone (low BDNF, low IL-6) */}
+          <rect
+            x={PAD.left} y={il6ThreshY}
+            width={bdnfThreshX - PAD.left}
+            height={H - PAD.bottom - il6ThreshY}
+            fill="var(--status-success)" opacity="0.05"
+          />
+          {/* Top-right: Subtype B zone (high IL-6) */}
+          <rect
+            x={PAD.left} y={PAD.top}
+            width={W - PAD.left - PAD.right}
+            height={il6ThreshY - PAD.top}
+            fill="var(--status-danger)" opacity="0.05"
+          />
+        </>
+      )}
 
       {/* Grid lines */}
       {xTicks.map(v => (
@@ -92,25 +98,34 @@ function ScatterPlot({ patients }: { patients: Patient[] }) {
         />
       ))}
 
-      {/* Threshold lines */}
-      <line
-        x1={bdnfThreshX} y1={PAD.top}
-        x2={bdnfThreshX} y2={H - PAD.bottom}
-        stroke="var(--status-success)" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
-      />
-      <line
-        x1={PAD.left} y1={il6ThreshY}
-        x2={W - PAD.right} y2={il6ThreshY}
-        stroke="var(--status-danger)" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
-      />
+      {/* Threshold lines — only for threshold method */}
+      {!useLLR && (
+        <>
+          <line
+            x1={bdnfThreshX} y1={PAD.top}
+            x2={bdnfThreshX} y2={H - PAD.bottom}
+            stroke="var(--status-success)" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
+          />
+          <line
+            x1={PAD.left} y1={il6ThreshY}
+            x2={W - PAD.right} y2={il6ThreshY}
+            stroke="var(--status-danger)" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
+          />
+          <text x={bdnfThreshX + 2} y={PAD.top + 10} fill="var(--status-success)" fontSize="7" opacity="0.7">
+            BDNF=15
+          </text>
+          <text x={PAD.left + 2} y={il6ThreshY - 3} fill="var(--status-danger)" fontSize="7" opacity="0.7">
+            IL-6=4
+          </text>
+        </>
+      )}
 
-      {/* Threshold labels */}
-      <text x={bdnfThreshX + 2} y={PAD.top + 10} fill="var(--status-success)" fontSize="7" opacity="0.7">
-        BDNF=15
-      </text>
-      <text x={PAD.left + 2} y={il6ThreshY - 3} fill="var(--status-danger)" fontSize="7" opacity="0.7">
-        IL-6=4
-      </text>
+      {/* LLR method annotation */}
+      {useLLR && (
+        <text x={W - PAD.right - 2} y={PAD.top + 10} fill="var(--text-secondary)" fontSize="7" textAnchor="end" opacity="0.6">
+          Subtypes from corpus likelihood ratio
+        </text>
+      )}
 
       {/* Axes */}
       <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={H - PAD.bottom} stroke="var(--border-subtle)" strokeWidth="1" />
@@ -314,7 +329,7 @@ export default function SubtypingResults({
           <p className="text-[10px] uppercase tracking-widest text-text-secondary mb-3">
             Patient Scatter — BDNF vs IL-6
           </p>
-          <ScatterPlot patients={report.patients} />
+          <ScatterPlot patients={report.patients} assignmentMethod={ml.assignments[0]?.assignment_method} />
           {/* Legend */}
           <div className="flex gap-4 mt-3 justify-center flex-wrap">
             {Object.entries(SUBTYPE_LABELS).map(([k, label]) => (

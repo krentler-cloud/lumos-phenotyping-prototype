@@ -5,10 +5,13 @@
  *
  * Steps:
  *   1. Bayesian update — update Phase 1 corpus priors with observed outcomes
- *   2. Threshold clustering — assign each patient to Subtype A / B / C
+ *   2. Subtype assignment — likelihood-ratio from corpus distributions (F-2),
+ *      or hardcoded thresholds as fallback for older Phase 1 reports
  *   3. Feature importance — Pearson correlation of each biomarker with response
  *   4. MADRS trajectory — mean MADRS per subtype at Wk 0/2/4/8
  */
+
+import { BiomarkerDistribution } from '@/lib/pipeline/synthesize-phase1'
 
 export interface ClinicalPatient {
   patient_code: string
@@ -35,6 +38,12 @@ export interface SubtypeAssignment {
   patient_code: string
   subtype: 'A' | 'B' | 'C'
   reason: string
+  assignment_method: 'likelihood_ratio' | 'threshold'
+  llr_score?: number               // F-2: log-likelihood ratio (positive = responder-favored)
+  llr_contributions?: {            // F-2: per-biomarker breakdown
+    biomarker: string
+    contribution: number
+  }[]
 }
 
 export interface FeatureImportance {
@@ -82,18 +91,139 @@ export interface Phase2MLResult {
   subtype_ab_count: number            // how many patients are A or B (denominator for predictive)
 }
 
-// ── 1. Threshold-based subtype clustering ────────────────────────────────────
-// Grounded in the Phase 1 corpus hypothesis:
-//   Subtype A: BDNF < 15 ng/mL (TrkB-deficit responders)
-//   Subtype B: IL-6 ≥ 4 pg/mL (high-inflammatory non-responders)
-//   Subtype C: all others (mixed)
-export function assignSubtypes(patients: ClinicalPatient[]): SubtypeAssignment[] {
+// ── Biomarker name → patient field mapping ──────────────────────────────────
+const BIOMARKER_FIELD_MAP: Record<string, keyof ClinicalPatient> = {
+  'BDNF':      'baseline_bdnf_ng_ml',
+  'IL-6':      'baseline_il6_pg_ml',
+  'CRP':       'baseline_crp_mg_l',
+  'TNF-ALPHA': 'baseline_tnf_alpha_pg_ml',
+  'MADRS':     'baseline_madrs',
+}
+
+// Log of normal PDF: log N(x | μ, σ) = -0.5 * ln(2π) - ln(σ) - (x-μ)²/(2σ²)
+const LOG_2PI = Math.log(2 * Math.PI)
+function logNormalPdf(x: number, mu: number, sigma: number): number {
+  const z = (x - mu) / sigma
+  return -0.5 * LOG_2PI - Math.log(sigma) - 0.5 * z * z
+}
+
+// F-2: Log-likelihood ratio threshold for subtype assignment.
+// τ = 1.0 means one group is ~2.7x more likely than the other.
+const LLR_THRESHOLD = 1.0
+
+// Per-biomarker contribution clamp to prevent a single extreme outlier
+// from dominating the total LLR.
+const MAX_CONTRIBUTION = 5.0
+
+interface LLRResult {
+  llr: number
+  contributions: { biomarker: string; contribution: number }[]
+  n_used: number
+}
+
+/**
+ * F-2: Compute log-likelihood ratio for a single patient against corpus distributions.
+ * Positive LLR = biomarker profile more consistent with responder population.
+ * Negative LLR = more consistent with nonresponder population.
+ */
+function computePatientLLR(
+  patient: ClinicalPatient,
+  distributions: BiomarkerDistribution[]
+): LLRResult {
+  let llr = 0
+  const contributions: { biomarker: string; contribution: number }[] = []
+
+  for (const dist of distributions) {
+    // Both populations need valid mean + SD
+    if (dist.responder.mean == null || dist.responder.sd == null) continue
+    if (dist.nonresponder.mean == null || dist.nonresponder.sd == null) continue
+    // SD must be positive (avoid division by zero)
+    if (dist.responder.sd <= 0 || dist.nonresponder.sd <= 0) continue
+
+    // Map biomarker name to patient field
+    const field = BIOMARKER_FIELD_MAP[dist.biomarker.toUpperCase()]
+    if (!field) continue
+    const value = patient[field]
+    if (typeof value !== 'number' || isNaN(value)) continue
+
+    const respLL = logNormalPdf(value, dist.responder.mean, dist.responder.sd)
+    const nonrespLL = logNormalPdf(value, dist.nonresponder.mean, dist.nonresponder.sd)
+    const raw = respLL - nonrespLL
+    // Clamp to prevent single outlier from dominating
+    const clamped = Math.max(-MAX_CONTRIBUTION, Math.min(MAX_CONTRIBUTION, raw))
+
+    llr += clamped
+    contributions.push({ biomarker: dist.biomarker, contribution: clamped })
+  }
+
+  // Sort by absolute contribution descending for explainability
+  contributions.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+
+  return { llr, contributions, n_used: contributions.length }
+}
+
+// ── 1. Subtype assignment ───────────────────────────────────────────────────
+// F-2: When corpus distributions are available (≥2 biomarkers with complete
+// responder + nonresponder stats), use likelihood-ratio approach. Otherwise
+// fall back to hardcoded thresholds for backward compatibility.
+
+export function assignSubtypes(
+  patients: ClinicalPatient[],
+  distributions?: BiomarkerDistribution[]
+): SubtypeAssignment[] {
+  // Check if we have enough distributions for LLR
+  const usableDists = distributions?.filter(d =>
+    d.responder.mean != null && d.responder.sd != null && d.responder.sd > 0 &&
+    d.nonresponder.mean != null && d.nonresponder.sd != null && d.nonresponder.sd > 0 &&
+    BIOMARKER_FIELD_MAP[d.biomarker.toUpperCase()]
+  ) ?? []
+
+  const useLLR = usableDists.length >= 2
+
   return patients.map(p => {
+    if (useLLR) {
+      const result = computePatientLLR(p, usableDists)
+      const topContrib = result.contributions.slice(0, 3)
+        .map(c => `${c.biomarker} ${c.contribution > 0 ? '+' : ''}${c.contribution.toFixed(2)}`)
+        .join(', ')
+
+      if (result.llr > LLR_THRESHOLD) {
+        return {
+          patient_code: p.patient_code,
+          subtype: 'A',
+          reason: `LLR +${result.llr.toFixed(2)} (responder-favored) from ${result.n_used} biomarkers: ${topContrib}`,
+          assignment_method: 'likelihood_ratio' as const,
+          llr_score: result.llr,
+          llr_contributions: result.contributions,
+        }
+      }
+      if (result.llr < -LLR_THRESHOLD) {
+        return {
+          patient_code: p.patient_code,
+          subtype: 'B',
+          reason: `LLR ${result.llr.toFixed(2)} (nonresponder-favored) from ${result.n_used} biomarkers: ${topContrib}`,
+          assignment_method: 'likelihood_ratio' as const,
+          llr_score: result.llr,
+          llr_contributions: result.contributions,
+        }
+      }
+      return {
+        patient_code: p.patient_code,
+        subtype: 'C',
+        reason: `LLR ${result.llr.toFixed(2)} (indeterminate, |LLR| ≤ ${LLR_THRESHOLD}) from ${result.n_used} biomarkers: ${topContrib}`,
+        assignment_method: 'likelihood_ratio' as const,
+        llr_score: result.llr,
+        llr_contributions: result.contributions,
+      }
+    }
+
+    // Fallback: hardcoded thresholds (pre-F-2 behavior)
     if (p.baseline_bdnf_ng_ml < 15 && p.baseline_il6_pg_ml < 3.5) {
       return {
         patient_code: p.patient_code,
         subtype: 'A',
         reason: `BDNF ${p.baseline_bdnf_ng_ml} ng/mL < 15 threshold (TrkB-deficit phenotype)`,
+        assignment_method: 'threshold' as const,
       }
     }
     if (p.baseline_il6_pg_ml >= 4.0) {
@@ -101,12 +231,14 @@ export function assignSubtypes(patients: ClinicalPatient[]): SubtypeAssignment[]
         patient_code: p.patient_code,
         subtype: 'B',
         reason: `IL-6 ${p.baseline_il6_pg_ml} pg/mL ≥ 4.0 threshold (high-inflammatory phenotype)`,
+        assignment_method: 'threshold' as const,
       }
     }
     return {
       patient_code: p.patient_code,
       subtype: 'C',
       reason: `Intermediate BDNF (${p.baseline_bdnf_ng_ml} ng/mL) and IL-6 (${p.baseline_il6_pg_ml} pg/mL)`,
+      assignment_method: 'threshold' as const,
     }
   })
 }
@@ -283,9 +415,10 @@ export function computeBayesianUpdate(
 // ── Main entry point ──────────────────────────────────────────────────────────
 export function runClinicalML(
   patients: ClinicalPatient[],
-  phase1Priors: { overall: number; responder: number; nonresponder: number }
+  phase1Priors: { overall: number; responder: number; nonresponder: number },
+  distributions?: BiomarkerDistribution[]
 ): Phase2MLResult {
-  const assignments = assignSubtypes(patients)
+  const assignments = assignSubtypes(patients, distributions)
   const featureImportance = computeFeatureImportance(patients)
   const madrsTrajectories = computeMadrsTrajectories(patients, assignments)
   const bayesianUpdate = computeBayesianUpdate(patients, phase1Priors)

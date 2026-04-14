@@ -106,7 +106,10 @@ export async function runPhase2Processing(studyId: string, runId: string): Promi
         responder:    phase1Report!.responder_profile.corpus_hypothesis_confidence,
         nonresponder: phase1Report!.nonresponder_profile.corpus_hypothesis_confidence,
       }
-      mlResult = runClinicalML(patients, priors)
+      // F-2: Pass Phase 1 corpus distributions for likelihood-ratio subtype assignment
+      const distributions = (phase1Report as unknown as Record<string, unknown>)?.biomarker_distributions as
+        import('@/lib/pipeline/synthesize-phase1').BiomarkerDistribution[] | undefined
+      mlResult = runClinicalML(patients, priors, distributions)
 
       // Write subtype labels back to each patient record
       for (const assignment of mlResult.assignments) {
