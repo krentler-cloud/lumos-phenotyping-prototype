@@ -6,12 +6,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
-- [ ] **Validate Planning Phase report on 7,754 doc corpus**
-  Run a fresh analysis and check:
-  - Clinical trial evidence appears in Evidence tab (reserved slots + 1.50x boost)
-  - Report quality is good with the larger, more diverse corpus
-  - Confidence score reflects honest assessment of evidence consistency
-  - Ask LumosAI chat answers accurately about the pipeline
+- [ ] **F-2: Phase 1 distributions as Bayesian priors for Phase 2**
+  Replace threshold-based subtype assignment with likelihood-ratio approach using Phase 1 distributions.
+  **Dependency:** F-1 done ✓.
 
 - [ ] **Downgrade Supabase compute add-on**
   The Small tier (2 CPU / 4 GB, $25/mo) was needed for the IVFFlat index build. Now that the index is built, can downgrade to free compute. The index persists after downgrade. Test search latency after downgrading to confirm performance is acceptable.
@@ -21,17 +18,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 ## ML Engine Upgrade (Track F)
 *See: [LumosAI Phenotyping Engine Upgrade](https://docs.google.com/document/d/1ExDn4FmjqnzwDCyWaP4odk70MAQ9AWEbKiz772Yc8hs)*
 
-- [ ] **F-1: Phase 1 distribution outputs — replace point estimates with (mean, σ, N, study count)**
-  Add `biomarker_distributions` to output schema. Opus extracts quantitative distributions from corpus. UI displays alongside dimension prose.
-  **Dependency:** P2-F done ✓. Corpus now has 7,700+ papers — distributions should be meaningful for common biomarkers (BDNF, IL-6, CRP).
-
-- [ ] **F-2: Phase 1 distributions as Bayesian priors for Phase 2**
-  Replace threshold-based subtype assignment with likelihood-ratio approach using Phase 1 distributions.
-  **Dependency:** F-1 must ship first.
-
 - [ ] **F-4: Evidence quality weighting in priors**
   Weight studies by source type (RCT 1.0 → case report 0.2). Track `evidence_quality_score` per biomarker.
-  **Dependency:** F-1 and F-2 must ship first.
+  **Dependency:** F-1 ✓ and F-2 must ship first.
 
 ---
 
@@ -92,11 +81,17 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **Corpus page: source-type filter + pagination** — April 13, 2026
   Dropdown filter (All/Literature/Clinical Trial/Regulatory). Paginated API (100/page) with real total count. Fixed "1000 documents ready" cap.
 
-- [x] **Reserved 10 retrieval slots for clinical trial + regulatory** — April 13, 2026
-  Guarantees IND/trial evidence appears regardless of corpus size (198:1 literature ratio).
+- [x] **F-1: Biomarker distribution outputs** — April 13, 2026
+  Extended Sonnet compression to extract structured numerics (mean, SD, N, unit, context). Pure-math aggregation produces BiomarkerDistribution[] per biomarker. UI + PDF render corpus stats below threshold boxes. Zero additional LLM calls.
+
+- [x] **Fix retrieval bias: clinical trial docs monopolizing reranked chunks** — April 13, 2026
+  1.5x source boost + drug-name rerank query + reserved slots triple-stacked, drowning out all 7,700 literature papers (50/0/0/0 breakdown). Fixed: removed boost, added 50% source-type cap in general pool, removed drug name from rerank query. Now 21 clinical / 29 literature.
+
+- [x] **Reserved 5 retrieval slots for clinical trial + regulatory** — April 13, 2026
+  Guarantees IND/trial evidence appears regardless of corpus size. Capped at 15 total clinical trial chunks.
 
 - [x] **Source-type boost increase** — April 13, 2026
-  clinical_trial 1.20→1.50, regulatory 1.15→1.30 for 7,700+ doc corpus.
+  clinical_trial 1.20→1.50, regulatory 1.15→1.30 for 7,700+ doc corpus. Later removed (April 13) — redundant with reserved slots.
 
 - [x] **Corpus stats API fix** — April 12, 2026
   PostgREST 1,000 row limit fixed with parallel count queries.

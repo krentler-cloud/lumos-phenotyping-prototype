@@ -146,17 +146,18 @@ export async function searchCorpusMultiAspect(
 
   // Reserve slots for high-value source types (clinical trial + regulatory docs).
   // Guarantees IND/trial evidence appears regardless of corpus size.
-  const RESERVED_SLOTS = 10
+  const RESERVED_SLOTS = 5
   const RESERVED_TYPES = new Set(['clinical_trial', 'regulatory'])
 
   const reserved = capped.filter(c => RESERVED_TYPES.has(c.source_type)).slice(0, RESERVED_SLOTS)
   const reservedIds = new Set(reserved.map(c => c.chunk_id))
 
-  // General pool: fill remaining slots, but cap any single source_type to 50%
-  // of the general pool so no type can monopolize retrieval.
+  // General pool: fill remaining slots. Cap reserved source types so their
+  // total (reserved + general) doesn't exceed 15 — the study is hypothetical
+  // and the IND docs are synthetic, so literature should dominate.
   const generalTarget = finalK - reserved.length
-  const MAX_PER_TYPE_PCT = 0.5
-  const maxPerType = Math.ceil(generalTarget * MAX_PER_TYPE_PCT)
+  const MAX_RESERVED_TYPE_TOTAL = 15
+  const maxReservedTypeInGeneral = MAX_RESERVED_TYPE_TOTAL - reserved.length
 
   const generalTypeCounts = new Map<string, number>()
   const general: MatchedChunk[] = []
@@ -164,7 +165,8 @@ export async function searchCorpusMultiAspect(
     if (reservedIds.has(chunk.chunk_id)) continue
     if (general.length >= generalTarget) break
     const typeCount = generalTypeCounts.get(chunk.source_type) ?? 0
-    if (typeCount >= maxPerType) continue
+    // Cap reserved source types (clinical_trial, regulatory) to keep total ≤ 15
+    if (RESERVED_TYPES.has(chunk.source_type) && typeCount >= maxReservedTypeInGeneral) continue
     general.push(chunk)
     generalTypeCounts.set(chunk.source_type, typeCount + 1)
   }
