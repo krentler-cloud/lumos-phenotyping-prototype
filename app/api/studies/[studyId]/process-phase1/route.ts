@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { embedTexts } from '@/lib/pipeline/embed'
 import { searchCorpusMultiAspect, rerankChunks, buildRerankQuery } from '@/lib/pipeline/search'
 import { computeBayesianPrior } from '@/lib/pipeline/score'
-import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, compressToEvidenceBrief, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
+import { synthesizePhase1Report, synthesizeExploratoryBiomarkers, synthesizeCorpusIntelligence, compressToEvidenceBrief, aggregateDistributions, SadMadCohort } from '@/lib/pipeline/synthesize-phase1'
 import { StepLog, MechanismContext } from '@/lib/types'
 
 export async function runPhase1Processing(studyId: string, runId: string): Promise<void> {
@@ -162,6 +162,15 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
       // evidenceBrief stays undefined — synthesizePhase1Report will use raw chunks
     }
 
+    // ── STEP 8b: Aggregate biomarker distributions from evidence brief (F-1) ──
+    // Pure math — zero LLM calls, zero latency. Uses structured numeric data
+    // extracted by the Sonnet compression step above.
+    const biomarkerDistributions = evidenceBrief ? aggregateDistributions(evidenceBrief) : []
+    if (biomarkerDistributions.length > 0) {
+      await log('Biomarker distributions', 'complete',
+        `${biomarkerDistributions.length} biomarkers: ${biomarkerDistributions.map(d => d.biomarker).join(', ')}`)
+    }
+
     // ── STEP 9: Phenotype synthesis ────────────────────────────────────────
     await log('Phenotype synthesis', 'running')
     const report = await synthesizePhase1Report(
@@ -187,9 +196,10 @@ export async function runPhase1Processing(studyId: string, runId: string): Promi
     // ── STEP 10: Store report ──────────────────────────────────────────────────
     await log('Store report', 'running')
 
-    // Store reranked chunks alongside report for evidence traceability
+    // Store reranked chunks + biomarker distributions alongside report
     const reportWithEvidence = {
       ...report,
+      biomarker_distributions: biomarkerDistributions.length > 0 ? biomarkerDistributions : undefined,
       _evidence_chunks: rerankedChunks.map(c => ({
         chunk_id: c.chunk_id,
         doc_id: c.doc_id,

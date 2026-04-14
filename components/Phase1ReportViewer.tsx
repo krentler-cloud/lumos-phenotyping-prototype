@@ -752,16 +752,43 @@ export default function Phase1ReportViewer({ report, drugName, indication, gener
                   </div>
                   <PriorityBar pct={bm.priority_pct} />
                   <p className="text-text-muted text-xs mt-3 leading-relaxed">{bm.preclinical_rationale}</p>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <div className="p-2.5 bg-status-success/5 border border-status-success/20 rounded-lg">
-                      <p className="text-status-success text-xs font-medium mb-0.5">Responder signal</p>
-                      <p className="text-text-body text-xs">{bm.responder_threshold}</p>
-                    </div>
-                    <div className="p-2.5 bg-status-danger/5 border border-status-danger/20 rounded-lg">
-                      <p className="text-status-danger text-xs font-medium mb-0.5">Non-responder signal</p>
-                      <p className="text-text-body text-xs">{bm.nonresponder_threshold}</p>
-                    </div>
-                  </div>
+                  {(() => {
+                    // F-1: Look up corpus distribution for this biomarker
+                    const dist = report.biomarker_distributions?.find(
+                      (d: { biomarker: string }) => d.biomarker.toLowerCase() === bm.name.toLowerCase()
+                    ) as { biomarker: string; unit: string; responder: { mean: number | null; sd: number | null; n_patients: number | null; n_studies: number | null }; nonresponder: { mean: number | null; sd: number | null; n_patients: number | null; n_studies: number | null }; evidence_gap: string | null } | undefined
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="p-2.5 bg-status-success/5 border border-status-success/20 rounded-lg">
+                          <p className="text-status-success text-xs font-medium mb-0.5">Responder signal</p>
+                          <p className="text-text-body text-xs">{bm.responder_threshold}</p>
+                          {dist?.responder?.mean != null && (
+                            <p className="text-text-muted text-[10px] mt-1">
+                              Corpus: {dist.responder.mean}{dist.responder.sd != null ? ` ± ${dist.responder.sd}` : ''} {dist.unit}
+                              {dist.responder.n_patients != null ? ` (N=${dist.responder.n_patients}` : ''}
+                              {dist.responder.n_studies != null ? `, ${dist.responder.n_studies} studies` : ''}
+                              {dist.responder.n_patients != null ? ')' : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="p-2.5 bg-status-danger/5 border border-status-danger/20 rounded-lg">
+                          <p className="text-status-danger text-xs font-medium mb-0.5">Non-responder signal</p>
+                          <p className="text-text-body text-xs">{bm.nonresponder_threshold}</p>
+                          {dist?.nonresponder?.mean != null && (
+                            <p className="text-text-muted text-[10px] mt-1">
+                              Corpus: {dist.nonresponder.mean}{dist.nonresponder.sd != null ? ` ± ${dist.nonresponder.sd}` : ''} {dist.unit}
+                              {dist.nonresponder.n_patients != null ? ` (N=${dist.nonresponder.n_patients}` : ''}
+                              {dist.nonresponder.n_studies != null ? `, ${dist.nonresponder.n_studies} studies` : ''}
+                              {dist.nonresponder.n_patients != null ? ')' : ''}
+                            </p>
+                          )}
+                        </div>
+                        {dist?.evidence_gap && (
+                          <p className="col-span-2 text-status-warning text-[10px] mt-0.5">⚠ {dist.evidence_gap}</p>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <p className="text-text-secondary text-xs">Timing:</p>
                     {bm.timing.map((t) => (

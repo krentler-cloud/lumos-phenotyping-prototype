@@ -98,6 +98,33 @@ export interface EvidenceFinding {
   sample_size?: string
   p_value?: string
   contradicts?: string   // Note if this contradicts another finding
+  // F-1: structured numeric extraction for biomarker distributions
+  biomarker_name?: string         // standardized: "BDNF", "IL-6", "CRP", "TNF-alpha", "MADRS"
+  numeric_value?: number | null   // parsed number (e.g., 30)
+  numeric_unit?: string           // "ng/mL", "pg/mL", "mg/L"
+  numeric_sd?: number | null      // SD if reported alongside mean
+  numeric_n?: number | null       // parsed sample size as integer
+  value_context?: 'responder' | 'nonresponder' | 'mixed' | null
+}
+
+// F-1: Biomarker distribution aggregated from evidence findings
+export interface BiomarkerDistribution {
+  biomarker: string
+  unit: string
+  responder: {
+    mean: number | null
+    sd: number | null
+    n_patients: number | null
+    n_studies: number | null
+  }
+  nonresponder: {
+    mean: number | null
+    sd: number | null
+    n_patients: number | null
+    n_studies: number | null
+  }
+  source_quality: string   // e.g. "3 RCTs, 2 observational"
+  evidence_gap: string | null
 }
 
 export interface DimensionBrief {
@@ -166,6 +193,7 @@ Extract every quantitative finding relevant to patient phenotyping and treatment
 - The source document title (exactly as shown in brackets)
 - Study quality: RCT, observational, animal_model, meta-analysis, case_report, or review
 - Note contradictions between studies explicitly
+- When a finding reports a quantitative biomarker measurement (mean, median, threshold, concentration), extract the structured numeric fields below. Standardize biomarker names: BDNF, IL-6, CRP, TNF-alpha, MADRS. Classify value_context as "responder" if the value describes treatment responders, "nonresponder" for non-responders, or "mixed" if not stratified.
 
 OUTPUT FORMAT — respond with valid JSON only:
 {
@@ -178,7 +206,13 @@ OUTPUT FORMAT — respond with valid JSON only:
       "study_quality": "RCT|observational|animal_model|meta-analysis|case_report|review",
       "sample_size": "N=X if reported",
       "p_value": "p=X if reported",
-      "contradicts": "note if this contradicts another finding in this set"
+      "contradicts": "note if this contradicts another finding in this set",
+      "biomarker_name": "BDNF|IL-6|CRP|TNF-alpha|MADRS|null (standardized name, null if not a biomarker value)",
+      "numeric_value": null,
+      "numeric_unit": "ng/mL|pg/mL|mg/L|points|null",
+      "numeric_sd": null,
+      "numeric_n": null,
+      "value_context": "responder|nonresponder|mixed|null"
     }
   ],
   "summary": "2-3 sentence synthesis of the key findings from this aspect group"
@@ -232,6 +266,125 @@ OUTPUT FORMAT — respond with valid JSON only:
 /**
  * Format an EvidenceBrief as a text block for injection into the Opus prompt.
  */
+/**
+ * F-1: Aggregate biomarker distributions from structured evidence findings.
+ * Groups findings by (biomarker_name, value_context), computes weighted mean/SD.
+ * Zero LLM calls — pure math on data already extracted by Sonnet compression.
+ */
+export function aggregateDistributions(brief: EvidenceBrief): BiomarkerDistribution[] {
+  // Collect all findings with structured numeric data
+  const byBiomarker = new Map<string, { responder: EvidenceFinding[]; nonresponder: EvidenceFinding[] }>()
+
+  for (const dim of brief.dimension_briefs) {
+    for (const f of dim.findings) {
+      if (!f.biomarker_name || f.numeric_value == null) continue
+      const key = f.biomarker_name.toUpperCase()
+      if (!byBiomarker.has(key)) byBiomarker.set(key, { responder: [], nonresponder: [] })
+      const group = byBiomarker.get(key)!
+      if (f.value_context === 'responder') group.responder.push(f)
+      else if (f.value_context === 'nonresponder') group.nonresponder.push(f)
+      // 'mixed' context findings are added to both groups with lower weight
+      else if (f.value_context === 'mixed') {
+        group.responder.push(f)
+        group.nonresponder.push(f)
+      }
+    }
+  }
+
+  function aggregateGroup(findings: EvidenceFinding[]): {
+    mean: number | null; sd: number | null; n_patients: number | null; n_studies: number | null
+  } {
+    if (findings.length === 0) return { mean: null, sd: null, n_patients: null, n_studies: null }
+
+    const values = findings.filter(f => f.numeric_value != null).map(f => ({
+      value: f.numeric_value!,
+      n: f.numeric_n ?? 1,
+      sd: f.numeric_sd ?? null,
+      doc: f.doc_title,
+    }))
+
+    if (values.length === 0) return { mean: null, sd: null, n_patients: null, n_studies: null }
+
+    // Weighted mean (weight by sample size when available)
+    const totalN = values.reduce((s, v) => s + v.n, 0)
+    const weightedMean = values.reduce((s, v) => s + v.value * v.n, 0) / totalN
+
+    // Pooled SD: if multiple studies report SD, use pooled formula
+    const withSd = values.filter(v => v.sd != null)
+    let sd: number | null = null
+    if (withSd.length >= 2) {
+      const pooledVar = withSd.reduce((s, v) => s + (v.n - 1) * (v.sd! ** 2), 0) /
+                        withSd.reduce((s, v) => s + (v.n - 1), 0)
+      sd = Math.round(Math.sqrt(pooledVar) * 100) / 100
+    } else if (values.length >= 3) {
+      // No SDs reported but 3+ values — compute sample SD from point estimates
+      const mean = weightedMean
+      const variance = values.reduce((s, v) => s + (v.value - mean) ** 2, 0) / (values.length - 1)
+      sd = Math.round(Math.sqrt(variance) * 100) / 100
+    }
+
+    // Count unique studies
+    const uniqueDocs = new Set(values.map(v => v.doc))
+
+    return {
+      mean: Math.round(weightedMean * 100) / 100,
+      sd,
+      n_patients: totalN > values.length ? totalN : null, // only report if real N values were provided
+      n_studies: uniqueDocs.size,
+    }
+  }
+
+  const distributions: BiomarkerDistribution[] = []
+
+  for (const [biomarker, groups] of byBiomarker) {
+    const responder = aggregateGroup(groups.responder)
+    const nonresponder = aggregateGroup(groups.nonresponder)
+
+    // Skip if no meaningful data in either group
+    if (responder.mean == null && nonresponder.mean == null) continue
+
+    // Determine unit from first finding
+    const allFindings = [...groups.responder, ...groups.nonresponder]
+    const unit = allFindings.find(f => f.numeric_unit)?.numeric_unit ?? ''
+
+    // Source quality summary
+    const qualityCounts: Record<string, number> = {}
+    for (const f of allFindings) {
+      const q = f.study_quality || 'unknown'
+      qualityCounts[q] = (qualityCounts[q] ?? 0) + 1
+    }
+    const sourceQuality = Object.entries(qualityCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([q, n]) => `${n} ${q}`)
+      .join(', ')
+
+    // Evidence gap flags
+    const gaps: string[] = []
+    const totalStudies = (responder.n_studies ?? 0) + (nonresponder.n_studies ?? 0)
+    if (totalStudies < 2) gaps.push('Single study — distribution not estimable')
+    if (responder.sd == null && responder.mean != null) gaps.push('Responder SD not estimable')
+    if (nonresponder.sd == null && nonresponder.mean != null) gaps.push('Non-responder SD not estimable')
+
+    distributions.push({
+      biomarker,
+      unit,
+      responder,
+      nonresponder,
+      source_quality: sourceQuality,
+      evidence_gap: gaps.length > 0 ? gaps.join('; ') : null,
+    })
+  }
+
+  // Sort by total evidence (most data first)
+  distributions.sort((a, b) => {
+    const aTotal = (a.responder.n_studies ?? 0) + (a.nonresponder.n_studies ?? 0)
+    const bTotal = (b.responder.n_studies ?? 0) + (b.nonresponder.n_studies ?? 0)
+    return bTotal - aTotal
+  })
+
+  return distributions
+}
+
 function formatEvidenceBrief(brief: EvidenceBrief): string {
   return brief.dimension_briefs.map(d => {
     const findingLines = d.findings.map((f, i) => {
@@ -503,6 +656,7 @@ export interface Phase1ReportData {
   overall_confidence: number
   exploratory_biomarkers?: ExploratoryBiomarker[]
   corpus_intelligence?: CorpusIntelligence
+  biomarker_distributions?: BiomarkerDistribution[]  // F-1: quantitative distributions from corpus
   _opus_diagnostics?: {
     duration_sec: number
     input_tokens?: number
