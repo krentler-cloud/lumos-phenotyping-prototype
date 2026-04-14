@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
-import { Phase1ReportData } from "@/lib/pipeline/synthesize-phase1";
+import { Phase1ReportData, BiomarkerDistribution } from "@/lib/pipeline/synthesize-phase1";
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const c = {
@@ -112,6 +112,22 @@ function FieldBlock({ label, value }: { label: string; value: string }) {
       <Text style={s.body}>{value}</Text>
     </View>
   );
+}
+
+function formatDistLine(
+  side: { mean: number | null; sd: number | null; n_patients: number | null; n_studies: number | null },
+  unit: string
+): string | null {
+  if (side.mean == null) return null;
+  let line = `Corpus: ${side.mean}`;
+  if (side.sd != null) line += ` ± ${side.sd}`;
+  line += ` ${unit}`;
+  if (side.n_patients != null) {
+    line += ` (N=${side.n_patients}`;
+    if (side.n_studies != null) line += `, ${side.n_studies} studies`;
+    line += `)`;
+  }
+  return line;
 }
 
 function Footer({ drugName, date }: { drugName: string; date: string }) {
@@ -280,6 +296,12 @@ export function Phase1PDF({
         {report.biomarker_recommendations?.sort((a, b) => a.rank - b.rank).map((bm) => {
           const dc = domainColor(bm.domain);
           const barWidth = `${bm.priority_pct}%`;
+          // F-1: Look up corpus distribution for this biomarker
+          const dist = (report.biomarker_distributions as BiomarkerDistribution[] | undefined)?.find(
+            (d) => d.biomarker.toLowerCase() === bm.name.toLowerCase()
+          );
+          const respLine = dist ? formatDistLine(dist.responder, dist.unit) : null;
+          const nonrespLine = dist ? formatDistLine(dist.nonresponder, dist.unit) : null;
           return (
             <View key={bm.rank} style={s.card}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
@@ -303,12 +325,17 @@ export function Phase1PDF({
                 <View style={[s.thresholdBox, { backgroundColor: "#0A1F0A", borderColor: `${c.green}30` }]}>
                   <Text style={[s.label, { color: c.green }]}>RESPONDER SIGNAL</Text>
                   <Text style={s.body}>{bm.responder_threshold}</Text>
+                  {respLine && <Text style={[s.small, { color: c.dim, marginTop: 2 }]}>{respLine}</Text>}
                 </View>
                 <View style={[s.thresholdBox, { backgroundColor: "#1A0A0A", borderColor: `${c.red}30` }]}>
                   <Text style={[s.label, { color: c.red }]}>NON-RESPONDER SIGNAL</Text>
                   <Text style={s.body}>{bm.nonresponder_threshold}</Text>
+                  {nonrespLine && <Text style={[s.small, { color: c.dim, marginTop: 2 }]}>{nonrespLine}</Text>}
                 </View>
               </View>
+              {dist?.evidence_gap && (
+                <Text style={[s.small, { color: c.amber, marginTop: 4 }]}>⚠ {dist.evidence_gap}</Text>
+              )}
 
               <View style={s.timingRow}>
                 <Text style={[s.small, { marginRight: 2 }]}>Timing:</Text>

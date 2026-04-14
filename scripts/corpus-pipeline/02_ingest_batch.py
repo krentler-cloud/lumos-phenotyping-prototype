@@ -51,7 +51,7 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env.local")
 VOYAGE_MODEL       = "voyage-3"
 EMBED_BATCH_SIZE   = 128
 SUPABASE_BATCH     = 200   # rows per insert
-DOWNLOAD_TIMEOUT   = 60    # seconds
+DOWNLOAD_TIMEOUT   = 15    # seconds — most PDFs download in <5s; 60s wasted time on stalled connections
 DOWNLOAD_RETRIES   = 2     # retries per URL (reduced — we have multiple tiers)
 MAX_PDF_BYTES      = 50 * 1024 * 1024   # 50 MB
 SOURCE_TYPE        = "literature"
@@ -300,9 +300,21 @@ def _tier3_publisher(csv_url: str, client: httpx.Client) -> bytes | None:
 
 
 def _tier4_openalex(openalex_id: str, client: httpx.Client, api_key: str) -> bytes | None:
-    """Tier 4: Download from OpenAlex hosted PDFs ($0.01 each)."""
+    """Tier 4: Download from OpenAlex hosted PDFs ($0.01 each).
+    No retries — 404 means the paper isn't hosted, retrying won't help."""
     url = f"https://content.openalex.org/works/{openalex_id}.pdf?api_key={api_key}"
-    return _try_download_url(url, client)
+    try:
+        r = client.get(url, timeout=10, follow_redirects=True)
+        if r.status_code == 404:
+            return None  # Not hosted — fast fail
+        r.raise_for_status()
+        if r.content[:5] != b"%PDF-":
+            return None
+        if len(r.content) < 1000 or len(r.content) > MAX_PDF_BYTES:
+            return None
+        return r.content
+    except Exception:
+        return None
 
 
 def download_pdf(
@@ -468,22 +480,37 @@ def process_paper(
     if oid in completed:
         return "skipped", "none"
 
+    # Check DB FIRST — before any paid API calls (embedding costs $0.001/paper;
+    # re-embedding on crash/restart cycles caused $107 in wasted Voyage spend)
+    try:
+        if doc_already_exists(sb, oid):
+            completed.add(oid)
+            return "skipped", "none"
+    except Exception:
+        pass  # DB check failed — proceed with ingestion, insert will handle dupes
+
     # Download (4-tier waterfall)
     pdf_bytes, tier = download_pdf(oid, url, doi_info, http, tier4_api_key, tier4_remaining)
     if not pdf_bytes:
+        completed.add(oid)  # Track failures too — don't retry papers known to be unavailable
         return "download_fail", "none"
 
     # Extract text
     text = extract_text_from_pdf(pdf_bytes)
+    del pdf_bytes  # Free memory immediately — large PDFs (up to 50MB) cause OOM crashes
     if not text:
+        completed.add(oid)  # Don't retry — PDF is corrupted or empty
         return "extract_fail", tier
 
     # Chunk
     chunks = chunk_text(text)
+    char_count = len(text)
+    del text  # Free raw text — chunks hold the content now
     if not chunks:
+        completed.add(oid)
         return "extract_fail", tier
 
-    # Embed
+    # Embed (AFTER dedup check — this is the expensive call)
     try:
         chunk_texts = [c["content"] for c in chunks]
         embeddings = embed_chunks(chunk_texts, vo)
@@ -494,11 +521,8 @@ def process_paper(
     # Write to Supabase (with retry)
     for db_attempt in range(3):
         try:
-            if doc_already_exists(sb, oid):
-                completed.add(oid)
-                return "skipped", "none"
             filename = re.sub(r"[^a-zA-Z0-9._-]", "_", f"{oid}.pdf")
-            doc_id = insert_doc(sb, oid, title, filename, len(text), len(chunks))
+            doc_id = insert_doc(sb, oid, title, filename, char_count, len(chunks))
             insert_chunks(sb, doc_id, chunks, embeddings)
             break
         except Exception as e:

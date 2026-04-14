@@ -16,7 +16,7 @@ export default function CorpusPage() {
       <div>
         <h1 className="text-2xl font-bold text-text-heading mb-1">Corpus</h1>
         <p className="text-text-muted text-sm">
-          Upload clinical literature and trial documents. Each document is chunked and embedded into the vector store for patient phenotyping.
+          Clinical literature, trial documents, and batch-ingested papers — chunked, embedded, and indexed for phenotype-driven retrieval.
         </p>
       </div>
 
@@ -27,10 +27,15 @@ export default function CorpusPage() {
         <div className="space-y-4">
           <h3 className="text-text-heading font-semibold">Corpus Stats</h3>
           <CorpusStats refreshTrigger={refreshTrigger} polling={uploading} />
-          <div className="bg-bg-surface border border-border-subtle rounded-xl p-5 text-sm text-text-muted space-y-1">
-            <p className="text-text-heading font-medium text-sm">Pipeline</p>
-            <p>PDF / DOCX / CSV → text extraction → 512-token chunks (64-token overlap) → Lumos AI proprietary embeddings → pgvector</p>
-            <p className="text-xs">~$0.001 per 50-page document</p>
+          <div className="bg-bg-surface border border-border-subtle rounded-xl p-5 text-sm text-text-muted space-y-3">
+            <div className="space-y-1">
+              <p className="text-text-heading font-medium text-sm">Ingestion</p>
+              <p>PDF acquisition (4-tier waterfall: Unpaywall → PubMed Central → publisher OA → OpenAlex hosted) → text extraction → 512-token chunks (64-token overlap) → Lumos AI semantic embeddings (1024-dim) → pgvector</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-text-heading font-medium text-sm">Retrieval (RRCS)</p>
+              <p>Multi-aspect vector search (600 raw → 100 deduped) → cross-attention reranking (→ top 50) → parallel evidence compression → Lumos AI synthesis</p>
+            </div>
           </div>
         </div>
       </div>

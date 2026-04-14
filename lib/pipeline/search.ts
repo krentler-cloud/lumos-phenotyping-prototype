@@ -57,14 +57,16 @@ export async function searchCorpus(
 }
 
 /**
- * Source-type-boosted cosine search.
- * Clinical trial docs get 1.20x, regulatory docs get 1.15x.
+ * Cosine search with optional source-type boosting.
+ * Source boost removed from defaults — reserved slots (in searchCorpusMultiAspect)
+ * now guarantee clinical trial representation. The 1.5x boost was overkill with
+ * reserved slots, causing clinical trial docs to monopolize the entire retrieval
+ * pool and drowning out the 7,700-paper literature corpus.
  */
 export async function searchCorpusWeighted(
   queryVector: number[],
   topK: number = 30,
-  // Boost increased from 1.20→1.50 after corpus grew to 7,700 literature vs 39 clinical trial docs (198:1 ratio)
-  sourceBoost: Record<string, number> = { clinical_trial: 1.50, regulatory: 1.30 }
+  sourceBoost: Record<string, number> = {}
 ): Promise<MatchedChunk[]> {
   const supabase = createServiceClient()
   return retryRpc('Weighted vector search', () =>
@@ -143,15 +145,39 @@ export async function searchCorpusMultiAspect(
   const afterCap = capped.length
 
   // Reserve slots for high-value source types (clinical trial + regulatory docs).
-  // With 7,700+ literature vs ~40 clinical trial docs, trial evidence gets drowned
-  // out by sheer volume. Reserving 10 slots guarantees IND/trial evidence appears
-  // regardless of corpus size.
+  // Guarantees IND/trial evidence appears regardless of corpus size.
   const RESERVED_SLOTS = 10
   const RESERVED_TYPES = new Set(['clinical_trial', 'regulatory'])
 
   const reserved = capped.filter(c => RESERVED_TYPES.has(c.source_type)).slice(0, RESERVED_SLOTS)
   const reservedIds = new Set(reserved.map(c => c.chunk_id))
-  const general = capped.filter(c => !reservedIds.has(c.chunk_id)).slice(0, finalK - reserved.length)
+
+  // General pool: fill remaining slots, but cap any single source_type to 50%
+  // of the general pool so no type can monopolize retrieval.
+  const generalTarget = finalK - reserved.length
+  const MAX_PER_TYPE_PCT = 0.5
+  const maxPerType = Math.ceil(generalTarget * MAX_PER_TYPE_PCT)
+
+  const generalTypeCounts = new Map<string, number>()
+  const general: MatchedChunk[] = []
+  for (const chunk of capped) {
+    if (reservedIds.has(chunk.chunk_id)) continue
+    if (general.length >= generalTarget) break
+    const typeCount = generalTypeCounts.get(chunk.source_type) ?? 0
+    if (typeCount >= maxPerType) continue
+    general.push(chunk)
+    generalTypeCounts.set(chunk.source_type, typeCount + 1)
+  }
+
+  // If we have room left after type caps, backfill with any remaining chunks
+  if (general.length < generalTarget) {
+    const generalIds = new Set(general.map(c => c.chunk_id))
+    for (const chunk of capped) {
+      if (general.length >= generalTarget) break
+      if (reservedIds.has(chunk.chunk_id) || generalIds.has(chunk.chunk_id)) continue
+      general.push(chunk)
+    }
+  }
 
   // Merge: reserved first (highest priority), then general by similarity
   const final = [...reserved, ...general]
@@ -186,13 +212,18 @@ export interface RankedChunk extends MatchedChunk {
 /**
  * Build a composite rerank query from all aspect texts.
  * Gives the reranker full context about what matters in a single pass.
+ *
+ * NOTE: Drug name is intentionally excluded. The reranker's cross-attention
+ * strongly prefers chunks mentioning the drug by name, which biases toward
+ * internal IND docs and drops all general literature evidence. The phenotype-
+ * oriented aspect texts already capture the scientific relevance signal.
  */
 export function buildRerankQuery(
-  drugName: string,
+  _drugName: string,
   indication: string,
   aspectTexts: Record<string, string>
 ): string {
-  const composite = `${drugName} in ${indication}: ${Object.values(aspectTexts).join('; ')}`
+  const composite = `${indication} patient phenotyping: ${Object.values(aspectTexts).join('; ')}`
   return composite.slice(0, 1000) // Voyage rerank query limit
 }
 

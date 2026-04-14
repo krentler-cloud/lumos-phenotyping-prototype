@@ -924,7 +924,8 @@ export async function synthesizeCorpusIntelligence(
     p50: searchStats.similarityP50,
     p75: searchStats.similarityP75,
     min: searchStats.similarityMin,
-    total_chunks: searchStats.finalSent,
+    // Use actual reranked chunk count (not pre-rerank finalSent) so the display is consistent
+    total_chunks: chunks.length,
   }
 
   // Build chunk summary for Claude (titles + source types)
