@@ -6,14 +6,6 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
-- [ ] **Expand synthetic patient cohort to N=80**
-  Study design says mdd_n=80 but the seed data only has 16 patients. Entire Phase 2 pipeline (concordance, subtype counts, MADRS trajectories, Bayesian N_EFF, feature importance) reflects 16 patients while the Study Overview shows 80. Need to:
-  - Expand the seed script to generate 80 realistic synthetic patients with plausible biomarker distributions (responder/nonresponder/uncertain mix)
-  - Verify the Phase 2 pipeline handles N=80 correctly (Bayesian update, concordance, LLR assignments)
-  - Update any hardcoded N references in UI or prompts
-  - Re-run Phase 2 to validate at full cohort size
-  **Note:** The 80 patients are synthetic — this is about making the demo realistic, not real clinical data.
-
 - [ ] **Re-run Phase 1 + Phase 2 to activate dynamic subtype labels**
   The subtype label consistency fix (below, completed) requires a Phase 1 re-run to generate the new `phenotype_label` fields. Until re-run, the fallback labels ("Responder-Favored" / "Nonresponder-Favored") will display — which is still correct, just generic.
 
@@ -59,7 +51,7 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   Generated `data/missing_high_relevance_papers.csv` — 15,764 papers sorted by relevance score that failed all download tiers. Top papers retrievable via institutional access, author preprints, or interlibrary loan.
 
 - [ ] **E-3: Qdrant migration (decision gate)**
-  At 346K chunks, pgvector IVFFlat handles queries fine with 30s timeout. Revisit if query latency >500ms, storage overages, or concurrent users.
+  At 346K chunks, pgvector IVFFlat handles queries with 60s timeout + retry. Revisit if query latency >500ms, storage overages, or concurrent users.
 
 ---
 
@@ -82,6 +74,12 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Completed
 
+- [x] **Default Ask LumosAI chat panel to closed** — April 13, 2026
+  Was `useState(true)` — opened on every page load across the app. Changed to `useState(false)`. Still opens on click or when ⓘ badges fire `lumos-ask` events.
+
+- [x] **Fix vector search timeout on 346K chunk corpus** — April 13, 2026
+  Fetch timeout 30s → 60s, DB statement_timeout 30s → 60s (migration 013), retryRpc now catches thrown TimeoutError/AbortError and retries with exponential backoff.
+
 - [x] **Fix Phase 2 subtype label consistency with Phase 1** — April 13, 2026
   Subtype labels were hardcoded ("TrkB-Deficit", "High-Inflammatory", "Mixed") and semantically contradicted the LLR assignment logic (Subtype A = responder-favored but labeled as a deficit). Fixed by: adding `phenotype_label` field to Phase 1 Opus output, creating `resolveSubtypeLabels()` utility in clinical-ml.ts, threading dynamic labels through Phase2MLResult → components. Fallback to "Responder-Favored" / "Nonresponder-Favored" / "Intermediate" for old reports. Requires Phase 1 re-run to generate dynamic labels.
 
@@ -91,8 +89,8 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 - [x] **F-1: Biomarker distribution outputs + PDF export** — April 13, 2026
   Extended Sonnet compression to extract structured numerics. Pure-math aggregation produces BiomarkerDistribution[] per biomarker. UI + PDF render corpus stats below threshold boxes. Zero additional LLM calls.
 
-- [x] **Regenerated synthetic MDD patients with realistic biomarker overlap** — April 13, 2026
-  16 MDD patients now have plausible distributions with intentional edge cases (P004: responder with high IL-6; P011: nonresponder with moderate BDNF). Added MAD Cohort 4 to reach 64 HV total (80 trial participants).
+- [x] **Corrected trial cohort structure: 16 MDD + 64 HV = 80 total** — April 13, 2026
+  Reverted incorrect N=80 MDD expansion. Trial design: 16 MDD efficacy patients (Phase 2 phenotyping), 64 healthy volunteers (SAD/MAD PK/safety). DB fields `mdd_n=16`, `healthy_volunteer_n=64` were already correct. MDD patients have realistic biomarker overlap with edge cases (P004, P011).
 
 - [x] **Study Overview page redesign** — April 13, 2026
   Live corpus stats, accurate methodology (reranking, compression, Bayesian updating), fixed stale references (removed "SHAP", "logistic regression", "ML-driven"). Added corpus stats section.
