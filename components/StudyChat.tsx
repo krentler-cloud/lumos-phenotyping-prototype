@@ -98,7 +98,7 @@ function getSuggestions(
 
 export default function StudyChat({ studyId, drugName, topBiomarker = "BDNF", predictedSubtype }: StudyChatProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
