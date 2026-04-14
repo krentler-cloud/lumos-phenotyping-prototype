@@ -73,6 +73,8 @@ async function seedPatients() {
   const patients = rows.map(r => ({
     study_id:                  STUDY_ID,
     patient_code:              r.patient_code,
+    age:                       parseInt(r.age || '35', 10),
+    sex:                       r.sex || 'F',
     subtype_label:             r.subtype_label || null,
     response_status:           r.response_status || 'uncertain',
     val66met_genotype:         r.val66met_genotype || null,
@@ -86,6 +88,8 @@ async function seedPatients() {
     baseline_tnf_alpha_pg_ml:  num(r.baseline_tnf_alpha_pg_ml) ?? 0,
     baseline_hamd17:           num(r.baseline_hamd17) ?? 0,
     baseline_madrs:            num(r.baseline_madrs) ?? 0,
+    baseline_sleep_regularity: num(r.baseline_sleep_regularity) ?? 0.5,
+    baseline_anhedonia_subscale: num(r.baseline_anhedonia_subscale) ?? 6,
     wk2_madrs:                 num(r.wk2_madrs),
     wk4_madrs:                 num(r.wk4_madrs),
     wk8_madrs:                 num(r.wk8_madrs),

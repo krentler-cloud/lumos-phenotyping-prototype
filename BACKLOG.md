@@ -6,9 +6,13 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Now (next session)
 
-- [ ] **F-2: Phase 1 distributions as Bayesian priors for Phase 2**
-  Replace threshold-based subtype assignment with likelihood-ratio approach using Phase 1 distributions.
-  **Dependency:** F-1 done ✓.
+- [ ] **Expand synthetic patient cohort to N=80**
+  Study design says mdd_n=80 but the seed data only has 16 patients. Entire Phase 2 pipeline (concordance, subtype counts, MADRS trajectories, Bayesian N_EFF, feature importance) reflects 16 patients while the Study Overview shows 80. Need to:
+  - Expand the seed script to generate 80 realistic synthetic patients with plausible biomarker distributions (responder/nonresponder/uncertain mix)
+  - Verify the Phase 2 pipeline handles N=80 correctly (Bayesian update, concordance, LLR assignments)
+  - Update any hardcoded N references in UI or prompts
+  - Re-run Phase 2 to validate at full cohort size
+  **Note:** The 80 patients are synthetic — this is about making the demo realistic, not real clinical data.
 
 - [ ] **Downgrade Supabase compute add-on**
   The Small tier (2 CPU / 4 GB, $25/mo) was needed for the IVFFlat index build. Now that the index is built, can downgrade to free compute. The index persists after downgrade. Test search latency after downgrading to confirm performance is acceptable.
@@ -80,6 +84,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 - [x] **Corpus page: source-type filter + pagination** — April 13, 2026
   Dropdown filter (All/Literature/Clinical Trial/Regulatory). Paginated API (100/page) with real total count. Fixed "1000 documents ready" cap.
+
+- [x] **F-2: Likelihood-ratio subtype assignment** — April 13, 2026
+  Phase 2 uses Phase 1 corpus distributions as Gaussian priors for patient LLR scoring. Falls back to thresholds for older reports. UI shows LLR rationale per patient, scatter plot adapts to assignment method.
 
 - [x] **F-1: Biomarker distribution outputs** — April 13, 2026
   Extended Sonnet compression to extract structured numerics (mean, SD, N, unit, context). Pure-math aggregation produces BiomarkerDistribution[] per biomarker. UI + PDF render corpus stats below threshold boxes. Zero additional LLM calls.
