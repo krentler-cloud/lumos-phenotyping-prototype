@@ -39,9 +39,9 @@ export function createServiceClient() {
         schema: 'public',
       },
       global: {
-        // Increase fetch timeout to 30s for heavy vector searches
+        // Increase fetch timeout to 60s for heavy vector searches (346K+ chunks)
         fetch: (url: string, options: RequestInit = {}) => {
-          return fetch(url, { ...options, signal: AbortSignal.timeout(30_000) })
+          return fetch(url, { ...options, signal: AbortSignal.timeout(60_000) })
         },
       },
     }

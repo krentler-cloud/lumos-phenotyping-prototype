@@ -14,6 +14,9 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
   - Re-run Phase 2 to validate at full cohort size
   **Note:** The 80 patients are synthetic — this is about making the demo realistic, not real clinical data.
 
+- [ ] **Re-run Phase 1 + Phase 2 to activate dynamic subtype labels**
+  The subtype label consistency fix (below, completed) requires a Phase 1 re-run to generate the new `phenotype_label` fields. Until re-run, the fallback labels ("Responder-Favored" / "Nonresponder-Favored") will display — which is still correct, just generic.
+
 - [ ] **Downgrade Supabase compute add-on**
   The Small tier (2 CPU / 4 GB, $25/mo) was needed for the IVFFlat index build. Now that the index is built, can downgrade to free compute. The index persists after downgrade. Test search latency after downgrading to confirm performance is acceptable.
 
@@ -79,26 +82,23 @@ Items are grouped by priority. Start a session by saying "check the backlog" and
 
 ## Completed
 
+- [x] **Fix Phase 2 subtype label consistency with Phase 1** — April 13, 2026
+  Subtype labels were hardcoded ("TrkB-Deficit", "High-Inflammatory", "Mixed") and semantically contradicted the LLR assignment logic (Subtype A = responder-favored but labeled as a deficit). Fixed by: adding `phenotype_label` field to Phase 1 Opus output, creating `resolveSubtypeLabels()` utility in clinical-ml.ts, threading dynamic labels through Phase2MLResult → components. Fallback to "Responder-Favored" / "Nonresponder-Favored" / "Intermediate" for old reports. Requires Phase 1 re-run to generate dynamic labels.
+
+- [x] **F-2: Likelihood-ratio subtype assignment + retrieval bias fix** — April 13, 2026
+  Phase 2 uses Phase 1 corpus distributions as Gaussian priors for patient LLR scoring. Falls back to thresholds for older reports. UI shows LLR rationale per patient, scatter plot adapts to assignment method. Also fixed retrieval bias: removed source boost, added 50% source-type cap in general pool, removed drug name from rerank query. Clinical trial docs were monopolizing all 50 reranked chunks.
+
+- [x] **F-1: Biomarker distribution outputs + PDF export** — April 13, 2026
+  Extended Sonnet compression to extract structured numerics. Pure-math aggregation produces BiomarkerDistribution[] per biomarker. UI + PDF render corpus stats below threshold boxes. Zero additional LLM calls.
+
+- [x] **Regenerated synthetic MDD patients with realistic biomarker overlap** — April 13, 2026
+  16 MDD patients now have plausible distributions with intentional edge cases (P004: responder with high IL-6; P011: nonresponder with moderate BDNF). Added MAD Cohort 4 to reach 64 HV total (80 trial participants).
+
 - [x] **Study Overview page redesign** — April 13, 2026
   Live corpus stats, accurate methodology (reranking, compression, Bayesian updating), fixed stale references (removed "SHAP", "logistic regression", "ML-driven"). Added corpus stats section.
 
 - [x] **Corpus page: source-type filter + pagination** — April 13, 2026
   Dropdown filter (All/Literature/Clinical Trial/Regulatory). Paginated API (100/page) with real total count. Fixed "1000 documents ready" cap.
-
-- [x] **F-2: Likelihood-ratio subtype assignment** — April 13, 2026
-  Phase 2 uses Phase 1 corpus distributions as Gaussian priors for patient LLR scoring. Falls back to thresholds for older reports. UI shows LLR rationale per patient, scatter plot adapts to assignment method.
-
-- [x] **F-1: Biomarker distribution outputs** — April 13, 2026
-  Extended Sonnet compression to extract structured numerics (mean, SD, N, unit, context). Pure-math aggregation produces BiomarkerDistribution[] per biomarker. UI + PDF render corpus stats below threshold boxes. Zero additional LLM calls.
-
-- [x] **Fix retrieval bias: clinical trial docs monopolizing reranked chunks** — April 13, 2026
-  1.5x source boost + drug-name rerank query + reserved slots triple-stacked, drowning out all 7,700 literature papers (50/0/0/0 breakdown). Fixed: removed boost, added 50% source-type cap in general pool, removed drug name from rerank query. Now 21 clinical / 29 literature.
-
-- [x] **Reserved 5 retrieval slots for clinical trial + regulatory** — April 13, 2026
-  Guarantees IND/trial evidence appears regardless of corpus size. Capped at 15 total clinical trial chunks.
-
-- [x] **Source-type boost increase** — April 13, 2026
-  clinical_trial 1.20→1.50, regulatory 1.15→1.30 for 7,700+ doc corpus. Later removed (April 13) — redundant with reserved slots.
 
 - [x] **Corpus stats API fix** — April 12, 2026
   PostgREST 1,000 row limit fixed with parallel count queries.

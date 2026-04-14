@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { runClinicalML, ClinicalPatient } from '@/lib/pipeline/clinical-ml'
+import { runClinicalML, ClinicalPatient, resolveSubtypeLabels } from '@/lib/pipeline/clinical-ml'
 import { synthesizePhase2Report } from '@/lib/pipeline/synthesize-phase2'
 import { Phase1ReportData } from '@/lib/pipeline/synthesize-phase1'
 
@@ -109,7 +109,9 @@ export async function runPhase2Processing(studyId: string, runId: string): Promi
       // F-2: Pass Phase 1 corpus distributions for likelihood-ratio subtype assignment
       const distributions = (phase1Report as unknown as Record<string, unknown>)?.biomarker_distributions as
         import('@/lib/pipeline/synthesize-phase1').BiomarkerDistribution[] | undefined
-      mlResult = runClinicalML(patients, priors, distributions)
+      // Resolve dynamic subtype labels from Phase 1 phenotype profiles
+      const subtypeLabels = resolveSubtypeLabels(phase1Report!)
+      mlResult = runClinicalML(patients, priors, distributions, subtypeLabels)
 
       // Write subtype labels back to each patient record
       for (const assignment of mlResult.assignments) {

@@ -497,7 +497,8 @@ OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
     "neuroplasticity": "",
     "imaging": "",
     "key_inclusion_criteria": [""],
-    "primary_subtype": "A|B|A+B"
+    "primary_subtype": "A|B|A+B",
+    "phenotype_label": "A concise 2-4 word label capturing the defining biological mechanism of this responder phenotype (e.g. 'Neuroplasticity-Responsive', 'BDNF-Intact Low-Inflammatory', 'TrkB-Sensitive Responder'). Must reflect corpus evidence. This label will identify this phenotype throughout the clinical analysis."
   },
   "nonresponder_profile": {
     "corpus_hypothesis_confidence": 0.00,
@@ -508,7 +509,8 @@ OUTPUT FORMAT — respond with valid JSON only, no prose outside the JSON:
     "neuroplasticity": "",
     "imaging": "",
     "key_exclusion_criteria": [""],
-    "primary_subtype": "C"
+    "primary_subtype": "C",
+    "phenotype_label": "A concise 2-4 word label capturing the defining biological mechanism of this non-responder phenotype (e.g. 'High-Inflammatory Refractory', 'TNF-Dominant Resistant', 'Neuroinflammatory Non-Responder'). Must reflect corpus evidence."
   },
   "cross_species_evidence": [
     {
@@ -610,6 +612,7 @@ export interface Phase1ReportData {
     imaging: string
     key_inclusion_criteria: string[]
     primary_subtype: string
+    phenotype_label?: string   // 2-4 word descriptive label (e.g. "Neuroplasticity-Responsive")
   }
   nonresponder_profile: {
     corpus_hypothesis_confidence: number
@@ -621,6 +624,7 @@ export interface Phase1ReportData {
     imaging: string
     key_exclusion_criteria: string[]
     primary_subtype: string
+    phenotype_label?: string   // 2-4 word descriptive label (e.g. "High-Inflammatory Refractory")
   }
   cross_species_evidence: {
     animal_model: string

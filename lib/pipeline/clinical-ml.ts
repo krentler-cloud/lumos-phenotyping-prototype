@@ -78,6 +78,33 @@ export interface BayesianUpdate {
   nonresponder: BayesianUpdateEntry
 }
 
+export interface SubtypeLabels {
+  A: string   // responder-favored phenotype label
+  B: string   // nonresponder-favored phenotype label
+  C: string   // intermediate phenotype label
+}
+
+const DEFAULT_SUBTYPE_LABELS: SubtypeLabels = {
+  A: 'Responder-Favored',
+  B: 'Nonresponder-Favored',
+  C: 'Intermediate',
+}
+
+/**
+ * Resolve subtype display labels from Phase 1 phenotype_label fields.
+ * Falls back to semantically correct generic labels for older reports.
+ */
+export function resolveSubtypeLabels(phase1Report?: {
+  responder_profile?: { phenotype_label?: string }
+  nonresponder_profile?: { phenotype_label?: string }
+}): SubtypeLabels {
+  return {
+    A: phase1Report?.responder_profile?.phenotype_label ?? DEFAULT_SUBTYPE_LABELS.A,
+    B: phase1Report?.nonresponder_profile?.phenotype_label ?? DEFAULT_SUBTYPE_LABELS.B,
+    C: DEFAULT_SUBTYPE_LABELS.C,
+  }
+}
+
 export interface Phase2MLResult {
   assignments: SubtypeAssignment[]
   feature_importance: FeatureImportance[]
@@ -89,6 +116,7 @@ export interface Phase2MLResult {
   concordance_pct: number            // overall % (includes Subtype C as concordant)
   predictive_concordance_pct: number  // % for Subtypes A & B only (excludes C padding)
   subtype_ab_count: number            // how many patients are A or B (denominator for predictive)
+  subtype_labels?: SubtypeLabels     // dynamic labels derived from Phase 1 phenotype profiles
 }
 
 // ── Biomarker name → patient field mapping ──────────────────────────────────
@@ -222,7 +250,7 @@ export function assignSubtypes(
       return {
         patient_code: p.patient_code,
         subtype: 'A',
-        reason: `BDNF ${p.baseline_bdnf_ng_ml} ng/mL < 15 threshold (TrkB-deficit phenotype)`,
+        reason: `BDNF ${p.baseline_bdnf_ng_ml} ng/mL < 15 threshold (responder-favored phenotype)`,
         assignment_method: 'threshold' as const,
       }
     }
@@ -230,7 +258,7 @@ export function assignSubtypes(
       return {
         patient_code: p.patient_code,
         subtype: 'B',
-        reason: `IL-6 ${p.baseline_il6_pg_ml} pg/mL ≥ 4.0 threshold (high-inflammatory phenotype)`,
+        reason: `IL-6 ${p.baseline_il6_pg_ml} pg/mL ≥ 4.0 threshold (nonresponder-favored phenotype)`,
         assignment_method: 'threshold' as const,
       }
     }
@@ -302,7 +330,8 @@ function mean(nums: number[]): number {
 
 export function computeMadrsTrajectories(
   patients: ClinicalPatient[],
-  assignments: SubtypeAssignment[]
+  assignments: SubtypeAssignment[],
+  labels?: SubtypeLabels
 ): MadrsTrajectory[] {
   const subtypeMap = new Map(assignments.map(a => [a.patient_code, a.subtype]))
 
@@ -313,10 +342,11 @@ export function computeMadrsTrajectories(
     groups['Overall'].push(p)
   }
 
+  const resolved = labels ?? DEFAULT_SUBTYPE_LABELS
   const config: Record<string, { label: string; color: string }> = {
-    A:       { label: 'Subtype A — TrkB-Deficit', color: '#22C55E' },
-    B:       { label: 'Subtype B — High-Inflammatory', color: '#EF4444' },
-    C:       { label: 'Subtype C — Mixed', color: '#F59E0B' },
+    A:       { label: `Subtype A — ${resolved.A}`, color: '#22C55E' },
+    B:       { label: `Subtype B — ${resolved.B}`, color: '#EF4444' },
+    C:       { label: `Subtype C — ${resolved.C}`, color: '#F59E0B' },
     Overall: { label: `Overall (N=${patients.length})`, color: '#4F8EF7' },
   }
 
@@ -416,11 +446,12 @@ export function computeBayesianUpdate(
 export function runClinicalML(
   patients: ClinicalPatient[],
   phase1Priors: { overall: number; responder: number; nonresponder: number },
-  distributions?: BiomarkerDistribution[]
+  distributions?: BiomarkerDistribution[],
+  subtypeLabels?: SubtypeLabels
 ): Phase2MLResult {
   const assignments = assignSubtypes(patients, distributions)
   const featureImportance = computeFeatureImportance(patients)
-  const madrsTrajectories = computeMadrsTrajectories(patients, assignments)
+  const madrsTrajectories = computeMadrsTrajectories(patients, assignments, subtypeLabels)
   const bayesianUpdate = computeBayesianUpdate(patients, phase1Priors)
 
   const responderCount    = patients.filter(p => p.response_status === 'responder').length
@@ -456,5 +487,6 @@ export function runClinicalML(
     concordance_pct: concordancePct,
     predictive_concordance_pct: predictiveConcordancePct,
     subtype_ab_count: abAssignments.length,
+    subtype_labels: subtypeLabels,
   }
 }

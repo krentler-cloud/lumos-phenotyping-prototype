@@ -74,9 +74,9 @@ function subtypeRationale(p: ClinicalPatientFull, assignment?: { reason: string;
   if (assignment?.reason) return assignment.reason;
   // Fallback: hardcoded rationale for pre-F-2 reports
   if (p.subtype_label === "A")
-    return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL < 15 ng/mL threshold → TrkB-deficit phenotype. Low BDNF indicates impaired neurotrophin signalling that this drug's TrkB agonism is designed to restore.`;
+    return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL < 15 ng/mL threshold → responder-favored phenotype. Low baseline BDNF is consistent with greater capacity for neuroplasticity-mediated treatment response.`;
   if (p.subtype_label === "B")
-    return `IL-6 ${fmt1(p.baseline_il6_pg_ml)} pg/mL ≥ 4 pg/mL threshold → High-inflammatory phenotype. Elevated neuroinflammation attenuates TrkB-mediated plasticity, predicting non-response.`;
+    return `IL-6 ${fmt1(p.baseline_il6_pg_ml)} pg/mL ≥ 4 pg/mL threshold → nonresponder-favored phenotype. Elevated neuroinflammation is associated with attenuated treatment response.`;
   return `BDNF ${fmt1(p.baseline_bdnf_ng_ml)} ng/mL and IL-6 ${fmt1(p.baseline_il6_pg_ml)} pg/mL both within intermediate range — neither threshold criterion met. Mixed phenotype; response uncertain.`;
 }
 

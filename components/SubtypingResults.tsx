@@ -26,11 +26,7 @@ const SUBTYPE_COLORS: Record<string, string> = {
   C: "var(--status-warning)",
 };
 
-const SUBTYPE_LABELS: Record<string, string> = {
-  A: "Subtype A — TrkB-Deficit",
-  B: "Subtype B — High-Inflammatory",
-  C: "Subtype C — Mixed",
-};
+// Subtype labels are now dynamic — resolved inside the component from ml_result.subtype_labels
 
 // ── SVG Scatter Plot (BDNF vs IL-6) ─────────────────────────────────────────
 function ScatterPlot({ patients, assignmentMethod }: { patients: Patient[]; assignmentMethod?: string }) {
@@ -270,6 +266,12 @@ export default function SubtypingResults({
 }) {
   const ml = report.ml_result;
   const bu = ml.bayesian_update;
+
+  const SUBTYPE_LABELS: Record<string, string> = {
+    A: `Subtype A — ${ml.subtype_labels?.A ?? 'Responder-Favored'}`,
+    B: `Subtype B — ${ml.subtype_labels?.B ?? 'Nonresponder-Favored'}`,
+    C: `Subtype C — ${ml.subtype_labels?.C ?? 'Intermediate'}`,
+  };
 
   const subtypeGroups: Record<string, Patient[]> = { A: [], B: [], C: [] };
   for (const p of report.patients) {

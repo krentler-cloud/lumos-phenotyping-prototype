@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 // 502 HTML page doesn't get surfaced to users.
 
 const TRANSIENT_PATTERN = /502|503|504|bad\s*gateway|<!DOCTYPE/i
+const THROWN_TRANSIENT = /timeout|abort|ECONNRESET|ECONNREFUSED|fetch failed/i
 
 async function retryRpc<T>(
   label: string,
@@ -15,11 +16,20 @@ async function retryRpc<T>(
 ): Promise<T> {
   let lastMessage = 'unknown error'
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const { data, error } = await fn()
-    if (!error) return data as T
-    lastMessage = error.message ?? ''
-    const isTransient = TRANSIENT_PATTERN.test(lastMessage)
-    if (!isTransient || attempt >= maxAttempts) break
+    try {
+      const { data, error } = await fn()
+      if (!error) return data as T
+      lastMessage = error.message ?? ''
+      const isTransient = TRANSIENT_PATTERN.test(lastMessage)
+      if (!isTransient || attempt >= maxAttempts) break
+    } catch (thrown: unknown) {
+      // AbortSignal.timeout() throws a DOMException/TimeoutError, not a Supabase error
+      const msg = thrown instanceof Error ? thrown.message : String(thrown)
+      lastMessage = `${thrown?.constructor?.name ?? 'Error'}: ${msg}`
+      const isTransient = THROWN_TRANSIENT.test(lastMessage)
+      if (!isTransient || attempt >= maxAttempts) break
+      console.warn(`[${label}] attempt ${attempt} threw ${lastMessage} — retrying`)
+    }
     const delay = 1000 * Math.pow(2, attempt - 1) // 1s → 2s → 4s
     await new Promise(r => setTimeout(r, delay))
   }
