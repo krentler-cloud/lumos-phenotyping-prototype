@@ -141,7 +141,20 @@ export async function searchCorpusMultiAspect(
   }
 
   const afterCap = capped.length
-  const final = capped.slice(0, finalK)
+
+  // Reserve slots for high-value source types (clinical trial + regulatory docs).
+  // With 7,700+ literature vs ~40 clinical trial docs, trial evidence gets drowned
+  // out by sheer volume. Reserving 10 slots guarantees IND/trial evidence appears
+  // regardless of corpus size.
+  const RESERVED_SLOTS = 10
+  const RESERVED_TYPES = new Set(['clinical_trial', 'regulatory'])
+
+  const reserved = capped.filter(c => RESERVED_TYPES.has(c.source_type)).slice(0, RESERVED_SLOTS)
+  const reservedIds = new Set(reserved.map(c => c.chunk_id))
+  const general = capped.filter(c => !reservedIds.has(c.chunk_id)).slice(0, finalK - reserved.length)
+
+  // Merge: reserved first (highest priority), then general by similarity
+  const final = [...reserved, ...general]
 
   // Compute similarity stats over the final set
   const sims = final.map(c => c.similarity).sort((a, b) => a - b)
